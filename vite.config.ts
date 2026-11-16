@@ -10,7 +10,30 @@ export default defineConfig({
 				runes: ({ filename }) =>
 					filename.split(/[/\\]/).includes('node_modules') ? undefined : true
 			},
-			adapter: adapter()
+			adapter: adapter(),
+			// Strict CSP: SvelteKit adds nonces (or hashes for prerendered pages) to its own inline
+			// scripts and styles. No 'unsafe-inline' scripts, no 'unsafe-eval', no third parties.
+			csp: {
+				mode: 'auto',
+				directives: {
+					'default-src': ['self'],
+					'script-src': ['self'],
+					'style-src': ['self'],
+					'img-src': ['self', 'data:', 'blob:'],
+					'font-src': ['self'],
+					'connect-src': ['self'],
+					'media-src': ['self', 'blob:'],
+					'worker-src': ['self'],
+					'manifest-src': ['self'],
+					'object-src': ['none'],
+					'base-uri': ['none'],
+					'form-action': ['self'],
+					'frame-ancestors': ['none'],
+					'frame-src': ['none']
+				}
+			},
+			// The origin check stays on: cross-site form posts are rejected. No trusted origins.
+			csrf: { trustedOrigins: [] }
 		})
 	],
 	test: {

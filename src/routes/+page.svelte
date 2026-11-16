@@ -1,12 +1,12 @@
-<!-- Placeholder until the design system and i18n land in phase 2. -->
-<main>
-	<h1>Herbarium</h1>
-</main>
+<script lang="ts">
+	import { messages } from '#lib/i18n/index.ts';
+	import type { PageProps } from './$types';
 
-<style>
-	main {
-		display: grid;
-		min-height: 100vh;
-		place-items: center;
-	}
-</style>
+	let { data }: PageProps = $props();
+	const m = $derived(messages(data.locale));
+</script>
+
+<!-- Placeholder home until the dashboard arrives in phase 9. -->
+<h1>{m.appName}</h1>
+<p>{m.home.greeting(data.displayName)}</p>
+<p>{m.home.intro}</p>

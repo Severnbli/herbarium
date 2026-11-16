@@ -12,9 +12,7 @@ const PARAMS = {
 	parallelism: 1
 } as const;
 
-export const PASSWORD_MIN_LENGTH = 12;
-/** Upper bound in characters, so nobody can make the server hash megabytes. */
-export const PASSWORD_MAX_LENGTH = 256;
+export { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from '../../domain/password.ts';
 
 export function hashPassword(password: string): Promise<string> {
 	return hash(password, PARAMS);

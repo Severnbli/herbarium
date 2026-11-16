@@ -35,7 +35,12 @@ export function beginTotpSetup(db: Db, fieldKey: Buffer, userId: string, usernam
 		.set({ totpPendingSecret: sealSecret(fieldKey, userId, secret.base32) })
 		.where(eq(user.id, userId))
 		.run();
-	return { secret: secret.base32, uri: totpFor(secret, username).toString() };
+	return { secret: secret.base32, uri: totpUri(secret.base32, username) };
+}
+
+/** The `otpauth://` URI an authenticator app imports, as text or QR code. */
+export function totpUri(base32: string, username: string): string {
+	return totpFor(Secret.fromBase32(base32), username).toString();
 }
 
 /**
