@@ -180,6 +180,15 @@ Traditional **Belarusian botanical art, folklore and natural symbolism**. The ap
 - Styles are scoped component CSS on top of global design tokens. No CSS framework.
 - Tests: unit tests (Vitest) for recurrence expansion, date handling and anything in `src/lib/server/`; Playwright for key flows once they exist.
 
+## Git workflow
+
+- **Branches**: `main` is the release branch, `dev` is the integration branch. Work happens on `dev` (or on a short-lived `feature/<name>` branch cut from `dev` and merged back into it).
+- **`main` changes only through a pull request from `dev`.** Never commit to `main` directly, never push to `main`, never force-push to `main` or `dev`.
+- **Commit often, without being reminded.** Commit after every completed logical step: a finished roadmap item, a working sub-feature, a refactor, a docs update. Do not let unrelated work pile up in one commit or leave finished work uncommitted at the end of a task. Push `dev` after committing.
+- Before committing: `check`, `lint` and `test` pass (once they exist). Never commit secrets, `.env` files, the data directory or real user data.
+- When a commit completes a roadmap item, tick it in `docs/ROADMAP.md` in the same commit.
+- Commit messages in English: imperative subject up to ~72 characters, a body explaining why when it is not obvious.
+
 ## Writing style
 
 - Never use the em dash (—). Use the en dash (–) everywhere: code comments, docs, commit messages, UI strings in all locales.
