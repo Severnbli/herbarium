@@ -19,6 +19,7 @@ Goal: an empty but production-shaped app.
 - [ ] `.env.example`, `.gitignore` (incl. `.env*`, data dir)
 - [ ] Dockerfile: multi-stage, non-root user, read-only root FS, data volume; `docker-compose.yml` example with Docker secret for the master key
 - [ ] CI: check, lint, unit tests, `npm audit` (high/critical blocks)
+- [ ] Add the CI job as a required status check to the "Protect main" GitHub ruleset
 - [ ] Update **Commands** in `CLAUDE.md`
 
 Done when: `docker compose up` serves a placeholder page; CI is green.
