@@ -4,7 +4,7 @@ Development plan for Herbarium. Phases are ordered by dependency: each one build
 
 Status legend: `[ ]` not started, `[~]` in progress, `[x]` done.
 
-**MVP** = phases 0–5: two people can log in securely, record moments, plans and occasions, attach photos, and see them in a list. Phases 6–10 turn it into the full chronicle.
+**MVP** = phases 0–5: members of a circle can log in securely, record moments, plans and occasions, attach photos, and see them in a list. Phases 6–10 turn it into the full chronicle.
 
 ---
 
@@ -31,7 +31,8 @@ Goal: encrypted storage and authentication before any user data exists.
 - [ ] Key management module: master key loading, data-key generation and wrapping (AES-256-GCM), unit-tested; key rotation procedure designed (implemented in phase 10)
 - [ ] Tables: `user`, `session`, `invite`, `audit_log`, `login_attempt`
 - [ ] First-run setup: create first account, explicit warning that a lost key means lost data
-- [ ] Single-use, expiring invite for the second account; registration closed after two users
+- [ ] Roles `owner` / `member`; owners issue single-use, expiring invites, revoke them, deactivate members (revoking their sessions) and promote/demote owners; at least one active owner always remains; no open registration
+- [ ] Members page: list, invite, deactivate
 - [ ] argon2id hashing; login with rate limiting + backoff; generic errors
 - [ ] Sessions: random 256-bit token, stored hashed, cookie flags, idle + absolute expiry, rotation, logout, "sign out everywhere"
 - [ ] Re-auth helper for sensitive actions; password change revokes other sessions
@@ -39,9 +40,9 @@ Goal: encrypted storage and authentication before any user data exists.
 - [ ] Security headers + strict CSP (`kit.csp`), CSRF check on, safe production error pages
 - [ ] Audit logging of security events
 - [ ] Optional TOTP 2FA per user, with single-use recovery codes stored hashed (may slip to phase 10 if it blocks progress)
-- [ ] Tests: every route rejects anonymous access, session expiry/revocation, rate limit, invite reuse/expiry, DB unreadable without key
+- [ ] Tests: every route rejects anonymous access, owner-only actions reject members, deactivated members are locked out, session expiry/revocation, rate limit, invite reuse/expiry, DB unreadable without key
 
-Done when: two accounts can be created and log in; the DB file is unreadable without the key.
+Done when: the owner can invite members, members can log in, deactivation locks them out immediately; the DB file is unreadable without the key.
 
 ## Phase 2 – Design system and i18n
 
@@ -71,7 +72,7 @@ Goal: the core domain.
 - [ ] Event list and detail page; simple filters by kind and year
 - [ ] Tags or categories (trip, date, milestone…) – keep minimal
 
-Done when: both users can record and edit past and future events with correct dates in any time zone.
+Done when: all members can record and edit past and future events with correct dates in any time zone.
 
 ## Phase 4 – Occasions and recurrence
 
@@ -163,6 +164,7 @@ Done when: events can be pinned and browsed on a map that works fully offline fr
 
 ## Decisions
 
+- **Members**: one shared space per instance with any number of members (a couple, a family, friends). Roles: `owner` and `member`; equal rights on content, owners manage members and settings. No multiple spaces per instance.
 - **Reminders**: delivered by email through the owners' own SMTP server. No Web Push (it routes through browser vendors' services) and no messenger bots.
 - **Places**: plain-text name plus optional coordinates on events, and a map of memories. Tiles are self-hosted PMTiles rendered with MapLibre – no external tile, style or font requests. Place search uses a bundled GeoNames gazetteer. GPS from a photo's EXIF is offered as a suggestion for the event's coordinates at upload, then stripped from the files, including the originals – no stored, exported or downloaded file contains location data.
 - **Notes**: limited Markdown, rendered and sanitized on the server.

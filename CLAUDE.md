@@ -4,7 +4,7 @@ Guidance for Claude Code when working in this repository.
 
 ## Project
 
-**Herbarium** is a self-hosted shared calendar for two people. It preserves their shared history, organizes their present and plans their future. It should feel like a personal botanical chronicle or an enchanted herbarium – a place where memories are collected, pressed, preserved and allowed to grow.
+**Herbarium** is a self-hosted shared calendar for a small circle of people – a couple, a family, close friends. It preserves their shared history, organizes their present and plans their future. It should feel like a personal botanical chronicle or an enchanted herbarium – a place where memories are collected, pressed, preserved and allowed to grow.
 
 Status: greenfield. The stack below is decided, but the app is not scaffolded yet. When you add tooling, update the **Commands** section so it always matches reality.
 
@@ -55,14 +55,14 @@ npm run db:migrate   # apply drizzle migrations
 ## Architecture principles
 
 - **Self-hosted and private by default.** No telemetry, no analytics, no third-party CDNs, no external fonts or APIs at runtime. Everything, including fonts, icons and map tiles, is bundled or served locally. The only outbound connection is the optional SMTP server the owners configure for reminder emails.
-- **Two users, one shared space.** Exactly two accounts share all data. Auth is local (see **Security**). Track `createdBy` on records so the UI can show who added what, but do not build a permission system between the two users.
+- **One shared space, any number of members.** One instance = one circle; every member sees and edits all content. Auth is local (see **Security**). Track `createdBy` on records so the UI can show who added what. The only roles are `owner` (the first account; can promote others to owner) and `member`: owners manage invites, members and instance settings, but on content everyone is equal. Do not build per-event permissions or multiple spaces per instance.
 - **The data must outlive the app.** One volume = full backup (encrypted SQLite file + encrypted media directory). Keep the schema readable, keep original media at full quality (never re-encoded; only location metadata is removed, see **File uploads**) inside their encryption envelope and provide a full export (JSON + original files) that decrypts on demand for an authenticated user.
 - **Server-first.** Use SvelteKit `load` functions and form actions; pages should work without client JS where reasonable. Validate all input on the server (zod or valibot).
 - Keep server-only code in `src/lib/server/` so it can never leak into the client bundle.
 
 ## Security
 
-This app holds the most private data two people have. Security is a requirement, not a polish step: every change must keep the rules below, and a feature that cannot meet them is not done.
+This app holds the most private data its members have. Security is a requirement, not a polish step: every change must keep the rules below, and a feature that cannot meet them is not done.
 
 ### Cryptography
 
@@ -81,7 +81,7 @@ This app holds the most private data two people have. Security is a requirement,
 - Session tokens: 256-bit random values; only their SHA-256 hash is stored in the database. Cookies are `HttpOnly`, `Secure`, `SameSite=Lax`, `Path=/`.
 - Sessions have an idle timeout and an absolute lifetime, are rotated on login and privilege-relevant changes, and are revoked on logout and password change. A "sign out everywhere" action exists.
 - Login is rate-limited per IP and per account with exponential backoff; error messages never reveal whether the account exists.
-- Registration is closed once the two accounts exist; the second account joins only through a single-use, expiring invite token.
+- There is no open registration. After first-run setup creates the owner, new members join only through a single-use, expiring invite token issued by an owner. Owners can revoke unused invites and deactivate members (which revokes all their sessions immediately). At least one active owner must always remain.
 - Optional TOTP second factor per user, with single-use recovery codes stored hashed. Sensitive actions (password change, export, deleting data, key operations) require re-entering the password.
 
 ### Authorization
@@ -100,7 +100,7 @@ This app holds the most private data two people have. Security is a requirement,
 
 ### Location data
 
-- Event coordinates reveal where the two people live and travel – treat them as the most sensitive fields. They live only in the encrypted database, are never logged, never put in reminder emails and never sent to any external service (no external geocoding, tiles or map styles). Place search uses a bundled local gazetteer.
+- Event coordinates reveal where the members live and travel – treat them as the most sensitive fields. They live only in the encrypted database, are never logged, never put in reminder emails and never sent to any external service (no external geocoding, tiles or map styles). Place search uses a bundled local gazetteer.
 - Map tiles, glyphs and sprites are served only through an authenticated route. CSP for map pages allows only what MapLibre strictly needs (`worker-src blob:`), never `unsafe-eval`.
 
 ### File uploads
