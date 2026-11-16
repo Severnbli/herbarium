@@ -6,7 +6,7 @@ Guidance for Claude Code when working in this repository.
 
 **Herbarium** is a self-hosted shared calendar for a small circle of people – a couple, a family, close friends. It preserves their shared history, organizes their present and plans their future. It should feel like a personal botanical chronicle or an enchanted herbarium – a place where memories are collected, pressed, preserved and allowed to grow.
 
-Status: greenfield. The stack below is decided, but the app is not scaffolded yet. When you add tooling, update the **Commands** section so it always matches reality.
+Status: phase 0 (foundation) is in place. When you add tooling, update the **Commands** section so it always matches reality.
 
 The development plan lives in `docs/ROADMAP.md`. Work phase by phase, and tick off items there as they are completed.
 
@@ -14,15 +14,15 @@ License: GPL-3.0. Keep new dependencies GPL-compatible.
 
 ## Core functionality
 
-| Feature | What it does |
-|---|---|
-| **Moments** | Important past events: first meeting, first call, trips, milestones. |
-| **Plans** | Upcoming activities, dates and trips. |
-| **Occasions** | Recurring events such as anniversaries and birthdays. |
-| **Memories** | Photos and videos attached to events, albums, chronological browsing. |
-| **Calendar** | Monthly, weekly and daily views with recurring events and reminders. |
-| **Timeline** | A chronological visualization of the shared story. |
-| **Map** | Events pinned by coordinates on a self-hosted map of memories. |
+| Feature       | What it does                                                                     |
+| ------------- | -------------------------------------------------------------------------------- |
+| **Moments**   | Important past events: first meeting, first call, trips, milestones.             |
+| **Plans**     | Upcoming activities, dates and trips.                                            |
+| **Occasions** | Recurring events such as anniversaries and birthdays.                            |
+| **Memories**  | Photos and videos attached to events, albums, chronological browsing.            |
+| **Calendar**  | Monthly, weekly and daily views with recurring events and reminders.             |
+| **Timeline**  | A chronological visualization of the shared story.                               |
+| **Map**       | Events pinned by coordinates on a self-hosted map of memories.                   |
 | **Dashboard** | Upcoming events, countdowns, recent memories, "on this day" from previous years. |
 
 Moments, Plans and Occasions are all **events** in one table, distinguished by `kind` (`moment` | `plan` | `occasion`). A Plan becomes a Moment once it has happened – model that as a state change, not a copy. Media belongs to events and can also be grouped into albums independently.
@@ -41,16 +41,21 @@ Prefer the platform and Svelte primitives over extra libraries. Every new depend
 
 ## Commands
 
-To be filled in once the project is scaffolded. Expected shape:
-
 ```bash
-npm run dev          # dev server
-npm run build        # production build
-npm run check        # svelte-check + TypeScript
-npm run lint         # eslint + prettier
-npm run test         # vitest
-npm run db:migrate   # apply drizzle migrations
+npm run dev          # dev server (needs MASTER_KEY in .env, see .env.example)
+npm run build        # production build into build/
+npm run start        # run the production build (node build)
+npm run check        # svelte-check + TypeScript, warnings fail
+npm run lint         # prettier --check + eslint
+npm run format       # prettier --write
+npm run test         # vitest unit tests (src/**/*.test.ts)
+npm run test:e2e     # Playwright (tests/e2e/*.e2e.ts) against a production build
+docker compose up    # local container; needs secrets/master_key, see docs/deployment.md
 ```
+
+`npm run db:migrate` arrives with the database in phase 1.
+
+CI (`.github/workflows/ci.yml`) runs audit, check, lint, unit and e2e tests in the `verify` job, then builds the image in the `docker` job and pushes it to Docker Hub (`severnbli/herbarium`) on pushes to `main`, `dev` and `v*` tags.
 
 ## Architecture principles
 
@@ -151,12 +156,14 @@ This app holds the most private data its members have. Security is a requirement
 Traditional **Belarusian botanical art, folklore and natural symbolism**. The app is a herbarium of a shared life: pressed flowers, handwritten labels, linen pages, embroidered borders.
 
 **Visual references**
-- *Vycinanka* (Belarusian paper cutting): symmetric silhouettes for dividers, frames and empty states
-- *Ruchnik* embroidery: geometric red-on-white ornament for borders and accents, used sparingly
+
+- _Vycinanka_ (Belarusian paper cutting): symmetric silhouettes for dividers, frames and empty states
+- _Ruchnik_ embroidery: geometric red-on-white ornament for borders and accents, used sparingly
 - Herbarium sheets: specimens on paper with a small label card (name, date, place)
-- Native flora: cornflower (*vasilok*), flax (*lion*), rye, chamomile, clover, oak, birch, and the mythical fern flower (*papars'-kvetka*) of Kupalle
+- Native flora: cornflower (_vasilok_), flax (_lion_), rye, chamomile, clover, oak, birch, and the mythical fern flower (_papars'-kvetka_) of Kupalle
 
 **Palette** (define as CSS custom properties, never inline hex in components)
+
 - Linen and unbleached paper for surfaces
 - Madder / embroidery red as the primary accent
 - Cornflower blue, moss and rye green, flax and straw gold as secondary
@@ -166,6 +173,7 @@ Traditional **Belarusian botanical art, folklore and natural symbolism**. The ap
 **Typography**: a serif with Cyrillic support for headings and labels (handwritten-label feel), a clean readable sans or serif for body text. Self-hosted only. Must render Belarusian і and ў correctly.
 
 **Metaphor rules**
+
 - The metaphor lives in the visuals and in light touches of copy (a new moment is "pressed" into the herbarium, the timeline grows like a stem). It must never make the UI unclear: buttons and navigation stay plainly labelled.
 - Code uses plain domain names (`event`, `media`, `album`), not metaphorical ones.
 - Ornament is decoration. Content (photos, notes) always comes first.
@@ -176,6 +184,8 @@ Traditional **Belarusian botanical art, folklore and natural symbolism**. The ap
 
 - TypeScript strict; no `any` without a comment explaining why.
 - Svelte 5 runes (`$state`, `$derived`, `$props`), not legacy stores, unless a library requires it.
+- SvelteKit 3: config lives in `vite.config.ts` (no `svelte.config.js`); import shared code via `#lib/...` with the file extension (`#lib/server/config.ts`), and use `$app/env` (not the deprecated `$app/environment`).
+- Configuration is read only through `getConfig()` from `src/lib/server/config.ts`, never from `process.env` directly.
 - Component files `PascalCase.svelte`; everything else `kebab-case.ts`.
 - Styles are scoped component CSS on top of global design tokens. No CSS framework.
 - Tests: unit tests (Vitest) for recurrence expansion, date handling and anything in `src/lib/server/`; Playwright for key flows once they exist.

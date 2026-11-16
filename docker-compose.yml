@@ -1,0 +1,33 @@
+# Example deployment. Put a reverse proxy with HTTPS in front and set ORIGIN to its public URL.
+# Before the first start, create the master key secret (see docs/deployment.md):
+#   mkdir -p secrets && openssl rand -base64 32 > secrets/master_key
+services:
+  herbarium:
+    build: .
+    image: herbarium:local
+    restart: unless-stopped
+    environment:
+      # The public https:// origin. The localhost default only works for a local trial.
+      ORIGIN: ${ORIGIN:-http://localhost:3000}
+      MASTER_KEY_FILE: /run/secrets/master_key
+    secrets:
+      - master_key
+    volumes:
+      - herbarium-data:/data
+    ports:
+      # Bound to loopback: expose it to the network only through the reverse proxy.
+      - '127.0.0.1:3000:3000'
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+secrets:
+  master_key:
+    file: ./secrets/master_key
+
+volumes:
+  herbarium-data:

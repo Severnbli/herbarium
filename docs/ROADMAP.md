@@ -12,15 +12,15 @@ Status legend: `[ ]` not started, `[~]` in progress, `[x]` done.
 
 Goal: an empty but production-shaped app.
 
-- [ ] Scaffold SvelteKit (Svelte 5, TypeScript strict, `adapter-node`)
-- [ ] ESLint + Prettier, `svelte-check`, Vitest, Playwright
-- [ ] Project layout: `src/lib/server/`, `src/lib/components/`, `src/lib/domain/`, `src/lib/i18n/`
-- [ ] Typed config loader validated at startup (`ORIGIN`, data dir, master key source, limits); refuses to start in production without HTTPS origin or key
-- [ ] `.env.example`, `.gitignore` (incl. `.env*`, data dir)
-- [ ] Dockerfile: multi-stage, non-root user, read-only root FS, data volume; `docker-compose.yml` example with Docker secret for the master key
-- [ ] CI: check, lint, unit tests, `npm audit` (high/critical blocks)
+- [x] Scaffold SvelteKit (Svelte 5, TypeScript strict, `adapter-node`)
+- [x] ESLint + Prettier, `svelte-check`, Vitest, Playwright
+- [x] Project layout: `src/lib/server/`, `src/lib/components/`, `src/lib/domain/`, `src/lib/i18n/`
+- [x] Typed config loader validated at startup (`ORIGIN`, data dir, master key source, limits); refuses to start in production without HTTPS origin or key
+- [x] `.env.example`, `.gitignore` (incl. `.env*`, data dir)
+- [x] Dockerfile: multi-stage, non-root user, read-only root FS, data volume; `docker-compose.yml` example with Docker secret for the master key
+- [x] CI: check, lint, unit tests, `npm audit` (high/critical blocks); e2e smoke test; image published to Docker Hub
 - [ ] Add the CI job as a required status check to the "Protect main" GitHub ruleset
-- [ ] Update **Commands** in `CLAUDE.md`
+- [x] Update **Commands** in `CLAUDE.md`
 
 Done when: `docker compose up` serves a placeholder page; CI is green.
 
