@@ -1,6 +1,8 @@
 # Example deployment. Put a reverse proxy with HTTPS in front and set ORIGIN to its public URL.
 # Before the first start, create the master key secret (see docs/deployment.md):
 #   mkdir -p secrets && openssl rand -base64 32 > secrets/master_key
+# Then open /setup and enter the one-time code from:
+#   docker compose exec herbarium cat /data/setup-code
 services:
   herbarium:
     build: .
@@ -10,6 +12,10 @@ services:
       # The public https:// origin. The localhost default only works for a local trial.
       ORIGIN: ${ORIGIN:-http://localhost:3000}
       MASTER_KEY_FILE: /run/secrets/master_key
+      # Behind a reverse proxy, let rate limiting see real client addresses (see docs/deployment.md).
+      # Leave these unset when nothing sits in front of the app.
+      # ADDRESS_HEADER: X-Forwarded-For
+      # XFF_DEPTH: 1
     secrets:
       - master_key
     volumes:

@@ -6,7 +6,7 @@ Guidance for Claude Code when working in this repository.
 
 **Herbarium** is a self-hosted shared calendar for a small circle of people – a couple, a family, close friends. It preserves their shared history, organizes their present and plans their future. It should feel like a personal botanical chronicle or an enchanted herbarium – a place where memories are collected, pressed, preserved and allowed to grow.
 
-Status: phase 0 (foundation) is in place. When you add tooling, update the **Commands** section so it always matches reality.
+Status: phases 0 (foundation) and 1 (security core) are in place. When you add tooling, update the **Commands** section so it always matches reality.
 
 The development plan lives in `docs/ROADMAP.md`. Work phase by phase, and tick off items there as they are completed.
 
@@ -30,7 +30,7 @@ Moments, Plans and Occasions are all **events** in one table, distinguished by `
 ## Tech stack
 
 - **SvelteKit** (Svelte 5 runes) with **TypeScript** in strict mode, `adapter-node`
-- **SQLite** via `better-sqlite3-multiple-ciphers` (SQLCipher-compatible encryption at rest), accessed through **Drizzle ORM**; migrations with `drizzle-kit`
+- **SQLite** via `better-sqlite3-multiple-ciphers` (SQLCipher-compatible encryption at rest), accessed through **Drizzle ORM**; migrations with `drizzle-kit`. The package is installed under the npm alias `better-sqlite3`, because Drizzle's driver imports that name; `openDatabase` refuses to run if the cipher is not active
 - **Media** stored encrypted on the local filesystem under a configurable data directory, never in the database. Thumbnails and previews via `sharp` (images) and `ffmpeg` (video posters)
 - **Maps** via MapLibre GL JS with self-hosted vector tiles in a single PMTiles file on the data volume; tiles, glyphs and sprites are served by the app itself
 - **Recurrence** via RFC 5545 RRULE (`rrule` package); occurrences are expanded at query time, not stored
@@ -50,10 +50,9 @@ npm run lint         # prettier --check + eslint
 npm run format       # prettier --write
 npm run test         # vitest unit tests (src/**/*.test.ts)
 npm run test:e2e     # Playwright (tests/e2e/*.e2e.ts) against a production build
+npm run db:generate  # SQL migration from schema changes (drizzle-kit); the app applies migrations on startup
 docker compose up    # local container; needs secrets/master_key, see docs/deployment.md
 ```
-
-`npm run db:migrate` arrives with the database in phase 1.
 
 CI (`.github/workflows/ci.yml`) runs audit, check, lint, unit and e2e tests in the `verify` job, then builds the image in the `docker` job and pushes it to Docker Hub (`severnbli/herbarium`) on pushes to `main`, `dev` and `v*` tags.
 
@@ -118,7 +117,7 @@ This app holds the most private data its members have. Security is a requirement
 ### HTTP hardening
 
 - Strict Content Security Policy via SvelteKit `kit.csp` with nonces/hashes: `default-src 'self'`, no `unsafe-inline` scripts, no `unsafe-eval`, `frame-ancestors 'none'`, `object-src 'none'`.
-- Also send `Referrer-Policy: no-referrer`, a restrictive `Permissions-Policy`, and `Cross-Origin-Opener-Policy: same-origin`.
+- Also send `Referrer-Policy: same-origin`, a restrictive `Permissions-Policy`, and `Cross-Origin-Opener-Policy: same-origin`. Not `no-referrer`: with it, browsers send `Origin: null` on form posts and the CSRF origin check rejects them; `same-origin` still sends nothing to other sites.
 - Keep SvelteKit's built-in CSRF origin check enabled. State-changing operations are never `GET`.
 - The PWA service worker caches only versioned static assets – never pages, API responses, media or anything decrypted.
 - Error pages and API errors never expose stack traces, SQL or file paths in production.
@@ -147,6 +146,7 @@ This app holds the most private data its members have. Security is a requirement
 ## Internationalization
 
 - All user-facing strings go through the i18n layer. No hard-coded text in components, in any language.
+- Until Paraglide arrives in phase 2, messages live in typed dictionaries in `src/lib/i18n/messages/` (`en.ts` defines the shape, `ru.ts` and `be.ts` must match it) and components read `messages(data.locale)`.
 - Add every new key to all three locales (`be`, `ru`, `en`) in the same change. Belarusian uses Cyrillic and proper Belarusian orthography (і, ў, ' – not Russian substitutes).
 - Plural rules differ: use ICU / `Intl.PluralRules`, never `count === 1` logic.
 - User content (titles, notes) is not translated.

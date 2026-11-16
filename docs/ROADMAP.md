@@ -28,20 +28,20 @@ Done when: `docker compose up` serves a placeholder page; CI is green.
 
 Goal: encrypted storage and authentication before any user data exists.
 
-- [ ] SQLite via `better-sqlite3-multiple-ciphers` (SQLCipher), Drizzle schema, `drizzle-kit` migrations run on startup
-- [ ] Key management module: master key loading, data-key generation and wrapping (AES-256-GCM), unit-tested; key rotation procedure designed (implemented in phase 10)
-- [ ] Tables: `user`, `session`, `invite`, `audit_log`, `login_attempt`
-- [ ] First-run setup: create first account, explicit warning that a lost key means lost data
-- [ ] Roles `owner` / `member`; owners issue single-use, expiring invites, revoke them, deactivate members (revoking their sessions) and promote/demote owners; at least one active owner always remains; no open registration
-- [ ] Members page: list, invite, deactivate
-- [ ] argon2id hashing; login with rate limiting + backoff; generic errors
-- [ ] Sessions: random 256-bit token, stored hashed, cookie flags, idle + absolute expiry, rotation, logout, "sign out everywhere"
-- [ ] Re-auth helper for sensitive actions; password change revokes other sessions
-- [ ] `hooks.server.ts`: deny-by-default auth guard with explicit allowlist
-- [ ] Security headers + strict CSP (`kit.csp`), CSRF check on, safe production error pages
-- [ ] Audit logging of security events
-- [ ] Optional TOTP 2FA per user, with single-use recovery codes stored hashed (may slip to phase 10 if it blocks progress)
-- [ ] Tests: every route rejects anonymous access, owner-only actions reject members, deactivated members are locked out, session expiry/revocation, rate limit, invite reuse/expiry, DB unreadable without key
+- [x] SQLite via `better-sqlite3-multiple-ciphers` (SQLCipher), Drizzle schema, `drizzle-kit` migrations run on startup
+- [x] Key management module: master key loading, data-key generation and wrapping (AES-256-GCM), unit-tested; key rotation procedure designed (implemented in phase 10)
+- [x] Tables: `user`, `session`, `invite`, `audit_log`, `login_attempt`
+- [x] First-run setup: create first account, explicit warning that a lost key means lost data
+- [x] Roles `owner` / `member`; owners issue single-use, expiring invites, revoke them, deactivate members (revoking their sessions) and promote/demote owners; at least one active owner always remains; no open registration
+- [x] Members page: list, invite, deactivate
+- [x] argon2id hashing; login with rate limiting + backoff; generic errors
+- [x] Sessions: random 256-bit token, stored hashed, cookie flags, idle + absolute expiry, rotation, logout, "sign out everywhere"
+- [x] Re-auth helper for sensitive actions; password change revokes other sessions
+- [x] `hooks.server.ts`: deny-by-default auth guard with explicit allowlist
+- [x] Security headers + strict CSP (`kit.csp`), CSRF check on, safe production error pages
+- [x] Audit logging of security events
+- [x] Optional TOTP 2FA per user, with single-use recovery codes stored hashed (may slip to phase 10 if it blocks progress)
+- [x] Tests: every route rejects anonymous access, owner-only actions reject members, deactivated members are locked out, session expiry/revocation, rate limit, invite reuse/expiry, DB unreadable without key
 
 Done when: the owner can invite members, members can log in, deactivation locks them out immediately; the DB file is unreadable without the key.
 
@@ -49,7 +49,7 @@ Done when: the owner can invite members, members can log in, deactivation locks 
 
 Goal: the herbarium look and three languages, before feature screens multiply.
 
-- [ ] i18n layer (Paraglide JS) with `be`, `ru`, `en`; locale detection + switcher saved per user; ICU plurals; locale-aware dates and week start
+- [ ] i18n layer (Paraglide JS) with `be`, `ru`, `en`, replacing the interim typed dictionaries from phase 1; locale detection + switcher saved per user; ICU plurals; locale-aware dates and week start
 - [ ] Design tokens as CSS custom properties: linen/paper surfaces, madder red, cornflower, moss, rye, flax gold, ink
 - [ ] Two themes: light (linen) and dark ("Kupalle night"), following system preference with manual override
 - [ ] Self-hosted fonts with full Belarusian Cyrillic (і, ў) coverage
@@ -175,6 +175,8 @@ Done when: events can be pinned and browsed on a map that works fully offline fr
 - **2FA**: optional TOTP per user with recovery codes.
 - **PWA**: installable, no offline mode, no user data cached on devices.
 - **Styling**: own CSS on design tokens, no CSS framework.
+- **First-run setup**: guarded by a one-time code the app writes to `setup-code` on the data volume (never logged), deleted once the owner exists.
+- **Referrer policy**: `same-origin` instead of `no-referrer`, because `no-referrer` makes browsers send `Origin: null` on form posts and breaks the CSRF origin check.
 
 ## Open questions
 

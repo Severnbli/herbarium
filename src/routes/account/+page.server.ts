@@ -145,6 +145,10 @@ export const actions: Actions = {
 
 	totpBegin: async (event) => {
 		const user = requireUser(event);
+		// Replacing an active secret goes through "turn off" first, never silently.
+		if (user.totpEnabled) {
+			return fail(400, { section: 'totp', problem: 'invalid' as const, fields: [] });
+		}
 		const result = await reauthenticate(event, user, passwordOnly, 'totp');
 		if (result.failure) return result.failure;
 		const { secret, uri } = beginTotpSetup(db(), keys().field, user.id, user.username);
