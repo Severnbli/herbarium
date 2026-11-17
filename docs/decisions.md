@@ -34,3 +34,13 @@ For a significant change to architecture, security, dependencies, data formats o
 - Consequences: costs, limitations, migration needs and affected documentation.
 
 Do not invent historical rationale or approval dates. Mark proposals clearly. Keep superseded decisions with a link to their replacement. Small implementation details belong in code or a commit message.
+
+## Compiled translations and saved member locales
+
+Status: accepted.
+
+Replace the interim TypeScript dictionaries with Paraglide JSON catalogs and a typed adapter that preserves the existing component API. Paraglide and its message-format plugin are MIT-licensed development dependencies, justified by typed message generation and locale-specific plural variants. Load the format plugin from the installed package rather than a CDN to keep builds reproducible and runtime traffic local.
+
+Pass the locale explicitly to every generated message call. A global locale would risk mixing languages across concurrent server requests. Preserve the small adapter rather than rewriting every auth component; adding a message now requires a catalog entry and an adapter entry.
+
+Store a nullable locale on the encrypted user record. Null preserves browser-language detection for existing accounts; an explicit preference follows the member across devices. A server form action changes only the authenticated member's preference and redirects, preserving operation without client JavaScript. No public locale endpoint or extra cookie is needed. English uses the CLDR default Sunday week start; Belarusian and Russian use Monday.

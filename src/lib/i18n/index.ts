@@ -1,20 +1,8 @@
-import { be } from './messages/be.ts';
-import { en, type Messages } from './messages/en.ts';
-import { ru } from './messages/ru.ts';
+export { messages, type Messages } from './catalog.ts';
 
-/**
- * Minimal i18n layer until Paraglide arrives in phase 2: typed dictionaries per locale, so a
- * missing key in any locale is a type error. Components read `messages(locale)`.
- */
 export const LOCALES = ['be', 'ru', 'en'] as const;
 export type Locale = (typeof LOCALES)[number];
 export const DEFAULT_LOCALE: Locale = 'en';
-
-const dictionaries: Record<Locale, Messages> = { be, ru, en };
-
-export function messages(locale: Locale): Messages {
-	return dictionaries[locale];
-}
 
 export function isLocale(value: unknown): value is Locale {
 	return typeof value === 'string' && (LOCALES as readonly string[]).includes(value);
@@ -39,5 +27,3 @@ export function negotiateLocale(header: string | null | undefined): Locale {
 	}
 	return DEFAULT_LOCALE;
 }
-
-export type { Messages };

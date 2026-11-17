@@ -7,7 +7,7 @@ import {
 	type HandleServerError,
 	type ServerInit
 } from '@sveltejs/kit/hooks';
-import { negotiateLocale } from '#lib/i18n/index.ts';
+import { isLocale, negotiateLocale } from '#lib/i18n/index.ts';
 import { db, initApp, isSetupDone } from '#lib/server/app.ts';
 import { clearSessionCookie, sessionCookieName } from '#lib/server/auth/cookies.ts';
 import { validateSession } from '#lib/server/auth/session.ts';
@@ -32,7 +32,10 @@ export const init: ServerInit = () => {
 };
 
 const locale: Handle = ({ event, resolve }) => {
-	event.locals.locale = negotiateLocale(event.request.headers.get('accept-language'));
+	const preference = event.locals.user?.locale;
+	event.locals.locale = isLocale(preference)
+		? preference
+		: negotiateLocale(event.request.headers.get('accept-language'));
 	return resolve(event, {
 		transformPageChunk: ({ html }) => html.replace('%lang%', event.locals.locale)
 	});
@@ -89,7 +92,7 @@ const headers: Handle = async ({ event, resolve }) => {
 	return response;
 };
 
-export const handle = sequence(headers, locale, authenticate, guard);
+export const handle = sequence(headers, authenticate, locale, guard);
 
 /**
  * Only unexpected errors reach the log, with a reference id shown on the error page. The response

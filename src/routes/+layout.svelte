@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import favicon from '#lib/assets/favicon.svg';
-	import { messages } from '#lib/i18n/index.ts';
+	import { LOCALES, messages } from '#lib/i18n/index.ts';
 	import type { LayoutProps } from './$types';
 
 	let { data, children }: LayoutProps = $props();
@@ -20,6 +20,15 @@
 			<a href={resolve('/members')}>{m.nav.members}</a>
 			<a href={resolve('/account')}>{m.nav.account}</a>
 		</nav>
+		<form method="POST" action="/account?/language">
+			<label for="language">{m.language.label}</label>
+			<select id="language" name="locale" value={data.locale}>
+				{#each LOCALES as locale (locale)}
+					<option value={locale} lang={locale}>{m.language[locale]}</option>
+				{/each}
+			</select>
+			<button>{m.language.save}</button>
+		</form>
 		<form method="POST" action="/logout">
 			<button>{m.nav.signOut}</button>
 		</form>

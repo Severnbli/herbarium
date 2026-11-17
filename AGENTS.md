@@ -63,6 +63,7 @@ npm run lint         # prettier --check + eslint
 npm run format       # prettier --write
 npm run test         # vitest unit tests (src/**/*.test.ts)
 npm run test:e2e     # Playwright (tests/e2e/*.e2e.ts) against a production build
+npm run i18n:compile # compile typed messages from messages/{be,ru,en}.json
 npm run db:generate  # SQL migration from schema changes (drizzle-kit); the app applies migrations on startup
 docker compose up    # local container; needs secrets/master_key, see docs/deployment.md
 ```
@@ -159,7 +160,7 @@ This app holds the most private data its members have. Security is a requirement
 ## Internationalization
 
 - All user-facing strings go through the i18n layer. No hard-coded text in components, in any language.
-- Until Paraglide arrives in phase 2, messages live in typed dictionaries in `src/lib/i18n/messages/` (`en.ts` defines the shape, `ru.ts` and `be.ts` must match it) and components read `messages(data.locale)`.
+- Messages live in Paraglide catalogs at `messages/{en,ru,be}.json`. Components read the typed `messages(data.locale)` adapter in `src/lib/i18n/catalog.ts`; add adapter entries alongside new messages. Pass locales explicitly to generated functions so concurrent server requests stay isolated. Generated files under `src/lib/i18n/paraglide/` are ignored; `npm run check` compiles them automatically.
 - Add every new key to all three locales (`be`, `ru`, `en`) in the same change. Belarusian uses Cyrillic and proper Belarusian orthography (і, ў, ' – not Russian substitutes).
 - Plural rules differ: use ICU / `Intl.PluralRules`, never `count === 1` logic.
 - User content (titles, notes) is not translated.

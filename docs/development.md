@@ -29,6 +29,14 @@ Run `npm run test:e2e` for browser-flow changes; see `playwright.config.ts` for 
 
 For schema changes, run `npm run db:generate`, review the generated SQL and commit migrations alongside the schema. The app applies migrations on startup.
 
+## Translations
+
+Edit `messages/en.json`, `messages/be.json` and `messages/ru.json` together, and expose new keys through `src/lib/i18n/catalog.ts`. Parameters use `{name}`; plural variants declare a `plural` selector and supply the locale's CLDR categories with a catchall. Translation catalogs contain data, not executable TypeScript.
+
+`npm run i18n:compile` generates typed message functions. Development, production builds and unit tests compile through the Vite plugin; `npm run check` compiles before checking types. Generated output and inlang caches are ignored. The translation plugin is installed from the lockfile and loaded locally, so compilation needs no translation CDN and the app makes no translation requests at runtime.
+
+Use `formatDateOnly` for calendar dates, `formatDateTime` with an explicit IANA zone for instants, and `weekStartsOn` for calendar layouts.
+
 ## Documentation workflow
 
 - Update [ROADMAP.md](ROADMAP.md) when a delivery item is completed.

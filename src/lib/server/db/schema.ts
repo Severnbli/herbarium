@@ -20,6 +20,8 @@ export const user = sqliteTable('user', {
 	/** Login name, stored lowercase. */
 	username: text('username').notNull().unique(),
 	displayName: text('display_name').notNull(),
+	/** Null follows browser language until the member chooses a preference. */
+	locale: text('locale', { enum: ['be', 'ru', 'en'] }),
 	/** argon2id PHC string. */
 	passwordHash: text('password_hash').notNull(),
 	role: text('role', { enum: ROLES }).notNull().default('member'),

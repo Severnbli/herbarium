@@ -26,3 +26,8 @@ vite.config.ts.timestamp-*
 /playwright-report
 /blob-report
 /playwright/.cache
+
+# Compiled translations and local inlang state
+/src/lib/i18n/paraglide
+/project.inlang/cache
+/project.inlang/local*

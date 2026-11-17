@@ -314,3 +314,34 @@ test('signing out ends the session on the server', async ({ browser }) => {
 	await again.goto('/members');
 	await expect(again).toHaveURL(/\/login/);
 });
+
+test('saves language per member without JavaScript and uses it on another device', async ({
+	browser
+}) => {
+	const page = await newPage(browser, { javaScriptEnabled: false });
+	await loginOwnerWithRecovery(page);
+	const response = await page.request.post('/account?/language', {
+		form: { locale: 'de' },
+		headers: { origin: ORIGIN }
+	});
+	expect(response.status()).toBe(400);
+	await page.getByLabel('Language', { exact: true }).selectOption('be');
+	await page.getByRole('button', { name: 'Save language' }).click();
+	await expect(page.locator('html')).toHaveAttribute('lang', 'be');
+	await expect(page.getByRole('heading', { name: 'Акаўнт', exact: true })).toBeVisible();
+
+	const other = await newPage(browser);
+	await loginOwnerWithRecovery(other);
+	await expect(other.locator('html')).toHaveAttribute('lang', 'be');
+	await other.goto('/members');
+	await expect(other.locator('html')).toHaveAttribute('lang', 'be');
+
+	await page.getByLabel('Мова', { exact: true }).selectOption('ru');
+	await page.getByRole('button', { name: 'Захаваць мову' }).click();
+	await expect(page.locator('html')).toHaveAttribute('lang', 'ru');
+	await page.getByLabel('Язык', { exact: true }).selectOption('en');
+	await page.getByRole('button', { name: 'Сохранить язык' }).click();
+	await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+	await other.reload();
+	await expect(other.locator('html')).toHaveAttribute('lang', 'en');
+});

@@ -49,7 +49,7 @@ Done when: the owner can invite members, members can log in, deactivation locks 
 
 Goal: the herbarium look and three languages, before feature screens multiply.
 
-- [ ] i18n layer (Paraglide JS) with `be`, `ru`, `en`, replacing the interim typed dictionaries from phase 1; locale detection + switcher saved per user; ICU plurals; locale-aware dates and week start
+- [x] i18n layer (Paraglide JS) with `be`, `ru`, `en`, replacing the interim typed dictionaries from phase 1; locale detection + switcher saved per user; ICU plurals; locale-aware dates and week start
 - [ ] Design tokens as CSS custom properties: linen/paper surfaces, madder red, cornflower, moss, rye, flax gold, ink
 - [ ] Two themes: light (linen) and dark ("Kupalle night"), following system preference with manual override
 - [ ] Self-hosted fonts with full Belarusian Cyrillic (і, ў) coverage

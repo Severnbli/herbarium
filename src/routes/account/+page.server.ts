@@ -1,5 +1,6 @@
 import { fail, redirect, type RequestEvent } from '@sveltejs/kit';
 import { z } from 'zod';
+import { updateLocale, localeSchema } from '#lib/server/auth/preferences.ts';
 import { audit } from '#lib/server/audit.ts';
 import { db, keys } from '#lib/server/app.ts';
 import { clearSessionCookie } from '#lib/server/auth/cookies.ts';
@@ -98,6 +99,14 @@ function totpSetupView(secret: string, uri: string) {
 }
 
 export const actions: Actions = {
+	language: async (event) => {
+		const user = requireUser(event);
+		const parsed = fields.parseForm(localeSchema, await event.request.formData());
+		if (!parsed.success)
+			return fail(400, { section: 'language', problem: 'invalid' as const, fields: parsed.fields });
+		updateLocale(db(), user.id, parsed.data.locale);
+		redirect(303, '/account');
+	},
 	changePassword: async (event) => {
 		const user = requireUser(event);
 		const schema = z

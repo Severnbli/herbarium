@@ -17,7 +17,7 @@ const TOUCH_INTERVAL_MS = MINUTE;
 
 export type SessionUser = Pick<
 	typeof user.$inferSelect,
-	'id' | 'username' | 'displayName' | 'role'
+	'id' | 'username' | 'displayName' | 'role' | 'locale'
 > & { totpEnabled: boolean };
 
 export interface ValidSession {
@@ -94,6 +94,7 @@ export function validateSession(db: Db, token: string, now = new Date()): ValidS
 			username: row.user.username,
 			displayName: row.user.displayName,
 			role: row.user.role,
+			locale: row.user.locale,
 			totpEnabled: row.user.totpSecret !== null
 		}
 	};
