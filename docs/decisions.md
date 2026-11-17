@@ -54,3 +54,13 @@ Use bundled DejaVu Serif and Sans, distributed under their included permissive f
 Keep appearance on the device with an allowlisted localStorage preference. System appearance remains the default and works without JavaScript. A small external same-origin script applies manual overrides before paint under the existing strict CSP. Language remains an account preference. A database theme column would add a migration and require authentication for a preference also useful on login and setup screens.
 
 Use native date, month and four-digit year inputs for the initial precision picker. This provides browser keyboard support and progressive form submission without introducing a date-picker dependency. Event validation and normalization belong to phase 3 server schemas.
+
+## Event date precision, DST and restricted notes
+
+Status: accepted.
+
+Use `@js-temporal/polyfill` (ISC), rather than custom offset calculations, to validate real calendar dates and convert local inputs under IANA zone rules. Reject nonexistent clock times. Ask for an explicit earlier/later occurrence for repeated times, independently for start and end, and preserve the selected instants when editing. Date-only values remain strings; approximate dates normalize to the first day of the selected period. Date-only plans finish only after the final UTC date/month/year boundary has elapsed; timed plans finish at their end instant, or their start when no end is supplied.
+
+Use markdown-it and sanitize-html (both MIT) for event notes. Parser restrictions provide the small supported syntax; a separate explicit HTML allowlist provides the security boundary. Store Markdown source, render on the server, forbid raw HTML/images and force safe link relations. These dependencies replace fragile custom Markdown or HTML parsing and are kept out of client bundles.
+
+Start with one optional fixed category (`trip`, `date`, `milestone`) rather than a tag-management service. The event table retains one identity when a plan becomes a moment. A local sort date permits indexed year filtering without interpreting date-only values as instants.
