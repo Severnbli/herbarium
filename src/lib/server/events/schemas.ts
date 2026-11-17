@@ -3,7 +3,8 @@ import {
 	DISAMBIGUATIONS,
 	PRECISIONS,
 	localToInstant,
-	normalizeDate
+	normalizeDate,
+	validTimeZone
 } from '#lib/domain/event-date.ts';
 
 export const eventId = z.string().regex(/^[A-Za-z0-9_-]{22}$/);
@@ -45,21 +46,30 @@ export const eventFormSchema = z
 		if ((value.lat === '') !== (value.lon === '')) issue('lat', 'Coordinates require a pair');
 		if (value.dateMode === 'timed' && value.precision !== 'day')
 			issue('precision', 'Timed dates require day precision');
+
+		if (value.dateMode === 'timed' && !validTimeZone(value.timeZone))
+			issue('timeZone', 'Invalid time zone');
+		let start: string | number;
 		try {
-			const start =
+			start =
 				value.dateMode === 'date'
 					? normalizeDate(value.start, value.precision)
 					: localToInstant(value.start, value.timeZone, value.disambiguation).getTime();
-			if (value.end) {
+		} catch {
+			issue('start', 'Invalid date or ambiguous local time');
+			return;
+		}
+		if (value.end) {
+			try {
 				const end =
 					value.dateMode === 'date'
 						? normalizeDate(value.end, value.precision)
 						: localToInstant(value.end, value.timeZone, value.endDisambiguation).getTime();
 				if (end < start || (value.dateMode === 'timed' && end === start))
 					issue('end', 'End must follow start');
+			} catch {
+				issue('end', 'Invalid date or ambiguous local time');
 			}
-		} catch {
-			issue('start', 'Invalid date, time zone or ambiguous local time');
 		}
 	});
 

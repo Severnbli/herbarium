@@ -64,3 +64,11 @@ Use `@js-temporal/polyfill` (ISC), rather than custom offset calculations, to va
 Use markdown-it and sanitize-html (both MIT) for event notes. Parser restrictions provide the small supported syntax; a separate explicit HTML allowlist provides the security boundary. Store Markdown source, render on the server, forbid raw HTML/images and force safe link relations. These dependencies replace fragile custom Markdown or HTML parsing and are kept out of client bundles.
 
 Start with one optional fixed category (`trip`, `date`, `milestone`) rather than a tag-management service. The event table retains one identity when a plan becomes a moment. A local sort date permits indexed year filtering without interpreting date-only values as instants.
+
+## Server-first event forms and deletion
+
+Status: accepted.
+
+Event forms use explicit text date formats with separate mode and precision selectors. This keeps every create/edit flow usable without JavaScript, including approximate dates and arbitrary time zones. The shared native DatePicker remains available for progressively enhanced feature screens; it is not the event validation boundary. Server errors preserve bounded known fields, reject duplicate and unknown fields and never echo passwords.
+
+Every member can edit or delete any event, preserving the circle's equal content access. Deletion is permanent and requires the acting member's password through the existing rate-limited re-authentication service. Record only the event identifier, actor and client address in the audit log, atomically with deletion; never include title, notes, place or coordinates. Completing a plan changes its kind in place, and the edit path enforces the same elapsed-period rule.
