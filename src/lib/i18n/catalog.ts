@@ -5,6 +5,18 @@ import type { Locale } from './index.ts';
 export function messages(locale: Locale) {
 	return {
 		appName: m.appName({}, { locale }),
+		design: {
+			theme: m.design_theme({}, { locale }),
+			system: m.design_system({}, { locale }),
+			light: m.design_light({}, { locale }),
+			dark: m.design_dark({}, { locale }),
+			skip: m.design_skip({}, { locale }),
+			precision: m.design_precision({}, { locale }),
+			day: m.design_day({}, { locale }),
+			month: m.design_month({}, { locale }),
+			year: m.design_year({}, { locale }),
+			close: m.design_close({}, { locale })
+		},
 		nav: {
 			label: m.nav_label({}, { locale }),
 			home: m.nav_home({}, { locale }),

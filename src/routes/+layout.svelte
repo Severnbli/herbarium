@@ -1,4 +1,8 @@
 <script lang="ts">
+	import '#lib/design.css';
+	import Ornament from '#lib/components/Ornament.svelte';
+	import ThemePicker from '#lib/components/ThemePicker.svelte';
+	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
 	import favicon from '#lib/assets/favicon.svg';
 	import { LOCALES, messages } from '#lib/i18n/index.ts';
@@ -13,12 +17,25 @@
 	<title>{m.appName}</title>
 </svelte:head>
 
+<a class="skip" href="#content">{m.design.skip}</a>
+<div class="masthead">
+	<a class="brand" href={resolve('/')}>{m.appName}</a>
+	<ThemePicker {m} />
+</div>
 {#if data.user}
 	<header>
 		<nav aria-label={m.nav.label}>
-			<a href={resolve('/')}>{m.nav.home}</a>
-			<a href={resolve('/members')}>{m.nav.members}</a>
-			<a href={resolve('/account')}>{m.nav.account}</a>
+			<a href={resolve('/')} aria-current={page.url.pathname === '/' ? 'page' : undefined}
+				>{m.nav.home}</a
+			>
+			<a
+				href={resolve('/members')}
+				aria-current={page.url.pathname === '/members' ? 'page' : undefined}>{m.nav.members}</a
+			>
+			<a
+				href={resolve('/account')}
+				aria-current={page.url.pathname === '/account' ? 'page' : undefined}>{m.nav.account}</a
+			>
 		</nav>
 		<form method="POST" action="/account?/language">
 			<label for="language">{m.language.label}</label>
@@ -35,29 +52,74 @@
 	</header>
 {/if}
 
-<main>
+<main id="content" tabindex="-1">
+	<Ornament kind={data.user ? 'divider' : 'flower'} />
 	{@render children()}
 </main>
 
 <style>
-	/* Bare structure only; the herbarium design system arrives in phase 2. */
+	.masthead,
 	header {
+		max-width: 76rem;
+		margin: auto;
+		padding: 1rem clamp(1rem, 4vw, 3rem);
 		display: flex;
 		flex-wrap: wrap;
-		gap: 1rem;
 		align-items: center;
 		justify-content: space-between;
-		padding: 1rem;
-	}
-
-	nav {
-		display: flex;
 		gap: 1rem;
 	}
-
+	.masthead {
+		border-bottom: 1px solid var(--line);
+	}
+	.brand {
+		font:
+			1.6rem Herbarium Serif,
+			serif;
+		text-decoration: none;
+		color: var(--ink);
+	}
+	nav {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 1.5rem;
+	}
+	nav a[aria-current='page'] {
+		font-weight: bold;
+		text-decoration-thickness: 2px;
+	}
+	header form {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		align-items: center;
+	}
+	header form > button {
+		margin: 0;
+	}
 	main {
-		max-width: 40rem;
-		margin: 0 auto;
-		padding: 1rem;
+		max-width: 48rem;
+		margin: clamp(1rem, 4vw, 3rem) auto;
+		padding: clamp(1.25rem, 5vw, 3.5rem);
+		background: var(--paper);
+		border: 1px solid var(--line);
+		border-radius: var(--radius);
+		box-shadow: var(--shadow);
+	}
+	.skip {
+		position: absolute;
+		top: -6rem;
+		left: 1rem;
+		padding: 0.75rem;
+		background: var(--paper);
+		z-index: 10;
+	}
+	.skip:focus {
+		top: 1rem;
+	}
+	@media (max-width: 50rem) {
+		main {
+			margin-inline: 1rem;
+		}
 	}
 </style>

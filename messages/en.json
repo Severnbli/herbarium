@@ -136,5 +136,15 @@
 	"language_save": "Save language",
 	"language_be": "Беларуская",
 	"language_ru": "Русский",
-	"language_en": "English"
+	"language_en": "English",
+	"design_theme": "Appearance",
+	"design_system": "System",
+	"design_light": "Linen",
+	"design_dark": "Kupalle night",
+	"design_skip": "Skip to content",
+	"design_precision": "Date precision",
+	"design_day": "Day",
+	"design_month": "Month",
+	"design_year": "Year",
+	"design_close": "Close"
 }

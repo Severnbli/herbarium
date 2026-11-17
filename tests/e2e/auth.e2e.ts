@@ -345,3 +345,61 @@ test('saves language per member without JavaScript and uses it on another device
 	await other.reload();
 	await expect(other.locator('html')).toHaveAttribute('lang', 'en');
 });
+
+test('appearance follows the system, persists overrides and works on a narrow screen', async ({
+	browser
+}) => {
+	const context = await browser.newContext({
+		colorScheme: 'dark',
+		locale: 'en-US',
+		viewport: { width: 375, height: 812 }
+	});
+	const page = await context.newPage();
+	await page.goto('/login');
+	const background = () =>
+		page.locator('body').evaluate(() => getComputedStyle(document.documentElement).backgroundColor);
+	expect(await background()).toBe('rgb(20, 31, 36)');
+	await page.getByLabel('Appearance', { exact: true }).selectOption('light');
+	await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+	expect(await background()).toBe('rgb(238, 232, 218)');
+	await page.reload();
+	await expect(page.getByLabel('Appearance', { exact: true })).toHaveValue('light');
+	await page.getByLabel('Appearance', { exact: true }).selectOption('dark');
+	await page.emulateMedia({ colorScheme: 'light', reducedMotion: 'reduce' });
+	expect(await background()).toBe('rgb(20, 31, 36)');
+	await page.getByLabel('Appearance', { exact: true }).selectOption('system');
+	expect(await background()).toBe('rgb(238, 232, 218)');
+	await page.reload();
+	await page.keyboard.press('Tab');
+	await expect(page.getByRole('link', { name: 'Skip to content' })).toBeFocused();
+	await page.keyboard.press('Enter');
+	await expect(page.locator('main')).toBeFocused();
+	expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+	const font = await page.request.get('/fonts/herbarium-serif.ttf');
+	expect(font.ok()).toBe(true);
+	await context.close();
+});
+
+test('public authentication screens render all locales with both themes', async ({ browser }) => {
+	for (const locale of ['en', 'be', 'ru']) {
+		for (const colorScheme of ['light', 'dark'] as const) {
+			const context = await browser.newContext({ locale, colorScheme, javaScriptEnabled: false });
+			const page = await context.newPage();
+			await page.goto('/login');
+			await expect(page.locator('html')).toHaveAttribute('lang', locale);
+			await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+			await expect(page.locator('input[name="username"]')).toBeVisible();
+			await expect(page.locator('input[name="password"]')).toBeVisible();
+			await page.screenshot({
+				path: `/tmp/herbarium-login-${locale}-${colorScheme}.png`,
+				fullPage: true
+			});
+			expect(
+				await page
+					.locator('body')
+					.evaluate(() => getComputedStyle(document.documentElement).colorScheme)
+			).toBe(colorScheme);
+			await context.close();
+		}
+	}
+});

@@ -50,13 +50,13 @@ Done when: the owner can invite members, members can log in, deactivation locks 
 Goal: the herbarium look and three languages, before feature screens multiply.
 
 - [x] i18n layer (Paraglide JS) with `be`, `ru`, `en`, replacing the interim typed dictionaries from phase 1; locale detection + switcher saved per user; ICU plurals; locale-aware dates and week start
-- [ ] Design tokens as CSS custom properties: linen/paper surfaces, madder red, cornflower, moss, rye, flax gold, ink
-- [ ] Two themes: light (linen) and dark ("Kupalle night"), following system preference with manual override
-- [ ] Self-hosted fonts with full Belarusian Cyrillic (і, ў) coverage
-- [ ] Ornament set as inline SVG: vycinanka dividers and frames, ruchnik borders, plant motifs for empty states
-- [ ] Base components: button, input, textarea, select, date picker (supports day/month/year precision), dialog, toast, card ("herbarium sheet" with label), app shell with navigation
-- [ ] Accessibility baseline: AA contrast in both themes, focus styles, keyboard nav, `prefers-reduced-motion`
-- [ ] Restyle login/setup/invite screens with the new system
+- [x] Design tokens as CSS custom properties: linen/paper surfaces, madder red, cornflower, moss, rye, flax gold, ink
+- [x] Two themes: light (linen) and dark ("Kupalle night"), following system preference with manual override
+- [x] Self-hosted fonts with full Belarusian Cyrillic (і, ў) coverage
+- [x] Ornament set as inline SVG: vycinanka dividers and frames, ruchnik borders, plant motifs for empty states
+- [x] Base components: button, input, textarea, select, date picker (supports day/month/year precision), dialog, toast, card ("herbarium sheet" with label), app shell with navigation
+- [x] Accessibility baseline: AA contrast in both themes, focus styles, keyboard nav, `prefers-reduced-motion`
+- [x] Restyle login/setup/invite screens with the new system
 
 Done when: auth screens look finished in both themes and all three locales.
 

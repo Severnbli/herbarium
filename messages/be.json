@@ -140,5 +140,15 @@
 	"language_save": "Захаваць мову",
 	"language_be": "Беларуская",
 	"language_ru": "Русский",
-	"language_en": "English"
+	"language_en": "English",
+	"design_theme": "Выгляд",
+	"design_system": "Як у сістэме",
+	"design_light": "Лён",
+	"design_dark": "Купальская ноч",
+	"design_skip": "Перайсці да змесціва",
+	"design_precision": "Дакладнасць даты",
+	"design_day": "Дзень",
+	"design_month": "Месяц",
+	"design_year": "Год",
+	"design_close": "Закрыць"
 }

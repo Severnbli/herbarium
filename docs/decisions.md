@@ -44,3 +44,13 @@ Replace the interim TypeScript dictionaries with Paraglide JSON catalogs and a t
 Pass the locale explicitly to every generated message call. A global locale would risk mixing languages across concurrent server requests. Preserve the small adapter rather than rewriting every auth component; adding a message now requires a catalog entry and an adapter entry.
 
 Store a nullable locale on the encrypted user record. Null preserves browser-language detection for existing accounts; an explicit preference follows the member across devices. A server form action changes only the authenticated member's preference and redirects, preserving operation without client JavaScript. No public locale endpoint or extra cookie is needed. English uses the CLDR default Sunday week start; Belarusian and Russian use Monday.
+
+## Local typography and device appearance
+
+Status: accepted.
+
+Use bundled DejaVu Serif and Sans, distributed under their included permissive font license, for full Belarusian Cyrillic coverage without runtime font requests or another npm dependency. The fonts add approximately 1.1 MiB of static assets; `font-display: swap` keeps text visible while they load.
+
+Keep appearance on the device with an allowlisted localStorage preference. System appearance remains the default and works without JavaScript. A small external same-origin script applies manual overrides before paint under the existing strict CSP. Language remains an account preference. A database theme column would add a migration and require authentication for a preference also useful on login and setup screens.
+
+Use native date, month and four-digit year inputs for the initial precision picker. This provides browser keyboard support and progressive form submission without introducing a date-picker dependency. Event validation and normalization belong to phase 3 server schemas.

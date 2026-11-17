@@ -2,7 +2,7 @@
 
 ## Current implementation
 
-Herbarium is a SvelteKit application using Svelte 5 runes, strict TypeScript and `adapter-node`. One instance represents one shared circle. Foundation and security core are implemented; calendar, events and media features remain planned in the [roadmap](ROADMAP.md).
+Herbarium is a SvelteKit application using Svelte 5 runes, strict TypeScript and `adapter-node`. One instance represents one shared circle. Foundation and security core are implemented; the design system and three locales are implemented; calendar, events and media features remain planned in the [roadmap](ROADMAP.md).
 
 | Location                   | Responsibility                                        |
 | -------------------------- | ----------------------------------------------------- |
@@ -40,3 +40,11 @@ Events will share one table with `moment`, `plan` and `occasion` kinds. Date-onl
 Media will live as encrypted files on the data volume and will be served through authenticated routes. Maps will use locally served tiles and a local gazetteer. Reminder email will use optional operator-configured SMTP. These are design commitments, not implemented services.
 
 The deployment remains one Node application and one data volume. Runtime assets are self-hosted; user data never goes to third-party APIs. Record boundary changes in [decisions.md](decisions.md).
+
+## Design system
+
+`src/lib/design.css` defines semantic color tokens, typography, controls and the accessibility baseline. Light linen and dark Kupalle themes follow the operating system. The appearance selector stores an optional device preference in localStorage, separate from the account language. A small same-origin script applies the allowlisted theme before first paint, without inline script or a CSP exception. With JavaScript disabled, system appearance and server forms still work.
+
+DejaVu Serif and Sans are bundled under `static/fonts/` with their redistribution license and cover Belarusian і and ў. No font service is contacted. Shared components provide buttons, labelled inputs (`Field`), textareas, selects, precision-aware native date fields, modal dialogs, persistent dismissible status messages and herbarium cards. Decorative inline SVG ornaments are hidden from assistive technology. The app shell includes a skip link, current-page navigation and responsive form layouts.
+
+DatePicker submits the selected precision separately from its date value (day: YYYY-MM-DD, month: YYYY-MM, year: YYYY). Changing precision clears the previous value. Feature actions must validate and normalize these fields on the server before storing them; this visual component does not define event storage.
