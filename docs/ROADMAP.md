@@ -20,7 +20,7 @@ Goal: an empty but production-shaped app.
 - [x] Dockerfile: multi-stage, non-root user, read-only root FS, data volume; `docker-compose.yml` example with Docker secret for the master key
 - [x] CI: check, lint, unit tests, `npm audit` (high/critical blocks); e2e smoke test; image published to Docker Hub
 - [x] Add the CI jobs (`verify`, `docker`) as required status checks to the "Protect main" GitHub ruleset
-- [x] Update **Commands** in `CLAUDE.md`
+- [x] Update **Commands** in `AGENTS.md`
 
 Done when: `docker compose up` serves a placeholder page; CI is green.
 
@@ -157,7 +157,7 @@ Done when: events can be pinned and browsed on a map that works fully offline fr
 - [ ] PWA: installable with app icon and splash in the herbarium style; no offline mode – the service worker caches only versioned static assets, never pages, API responses or media
 - [ ] Performance pass: query indexes, image sizes, bundle size
 - [ ] Full accessibility audit in both themes and all locales
-- [ ] Security review against the **Security** section of `CLAUDE.md`; dependency review
+- [ ] Security review against the **Security** section of `AGENTS.md`; dependency review
 - [ ] README: features, screenshots, deployment with reverse proxy and HTTPS, configuration reference
 - [ ] **v1.0 release**
 
@@ -165,18 +165,7 @@ Done when: events can be pinned and browsed on a map that works fully offline fr
 
 ## Decisions
 
-- **Members**: one shared space per instance with any number of members (a couple, a family, friends). Roles: `owner` and `member`; equal rights on content, owners manage members and settings. No multiple spaces per instance.
-- **Reminders**: delivered by email through the owners' own SMTP server. No Web Push (it routes through browser vendors' services) and no messenger bots.
-- **Places**: plain-text name plus optional coordinates on events, and a map of memories. Tiles are self-hosted PMTiles rendered with MapLibre – no external tile, style or font requests. Place search uses a bundled GeoNames gazetteer. GPS from a photo's EXIF is offered as a suggestion for the event's coordinates at upload, then stripped from the files, including the originals – no stored, exported or downloaded file contains location data.
-- **Notes**: limited Markdown, rendered and sanitized on the server.
-- **ICS feed**: not planned. Data stays inside the app.
-- **Imports**: only bulk photo/video upload (plus restoring Herbarium's own export). No Google Takeout or ICS import.
-- **Encryption at rest**: kept for the database and all media. A lost master key means lost data; setup warns about this.
-- **2FA**: optional TOTP per user with recovery codes.
-- **PWA**: installable, no offline mode, no user data cached on devices.
-- **Styling**: own CSS on design tokens, no CSS framework.
-- **First-run setup**: guarded by a one-time code the app writes to `setup-code` on the data volume (never logged), deleted once the owner exists.
-- **Referrer policy**: `same-origin` instead of `no-referrer`, because `no-referrer` makes browsers send `Origin: null` on form posts and breaks the CSRF origin check.
+Accepted product and architecture decisions live in [decisions.md](decisions.md). Keep this roadmap focused on delivery status.
 
 ## Open questions
 
