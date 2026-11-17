@@ -1,23 +1,38 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import Ornament from './Ornament.svelte';
-	let { title, label, children }: { title: string; label?: string; children: Snippet } = $props();
+	let {
+		title,
+		titleHref,
+		label,
+		children
+	}: { title: string; titleHref?: string; label?: string; children: Snippet } = $props();
 	const id = $props.id();
 </script>
 
 <article aria-labelledby={id}>
 	<Ornament kind="frame" />
-	<h2 {id}>{title}</h2>
+	<!-- titleHref is resolved by the caller, including the configured base path. -->
+	<!-- eslint-disable svelte/no-navigation-without-resolve -->
+	<h2 {id}>
+		{#if titleHref}<a href={titleHref}>{title}</a>{:else}{title}{/if}
+	</h2>
+	<!-- eslint-enable svelte/no-navigation-without-resolve -->
 	{@render children()}
 	{#if label}<footer>{label}</footer>{/if}
 </article>
 
 <style>
 	article {
+		min-width: 0;
+		overflow-wrap: anywhere;
 		padding: 1.5rem;
 		border: 1px solid var(--line);
 		background: var(--paper);
 		box-shadow: var(--shadow);
+	}
+	h2 {
+		overflow-wrap: anywhere;
 	}
 	footer {
 		margin-top: 1rem;

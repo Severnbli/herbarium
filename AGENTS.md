@@ -8,7 +8,7 @@ This file is the source of truth for project context and instructions. Keep shar
 
 **Herbarium** is a self-hosted shared calendar for a small circle of people – a couple, a family, close friends. It preserves their shared history, organizes their present and plans their future. It should feel like a personal botanical chronicle or an enchanted herbarium – a place where memories are collected, pressed, preserved and allowed to grow.
 
-Status: phases 0 (foundation), 1 (security core) and 2 (design system and i18n) are in place. When you add tooling, update the **Commands** section so it always matches reality.
+Status: phases 0 (foundation), 1 (security core), 2 (design system and i18n) and 3 (moments and plans) are in place. When you add tooling, update the **Commands** section so it always matches reality.
 
 The development plan lives in `docs/ROADMAP.md`. Work phase by phase, and tick off items there as they are completed.
 
@@ -206,9 +206,10 @@ Traditional **Belarusian botanical art, folklore and natural symbolism**. The ap
 
 ## Git workflow
 
-- **Branches**: `main` is the release branch, `dev` is the integration branch. Work happens on `dev` (or on a short-lived `feature/<name>` branch cut from `dev` and merged back into it).
+- **Branches**: `main` is the release branch and `dev` is the integration branch. Start every feature, bug fix and other change on a short-lived branch cut from `dev`: use `feature/<name>`, `fix/<name>`, `docs/<name>` or `chore/<name>` as appropriate. Do not commit implementation work directly to `dev`.
+- **Pull requests**: open a PR from the working branch into `dev` after implementation and required checks are complete. Keep each PR focused and include its validation results. Merge through the PR workflow; do not merge locally into `dev` or push directly to it.
 - **`main` changes only through a pull request from `dev`.** Never commit to `main` directly, never push to `main`, never force-push to `main` or `dev`. This is enforced on GitHub by the "Protect main" ruleset (PR required, CI jobs `verify` and `docker` must pass, no direct pushes, no force-push, no deletion).
-- **Commit often, without being reminded.** Commit after every completed logical step: a finished roadmap item, a working sub-feature, a refactor, a docs update. Do not let unrelated work pile up in one commit or leave finished work uncommitted at the end of a task. Push `dev` after committing.
+- **Commit often, without being reminded.** After each completed logical step, run relevant checks and create a focused commit containing only that step's changes. Preserve unrelated user changes. Do not leave finished work uncommitted. Do not push unless requested; a request to open a PR authorizes pushing its working branch.
 - Before committing: `check`, `lint` and `test` pass (once they exist). Never commit secrets, `.env` files, the data directory or real user data.
 - When a commit completes a roadmap item, tick it in `docs/ROADMAP.md` in the same commit.
 - Commit messages in English: imperative subject up to ~72 characters, a body explaining why when it is not obvious.

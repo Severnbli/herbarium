@@ -13,7 +13,15 @@ const dataDir = process.env.E2E_DATA_DIR as string;
 const ORIGIN = 'http://localhost:4173';
 const owner = { username: 'alice', name: 'Alice', password: 'alice has a long password' };
 const member = { username: 'bob', name: 'Bob', password: 'bob has a long password too' };
-const PROTECTED = ['/', '/members', '/account'];
+const PROTECTED = [
+	'/',
+	'/members',
+	'/account',
+	'/events',
+	'/events/new',
+	'/events/' + 'a'.repeat(22),
+	'/events/' + 'a'.repeat(22) + '/edit'
+];
 
 let recoveryCodes: string[] = [];
 
@@ -95,7 +103,15 @@ test('rejects anonymous access to every route', async ({ browser }) => {
 		await expect(page).toHaveURL(/\/login(\?|$)/);
 	}
 
-	for (const path of ['/members?/invite', '/account?/changePassword', '/logout']) {
+	for (const path of [
+		'/members?/invite',
+		'/account?/changePassword',
+		'/logout',
+		'/events/new',
+		'/events/' + 'a'.repeat(22) + '?/complete',
+		'/events/' + 'a'.repeat(22) + '?/delete',
+		'/events/' + 'a'.repeat(22) + '/edit'
+	]) {
 		const response = await page.request.post(path, {
 			headers: { origin: ORIGIN },
 			form: { x: '1' },
@@ -170,6 +186,147 @@ test('an owner invites a member, and the invite works once', async ({ browser })
 	const other = await newPage(browser);
 	await other.goto(inviteLink);
 	await expect(other.getByRole('heading', { name: 'This invite cannot be used' })).toBeVisible();
+});
+
+test('members create, edit, filter, complete and delete shared events without JavaScript', async ({
+	browser
+}) => {
+	const page = await newPage(browser, { javaScriptEnabled: false });
+	await login(page, member.username, member.password);
+	await page.goto('/events');
+	await expect(page.getByRole('heading', { name: 'Events', exact: true })).toBeVisible();
+	await page.getByRole('link', { name: 'New event' }).click();
+	await page.getByLabel('Title', { exact: true }).fill('Synthetic spring journey');
+	await page.getByLabel('Start', { exact: true }).fill('2023-02-29');
+	await page
+		.getByLabel('Notes', { exact: true })
+		.fill(
+			'**Pressed memory**\n<script>window.injected=true</script>\n[link](https://example.com)\n![pixel](https://example.com/pixel)'
+		);
+	await page.getByRole('button', { name: 'Save event', exact: true }).click();
+	await expect(page.getByRole('alert')).toBeVisible();
+	await expect(page.getByLabel('Title', { exact: true })).toHaveValue('Synthetic spring journey');
+	await page.getByLabel('Start', { exact: true }).fill('2020-03');
+	await page.getByLabel('Date precision').selectOption('month');
+	await page.getByLabel('Event kind').selectOption('plan');
+	await page.getByRole('button', { name: 'Save event', exact: true }).click();
+	const detail = page.url();
+	await expect(
+		page.getByRole('heading', { name: 'Synthetic spring journey', exact: true })
+	).toBeVisible();
+	await expect(page.getByText('March 2020', { exact: true })).toBeVisible();
+	await expect(page.locator('.notes strong')).toHaveText('Pressed memory');
+	await expect(page.locator('.notes script, .notes img')).toHaveCount(0);
+	await expect(page.locator('.notes a').first()).toHaveAttribute('rel', 'noopener noreferrer');
+	await expect(page.getByText('Added by Bob')).toBeVisible();
+	const other = await newPage(browser, { javaScriptEnabled: false });
+	await login(other, owner.username, owner.password);
+	await other.goto(detail);
+	await other.getByRole('link', { name: 'Edit', exact: true }).click();
+	await other.getByLabel('Title', { exact: true }).fill('Synthetic shared journey');
+	await other.getByLabel('Category').selectOption('trip');
+	await other.getByLabel('Place', { exact: true }).fill('Synthetic meadow');
+	await other.getByRole('button', { name: 'Save changes' }).click();
+	await expect(other.getByText('Added by Bob')).toBeVisible();
+	await page.goto('/events');
+	await page.getByLabel('Event kind').selectOption('plan');
+	await page.getByLabel('Start year').fill('2020');
+	await page.getByRole('button', { name: 'Filter', exact: true }).click();
+	await page.getByRole('link', { name: 'Synthetic shared journey', exact: true }).click();
+	await page.getByRole('button', { name: 'Mark as moment' }).click();
+	await expect(page).toHaveURL(detail);
+	await expect(page.getByText('Moment · Trip', { exact: true })).toBeVisible();
+	await page.getByLabel('Current password').fill('wrong synthetic password');
+	await page.getByRole('button', { name: 'Delete event', exact: true }).click();
+	await expect(page.getByRole('alert')).toBeVisible();
+	await expect(page.getByLabel('Current password')).toHaveValue('');
+	await page.getByLabel('Current password').fill(member.password);
+	await page.getByRole('button', { name: 'Delete event', exact: true }).click();
+	await expect(page).toHaveURL('/events');
+	const missing = await page.goto(detail);
+	expect(missing?.status()).toBe(404);
+});
+
+test('timed events retain their local year and future plans cannot be completed early', async ({
+	browser
+}) => {
+	const page = await newPage(browser, { javaScriptEnabled: false });
+	await login(page, member.username, member.password);
+	await page.goto('/events/new');
+	await page.getByLabel('Title', { exact: true }).fill('Synthetic midnight');
+	await page.getByLabel('Event kind').selectOption('plan');
+	await page.getByLabel('Date type').selectOption('timed');
+	await page.getByLabel('Start', { exact: true }).fill('9999-01-01T00:30');
+	await page.getByLabel('Time zone', { exact: true }).fill('Asia/Kathmandu');
+	await page.getByRole('button', { name: 'Save event', exact: true }).click();
+	const detail = page.url();
+	await expect(page.getByText(/January 1, 9999/)).toBeVisible();
+	await expect(page.getByRole('button', { name: 'Mark as moment' })).toBeDisabled();
+	const blocked = await page.request.post(detail + '?/complete', {
+		form: {},
+		headers: { origin: ORIGIN }
+	});
+	expect(blocked.status()).toBe(400);
+	await page.getByRole('link', { name: 'Edit', exact: true }).click();
+	await expect(page.getByLabel('Start', { exact: true })).toHaveValue('9999-01-01T00:30');
+	await page.getByLabel('Event kind').selectOption('moment');
+	await page.getByRole('button', { name: 'Save changes' }).click();
+	await expect(page.getByRole('alert')).toContainText('after it finishes');
+	await page.getByLabel('Event kind').selectOption('plan');
+	await page.getByLabel('Start', { exact: true }).fill('2024-01-01T00:30');
+	await page.getByRole('button', { name: 'Save changes' }).click();
+	await page.goto('/events?kind=plan&year=2024');
+	await expect(page.getByRole('link', { name: 'Synthetic midnight' })).toBeVisible();
+	await page.goto('/events?kind=plan&year=2023');
+	await expect(page.getByRole('link', { name: 'Synthetic midnight' })).toHaveCount(0);
+	for (const query of ['year=bad', 'year=2024&year=2023', 'other=1', '__proto__=1']) {
+		const response = await page.request.get('/events?' + query);
+		expect(response.status()).toBe(400);
+	}
+	const malformed = await page.request.get('/events/bad-id');
+	expect(malformed.status()).toBe(404);
+	await page.goto(detail);
+	await page.getByLabel('Current password').fill(member.password);
+	await page.getByRole('button', { name: 'Delete event', exact: true }).click();
+	await expect(page).toHaveURL('/events');
+});
+
+test('event screens render in three languages and both themes on a phone', async ({ browser }) => {
+	for (const [locale, heading, save] of [
+		['en', 'New event', 'Save event'],
+		['be', 'Новая падзея', 'Захаваць падзею'],
+		['ru', 'Новое событие', 'Сохранить событие']
+	]) {
+		const context = await browser.newContext({ locale, viewport: { width: 375, height: 812 } });
+		const page = await context.newPage();
+		// Login labels are locale-dependent; request the form with the same credentials instead.
+		await page.goto('/login');
+		await page.locator('input[name="username"]').fill(member.username);
+		await page.locator('input[name="password"]').fill(member.password);
+		await page.locator('main form button').click();
+		await expect(page).toHaveURL('/');
+		await page.goto('/events/new');
+		await expect(page.getByRole('heading', { name: heading, exact: true })).toBeVisible();
+		await page.locator('input[name="title"]').fill(`Synthetic ${locale} event`);
+		await page.locator('input[name="start"]').fill('2020');
+		await page.locator('select[name="precision"]').selectOption('year');
+		await page.locator('textarea[name="notes"]').fill('A **synthetic** memory.');
+		await page.getByRole('button', { name: save, exact: true }).click();
+		await expect(
+			page.getByRole('heading', { name: `Synthetic ${locale} event`, exact: true })
+		).toBeVisible();
+		for (const colorScheme of ['light', 'dark'] as const) {
+			await page.emulateMedia({ colorScheme });
+			await page.screenshot({
+				path: `/tmp/herbarium-event-${locale}-${colorScheme}.png`,
+				fullPage: true
+			});
+			expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+				true
+			);
+		}
+		await context.close();
+	}
 });
 
 test('a revoked invite cannot be used', async ({ browser }) => {

@@ -46,3 +46,9 @@ Use `formatDateOnly` for calendar dates, `formatDateTime` with an explicit IANA 
 - Keep shared agent guidance in `AGENTS.md`; retain `CLAUDE.md` as a secondary import.
 
 Open questions belong in the roadmap until resolved. Move their outcome into the decision log when the choice affects future work.
+
+## Events
+
+Open `/events` after signing in. All members can create and edit moments and plans, filter by kind and local start year, and delete an event after confirming their own password. Forms work without JavaScript. Date-only input formats are `YYYY-MM-DD`, `YYYY-MM` and `YYYY` for day/month/year precision. Timed input uses `YYYY-MM-DDTHH:mm` and an explicit IANA time zone. Repeated DST clock times require independent earlier/later choices for start and end; nonexistent clock times are rejected. The event's local start year determines its list filter even if the stored UTC instant falls in another year.
+
+Unit tests cover date precision, DST gaps/folds, validation, sanitized notes, encrypted storage, pagination, plan transitions and independent route authentication checks. Browser tests exercise shared editing and password-confirmed deletion without JavaScript, local-year filters, blocked early completion, and mobile event pages in all three locales and both themes.

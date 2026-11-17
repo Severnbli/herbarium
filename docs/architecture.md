@@ -2,7 +2,7 @@
 
 ## Current implementation
 
-Herbarium is a SvelteKit application using Svelte 5 runes, strict TypeScript and `adapter-node`. One instance represents one shared circle. Foundation and security core are implemented; the design system and three locales are implemented; calendar, events and media features remain planned in the [roadmap](ROADMAP.md).
+Herbarium is a SvelteKit application using Svelte 5 runes, strict TypeScript and `adapter-node`. One instance represents one shared circle. Foundation, security, the design system, three locales and moments/plans are implemented. Recurrence, calendar and media remain planned in the [roadmap](ROADMAP.md).
 
 | Location                   | Responsibility                                        |
 | -------------------------- | ----------------------------------------------------- |
@@ -35,7 +35,7 @@ Date-only formatting fixes the time zone to UTC to preserve the day; timed forma
 
 ## Planned boundaries
 
-Events will share one table with `moment`, `plan` and `occasion` kinds. Date-only values stay `YYYY-MM-DD` strings; timed events store a UTC instant and an IANA time zone. Recurrence will expand at query time.
+Events share one encrypted table with `moment`, `plan` and `occasion` kinds. The event services, schemas, date/notes modules and server-first screens are implemented. Date-only values stay `YYYY-MM-DD` strings, normalized to the first day for month/year precision. Timed events store UTC instants and an IANA time zone, plus the local start date for sorting and year filters. Recurrence remains planned for phase 4.
 
 Media will live as encrypted files on the data volume and will be served through authenticated routes. Maps will use locally served tiles and a local gazetteer. Reminder email will use optional operator-configured SMTP. These are design commitments, not implemented services.
 
@@ -48,3 +48,13 @@ The deployment remains one Node application and one data volume. Runtime assets 
 DejaVu Serif and Sans are bundled under `static/fonts/` with their redistribution license and cover Belarusian і and ў. No font service is contacted. Shared components provide buttons, labelled inputs (`Field`), textareas, selects, precision-aware native date fields, modal dialogs, persistent dismissible status messages and herbarium cards. Decorative inline SVG ornaments are hidden from assistive technology. The app shell includes a skip link, current-page navigation and responsive form layouts.
 
 DatePicker submits the selected precision separately from its date value (day: YYYY-MM-DD, month: YYYY-MM, year: YYYY). Changing precision clears the previous value. Feature actions must validate and normalize these fields on the server before storing them; this visual component does not define event storage.
+
+## Event dates and notes
+
+`src/lib/domain/event-date.ts` uses the ISC-licensed Temporal polyfill to validate calendar dates, convert local clock times to instants, render precision and determine whether an interval has elapsed. Nonexistent DST times are rejected. Repeated local times require explicit earlier/later choices, independently for start and end. Date-only end dates are inclusive; plan completion uses the next UTC day, month or year boundary so a partially elapsed date-only period cannot be completed early.
+
+`src/lib/server/events/schemas.ts` strictly validates fields, bounded notes, paired coordinates, chronological ends and list filters. `notes.ts` renders a small Markdown subset with markdown-it (raw HTML and images disabled), then sanitizes with sanitize-html. Only paragraphs, bold, italic, lists, links and line breaks survive. Links use allowlisted schemes and forced `rel="noopener noreferrer"`. Both dependencies are MIT-licensed and server-only.
+
+`src/lib/server/events/events.ts` provides validated create/update/delete operations, author-preserving plan completion and paginated list queries. Lists filter by the local start year and kind and return 30 records per page, ordered by local start date and random identifier. SQL is built through Drizzle with bound parameters. Authenticated routes under `/events` provide a paginated list, kind/year filters, a create form, detail pages and edit forms. Every load and action checks its session independently of the hook. Members can edit all events; the author stays unchanged. Deleting an event requires rate-limited password confirmation and writes a content-free audit event in the same transaction.
+
+Event forms accept bounded text dates in the displayed formats, so selecting a different precision or timed mode works without client JavaScript. Failed submissions return known, bounded field values and field identifiers; password values are never returned. Kind, category and date/clock options are fully translated in all three locales. Detail pages render the server-sanitized notes HTML as the only user-content `{@html}` exception.

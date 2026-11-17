@@ -64,14 +64,14 @@ Done when: auth screens look finished in both themes and all three locales.
 
 Goal: the core domain.
 
-- [ ] `event` table: `kind` (moment/plan/occasion), title, notes (limited Markdown source), place (plain text) plus optional coordinates (`lat`/`lon`, validated ranges, entered as numbers until the map picker lands in phase 8), all-day date (`YYYY-MM-DD`) or timed (UTC instant + IANA tz), date precision, optional end, `createdBy`, timestamps
-- [ ] Domain module for date handling (all-day vs timed, precision rendering, time zones) with thorough unit tests
-- [ ] Server-side validation schemas for all event inputs
-- [ ] Notes in limited Markdown (bold, italic, lists, links, line breaks): rendered on the server, sanitized with an allowlist, links forced to `rel="noopener noreferrer"`; tests with XSS payloads
-- [ ] Create / edit / delete moments and plans (form actions, works without JS)
-- [ ] Plan → moment transition once it has happened (state change, optional prompt to add memories)
-- [ ] Event list and detail page; simple filters by kind and year
-- [ ] Tags or categories (trip, date, milestone…) – keep minimal
+- [x] `event` table: `kind` (moment/plan/occasion), title, notes (limited Markdown source), place (plain text) plus optional coordinates (`lat`/`lon`, validated ranges, entered as numbers until the map picker lands in phase 8), all-day date (`YYYY-MM-DD`) or timed (UTC instant + IANA tz), date precision, optional end, `createdBy`, timestamps
+- [x] Domain module for date handling (all-day vs timed, precision rendering, time zones) with thorough unit tests
+- [x] Server-side validation schemas for all event inputs
+- [x] Notes in limited Markdown (bold, italic, lists, links, line breaks): rendered on the server, sanitized with an allowlist, links forced to `rel="noopener noreferrer"`; tests with XSS payloads
+- [x] Create / edit / delete moments and plans (form actions, works without JS)
+- [x] Plan → moment transition once it has happened (state change, optional prompt to add memories)
+- [x] Event list and detail page; simple filters by kind and year
+- [x] Tags or categories (trip, date, milestone…) – keep minimal
 
 Done when: all members can record and edit past and future events with correct dates in any time zone.
 

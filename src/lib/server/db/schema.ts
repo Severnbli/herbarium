@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { blob, index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { blob, check, index, integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 /**
  * Database schema. Keep it readable: the data must outlive the app, so column names say what they
@@ -118,7 +118,8 @@ export const AUDIT_EVENTS = [
 	'totp_enabled',
 	'totp_disabled',
 	'recovery_code_used',
-	'recovery_codes_regenerated'
+	'recovery_codes_regenerated',
+	'event_deleted'
 ] as const;
 export type AuditEvent = (typeof AUDIT_EVENTS)[number];
 
@@ -138,4 +139,47 @@ export const auditLog = sqliteTable(
 		details: text('details', { mode: 'json' }).$type<Record<string, string | number | boolean>>()
 	},
 	(table) => [index('audit_log_created_idx').on(table.createdAt)]
+);
+
+/** Moments, plans and (from phase 4) recurring occasions share their identity. */
+export const event = sqliteTable(
+	'event',
+	{
+		id: text('id').primaryKey(),
+		kind: text('kind', { enum: ['moment', 'plan', 'occasion'] }).notNull(),
+		title: text('title').notNull(),
+		notes: text('notes').notNull().default(''),
+		place: text('place').notNull().default(''),
+		lat: real('lat'),
+		lon: real('lon'),
+		category: text('category', { enum: ['none', 'trip', 'date', 'milestone'] })
+			.notNull()
+			.default('none'),
+		dateMode: text('date_mode', { enum: ['date', 'timed'] }).notNull(),
+		precision: text('precision', { enum: ['day', 'month', 'year'] }).notNull(),
+		startDate: text('start_date'),
+		endDate: text('end_date'),
+		startsAt: timestamp('starts_at'),
+		endsAt: timestamp('ends_at'),
+		timeZone: text('time_zone'),
+		/** Local calendar date, also for timed events, for stable sorting and year filters. */
+		sortDate: text('sort_date').notNull(),
+		createdBy: text('created_by')
+			.notNull()
+			.references(() => user.id),
+		createdAt: createdAt(),
+		updatedAt: timestamp('updated_at').notNull()
+	},
+	(table) => [
+		index('event_sort_idx').on(table.sortDate, table.id),
+		index('event_kind_sort_idx').on(table.kind, table.sortDate),
+		check(
+			'event_coordinates',
+			sql`(${table.lat} IS NULL AND ${table.lon} IS NULL) OR (${table.lat} IS NOT NULL AND ${table.lon} IS NOT NULL AND ${table.lat} BETWEEN -90 AND 90 AND ${table.lon} BETWEEN -180 AND 180)`
+		),
+		check(
+			'event_dates',
+			sql`(${table.dateMode} = 'date' AND ${table.startDate} IS NOT NULL AND ${table.startsAt} IS NULL AND ${table.endsAt} IS NULL AND ${table.timeZone} IS NULL) OR (${table.dateMode} = 'timed' AND ${table.precision} = 'day' AND ${table.startsAt} IS NOT NULL AND ${table.timeZone} IS NOT NULL AND ${table.startDate} IS NULL AND ${table.endDate} IS NULL)`
+		)
+	]
 );
