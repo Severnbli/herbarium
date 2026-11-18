@@ -2,7 +2,7 @@
 
 ## Current implementation
 
-Herbarium is a SvelteKit application using Svelte 5 runes, strict TypeScript and `adapter-node`. One instance represents one shared circle. Foundation, security, the design system, three locales, moments, plans and recurring occasions are implemented. Calendar and media remain planned in the [roadmap](ROADMAP.md).
+Herbarium is a SvelteKit application using Svelte 5 runes, strict TypeScript and `adapter-node`. One instance represents one shared circle. Foundation, security, the design system, three locales, moments, plans, recurring occasions and memories are implemented. Calendar and later phases remain planned in the [roadmap](ROADMAP.md).
 
 | Location                   | Responsibility                                        |
 | -------------------------- | ----------------------------------------------------- |
@@ -70,3 +70,9 @@ The server accepts yearly and monthly presets, and custom daily, weekly, monthly
 The encrypted database stores memory metadata and the wrapped key for each original, preview and thumbnail. The media directory holds ciphertext files named by random IDs. [`/media/[id]/[variant]`](../src/routes/media/%5Bid%5D/%5Bvariant%5D/+server.ts) requires a fully authenticated member session and serves private `GET` and `HEAD` responses with a fixed media type and filename disposition. `GET` supports single byte ranges. The server authenticates the header and each requested segment and aborts delivery if a segment fails verification. See [key management](key-management.md) for the file format.
 
 The streaming multipart parser bounds each file and the entire request. A Linux helper holds media in anonymous memory files and identifies JPEG, PNG, HEIC, MP4 and MOV from their bytes. Landlock and seccomp restrict the image and video tools, which receive media through inherited descriptors and run under time, memory, output and pixel limits. `sharp` generates JPEG image derivatives. FFmpeg creates a JPEG video poster and an H.264/AAC playback derivative. ExifTool cleans image originals without changing compressed image data. FFmpeg copies compressed audio and video into a fresh container, retaining capture time and display rotation while removing metadata tracks and supplementary video messages that can carry location. The database transaction publishes a memory only after its encrypted assets are durable. On restart the server removes encrypted files left without a database row.
+
+## Memories and albums
+
+The chronological gallery uses capture dates, falling back to the UTC upload date. The event page lists its attachments and links to a filtered gallery for longer collections. The upload form can offer a photo's location for an event that has no coordinates. The suggestion is sealed, expires after 30 minutes and is bound to the uploading session and memory. Accepting it writes the coordinates directly to the event if its location is still unset.
+
+A memory can be uploaded on its own or attached to one event, and it can belong to several albums. Events and albums have independent lifecycles. Deleting an event detaches its files. Deleting an album removes its memberships. Deleting a memory removes every membership and discards its wrapped keys and files. Memory and album deletion require password confirmation and create a content-free audit entry.

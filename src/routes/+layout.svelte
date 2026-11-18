@@ -34,6 +34,11 @@
 				>{m.nav.events}</a
 			>
 			<a
+				href={resolve('/memories')}
+				aria-current={page.url.pathname.startsWith('/memories') ? 'page' : undefined}
+				>{m.nav.memories}</a
+			>
+			<a
 				href={resolve('/members')}
 				aria-current={page.url.pathname === '/members' ? 'page' : undefined}>{m.nav.members}</a
 			>

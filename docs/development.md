@@ -56,3 +56,9 @@ Open `/events` after signing in. All members can create and edit moments, plans 
 Unit tests cover date precision, DST gaps/folds, validation, sanitized notes, encrypted storage, pagination, plan transitions and independent route authentication checks. Browser tests exercise shared editing and password-confirmed deletion without JavaScript, local-year filters, blocked early completion, and mobile event pages in all three locales and both themes.
 
 For an occasion, use day precision and open **For occasions** to set the repeat schedule. Select **Yearly** for anniversaries and birthdays to show the anniversary number or age. Custom schedules repeat by a chosen number of days, weeks, months or years. The occasion detail shows the localized schedule and upcoming dates.
+
+## Memories
+
+Choose **Add a memory** from an event to attach a photo or video, or from **Memories** to upload it to the gallery. Supported files are JPEG, PNG, HEIC and H.264 or HEVC videos in MP4 or MOV. Members can edit alt text and captions, download cleaned originals and organize memories in multiple albums. With JavaScript enabled, the gallery opens a lightbox with Previous and Next buttons, left and right arrow keys, and Escape to close. The same links open memory pages without JavaScript.
+
+The media integration tests use synthetic JPEG, PNG, HEIC, MP4 and MOV files. They check compressed image and media samples, location stripping, authenticated downloads, corrupted files and size limits. Playwright covers event attachments, coordinate consent, albums, keyboard navigation and video range responses.

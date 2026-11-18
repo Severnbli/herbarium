@@ -2,6 +2,7 @@
 	import { resolve } from '$app/paths';
 	import Field from '#lib/components/Field.svelte';
 	import Button from '#lib/components/Button.svelte';
+	import MemoryGrid from '#lib/components/MemoryGrid.svelte';
 	import { messages } from '#lib/i18n/index.ts';
 	import type { PageProps } from './$types';
 	let { data, form }: PageProps = $props();
@@ -58,6 +59,17 @@
 		{#if !data.canComplete}<p>{m.event.notFinished}</p>{/if}
 	</section>
 {/if}
+<section aria-labelledby="event-memories">
+	<h2 id="event-memories">{m.memory.title}</h2>
+	<!-- eslint-disable svelte/no-navigation-without-resolve -->
+	<a class="button" href={`${resolve('/memories/new')}?event=${data.event.id}`}>{m.memory.upload}</a
+	>
+	<MemoryGrid rows={data.memories.rows} locale={data.locale} {m} />
+	{#if data.memories.hasNext}
+		<a href={`${resolve('/memories')}?event=${data.event.id}`}>{m.memory.browse}</a>
+	{/if}
+	<!-- eslint-enable svelte/no-navigation-without-resolve -->
+</section>
 <section aria-labelledby="delete-title">
 	<h2 id="delete-title">{m.event.deleteTitle}</h2>
 	<p>{m.event.deleteHint}</p>

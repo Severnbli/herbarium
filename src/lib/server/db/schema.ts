@@ -4,6 +4,7 @@ import {
 	check,
 	index,
 	integer,
+	primaryKey,
 	real,
 	sqliteTable,
 	text,
@@ -128,7 +129,9 @@ export const AUDIT_EVENTS = [
 	'totp_disabled',
 	'recovery_code_used',
 	'recovery_codes_regenerated',
-	'event_deleted'
+	'event_deleted',
+	'memory_deleted',
+	'album_deleted'
 ] as const;
 export type AuditEvent = (typeof AUDIT_EVENTS)[number];
 
@@ -241,5 +244,30 @@ export const mediaFile = sqliteTable(
 	(table) => [
 		uniqueIndex('media_file_variant_idx').on(table.memoryId, table.variant),
 		check('media_file_size', sql`${table.size} > 0`)
+	]
+);
+
+export const album = sqliteTable('album', {
+	id: text('id').primaryKey(),
+	title: text('title').notNull(),
+	createdBy: text('created_by')
+		.notNull()
+		.references(() => user.id),
+	createdAt: createdAt()
+});
+
+export const albumMemory = sqliteTable(
+	'album_memory',
+	{
+		albumId: text('album_id')
+			.notNull()
+			.references(() => album.id, { onDelete: 'cascade' }),
+		memoryId: text('memory_id')
+			.notNull()
+			.references(() => memory.id, { onDelete: 'cascade' })
+	},
+	(table) => [
+		primaryKey({ columns: [table.albumId, table.memoryId] }),
+		index('album_memory_memory_idx').on(table.memoryId)
 	]
 );

@@ -10,6 +10,7 @@ import { EventError, completePlan, deleteEvent, findEvent } from '#lib/server/ev
 import { handleEventError, routeEventId } from '#lib/server/events/forms.ts';
 import { describeOccasion } from '#lib/server/events/occasion-labels.ts';
 import { renderNotes } from '#lib/server/events/notes.ts';
+import { listMemories } from '#lib/server/media/gallery.ts';
 import { clientIp, minutesUntil } from '#lib/server/http/request.ts';
 import type { Actions, PageServerLoad } from './$types';
 export const load: PageServerLoad = (event) => {
@@ -19,6 +20,7 @@ export const load: PageServerLoad = (event) => {
 		const row = findEvent(db(), id);
 		return {
 			event: row,
+			memories: listMemories(db(), { eventId: id }),
 			dateLabel: formatEventDate(event.locals.locale, row),
 			notesHtml: renderNotes(row.notes),
 			recurrence:
