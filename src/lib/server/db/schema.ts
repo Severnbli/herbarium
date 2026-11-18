@@ -1,5 +1,14 @@
 import { sql } from 'drizzle-orm';
-import { blob, check, index, integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import {
+	blob,
+	check,
+	index,
+	integer,
+	real,
+	sqliteTable,
+	text,
+	uniqueIndex
+} from 'drizzle-orm/sqlite-core';
 
 /**
  * Database schema. Keep it readable: the data must outlive the app, so column names say what they
@@ -183,5 +192,54 @@ export const event = sqliteTable(
 			'event_dates',
 			sql`(${table.dateMode} = 'date' AND ${table.startDate} IS NOT NULL AND ${table.startsAt} IS NULL AND ${table.endsAt} IS NULL AND ${table.timeZone} IS NULL) OR (${table.dateMode} = 'timed' AND ${table.precision} = 'day' AND ${table.startsAt} IS NOT NULL AND ${table.timeZone} IS NOT NULL AND ${table.startDate} IS NULL AND ${table.endDate} IS NULL)`
 		)
+	]
+);
+
+export const MEDIA_TYPES = [
+	'image/jpeg',
+	'image/png',
+	'image/heic',
+	'video/mp4',
+	'video/quicktime'
+] as const;
+export const MEDIA_VARIANTS = ['original', 'preview', 'thumbnail'] as const;
+
+export const memory = sqliteTable(
+	'memory',
+	{
+		id: text('id').primaryKey(),
+		eventId: text('event_id').references(() => event.id, { onDelete: 'set null' }),
+		originalName: text('original_name').notNull(),
+		altText: text('alt_text').notNull(),
+		caption: text('caption').notNull(),
+		captureDate: text('capture_date'),
+		/** Capture date, falling back to the day the file was added. */
+		sortDate: text('sort_date').notNull(),
+		createdBy: text('created_by')
+			.notNull()
+			.references(() => user.id),
+		createdAt: createdAt()
+	},
+	(table) => [
+		index('memory_sort_idx').on(table.sortDate, table.id),
+		index('memory_event_idx').on(table.eventId, table.sortDate, table.id)
+	]
+);
+
+export const mediaFile = sqliteTable(
+	'media_file',
+	{
+		id: text('id').primaryKey(),
+		memoryId: text('memory_id')
+			.notNull()
+			.references(() => memory.id, { onDelete: 'cascade' }),
+		variant: text('variant', { enum: MEDIA_VARIANTS }).notNull(),
+		contentType: text('content_type', { enum: MEDIA_TYPES }).notNull(),
+		size: integer('size').notNull(),
+		wrappedKey: blob('wrapped_key', { mode: 'buffer' }).notNull()
+	},
+	(table) => [
+		uniqueIndex('media_file_variant_idx').on(table.memoryId, table.variant),
+		check('media_file_size', sql`${table.size} > 0`)
 	]
 );

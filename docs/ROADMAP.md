@@ -89,10 +89,10 @@ Done when: occasions recur correctly and show their count.
 
 Goal: encrypted photos and videos attached to events. Completes the MVP.
 
-- [ ] Encrypted file format: chunked AEAD (AES-256-GCM per fixed-size segment, counter-derived nonces, authenticated header) so videos can be streamed with HTTP range requests without decrypting the whole file
+- [x] Encrypted file format: chunked AEAD (AES-256-GCM per fixed-size segment, counter-derived nonces, authenticated header) so videos can be streamed with HTTP range requests without decrypting the whole file
 - [ ] Upload pipeline: size limits, magic-byte type detection with allowlist (no SVG/HTML), random storage IDs, streaming encryption
 - [ ] Derivatives: `sharp` thumbnails and previews with `limitInputPixels`; `ffmpeg` video posters via `execFile` with timeouts; EXIF capture date extracted; EXIF GPS read in memory only to offer it as the event's coordinates (stored only if the user accepts, as the event's location), then all location metadata (EXIF GPS, XMP, video location atoms) removed losslessly from the original before encryption (`exiftool` for images, `ffmpeg -c copy` remux for video); derivatives carry no EXIF at all
-- [ ] Authenticated media route: decrypt on the fly, range support, `nosniff`, exact `Content-Type`, `Content-Disposition`
+- [x] Authenticated media route: decrypt on the fly, range support, `nosniff`, exact `Content-Type`, `Content-Disposition`
 - [ ] Attach media to events; alt text and captions
 - [ ] Albums independent of events; chronological gallery; lightbox with keyboard navigation
 - [ ] Tests: type/size rejection, path traversal attempts, tampered ciphertext rejected, files unreadable without key, no GPS/location metadata in stored originals, derivatives or downloads (JPEG, HEIC, PNG, MP4, MOV fixtures), originals not re-encoded

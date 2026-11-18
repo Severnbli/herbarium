@@ -37,7 +37,7 @@ Date-only formatting fixes the time zone to UTC to preserve the day; timed forma
 
 Events share one encrypted table with `moment`, `plan` and `occasion` kinds. The event services, schemas, date/notes modules and server-first screens are implemented. Date-only values stay `YYYY-MM-DD` strings, normalized to the first day for month/year precision. Timed events store UTC instants and an IANA time zone, plus the local start date for sorting and year filters.
 
-Media will live as encrypted files on the data volume and will be served through authenticated routes. Maps will use locally served tiles and a local gazetteer. Reminder email will use optional operator-configured SMTP. These are design commitments, not implemented services.
+Maps will use locally served tiles and a local gazetteer. Reminder email will use optional operator-configured SMTP.
 
 The deployment remains one Node application and one data volume. Runtime assets are self-hosted; user data never goes to third-party APIs. Record boundary changes in [decisions.md](decisions.md).
 
@@ -64,3 +64,7 @@ Event forms accept bounded text dates in the displayed formats, so selecting a d
 Occasions share the event table and store a single RRULE and occasion type alongside their original event dates. `listOccurrences` expands starts over an inclusive local-date range of at most 367 dates. Occurrence rows are computed on demand. The event list still shows one row per original event and filters by its original local start year. Event details show the recurrence summary and up to five occurrences in the coming year.
 
 The server accepts yearly and monthly presets, and custom daily, weekly, monthly or yearly intervals from 1 to 99. Anniversaries and birthdays use the yearly preset and count the years elapsed since the original date. Yearly February 29 occasions fall on February 28 in non-leap years. Monthly rules skip months without the original day. Timed occurrences retain local wall time and elapsed duration. DST gaps are skipped, future repeated clock times use the earlier instant and the original occurrence retains its saved instant.
+
+## Media storage
+
+The encrypted database stores memory metadata and the wrapped key for each original, preview and thumbnail. The media directory holds ciphertext files named by random IDs. [`/media/[id]/[variant]`](../src/routes/media/%5Bid%5D/%5Bvariant%5D/+server.ts) requires a fully authenticated member session and serves private `GET` and `HEAD` responses with a fixed media type and filename disposition. `GET` supports single byte ranges. The server authenticates the header and each requested segment and aborts delivery if a segment fails verification. See [key management](key-management.md) for the file format.
