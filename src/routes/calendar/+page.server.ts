@@ -7,10 +7,11 @@ import {
 	calendarToday,
 	calendarWindow
 } from '#lib/server/events/calendar.ts';
+import { getReminderPreferences } from '#lib/server/reminders/preferences.ts';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = (event) => {
-	requireUser(event);
+	const member = requireUser(event);
 	const query: Record<string, string> = Object.create(null);
 	for (const [key, value] of event.url.searchParams) {
 		if (Object.hasOwn(query, key)) error(400, 'invalid');
@@ -21,7 +22,8 @@ export const load: PageServerLoad = (event) => {
 
 	const { locale } = event.locals;
 	const { view } = parsed.data;
-	const today = calendarToday(new Date());
+	const { timeZone } = getReminderPreferences(db(), member.id);
+	const today = calendarToday(new Date(), timeZone);
 	const date = parsed.data.date ?? today;
 	const { days, first, last, previous, next, weekdays } = calendarWindow({ view, date }, locale);
 	const entries = calendarEntries(db(), first, last, locale);

@@ -15,7 +15,7 @@ Follow `.env.example` to configure a local data directory and a development mast
 
 First-run setup requires the code stored in `setup-code` inside the configured data directory. The file is removed after the first owner is created. See [deployment.md](deployment.md#first-run-setup) for the setup flow.
 
-The media pipeline and its tests use Python 3, ExifTool, FFmpeg 8 with `libx264`, ffprobe and libseccomp on Linux with Landlock ABI 3 or newer. On Ubuntu 26.04, install them with `sudo apt-get install ffmpeg libimage-exiftool-perl libseccomp2 python3`. The production image bundles its own copies.
+The media pipeline and its tests use Python 3, ExifTool, FFmpeg 8 with `libx264`, ffprobe and libseccomp on Linux with Landlock ABI 3 or newer. The SMTP integration tests use OpenSSL to generate a temporary certificate and run a relay on localhost. On Ubuntu 26.04, install the development tools with `sudo apt-get install ffmpeg libimage-exiftool-perl libseccomp2 openssl python3`. The production image bundles its media tools.
 
 ## Verification
 
@@ -66,3 +66,9 @@ The media integration tests use synthetic JPEG, PNG, HEIC, MP4 and MOV files. Th
 ## Calendar
 
 Open **Calendar** to switch between month, week and day views or jump to any date. On narrow screens, the month and week are displayed as stacked days. Use the plus button on a date to prefill a new event. Past dates default to moments and today or future dates default to plans. The kind can still be changed on the event form.
+
+## Reminders
+
+Open an event with day precision and choose the reminder times. Members use **Calendar and email preferences** under **Account** to set their time zone and opt in with their own email address. All-day reminders are scheduled relative to 09:00 in that zone. Timed events use the time zone saved on the event. An offset of one day is 24 elapsed hours, including across DST changes.
+
+Tests cover all-day and timed schedules across DST, durable claims and retries across database reopen, opt-out and event changes, and successful SMTP delivery and failure handling against a local test relay. See the [deployment guide](deployment.md#reminder-email) to configure mail for an instance.

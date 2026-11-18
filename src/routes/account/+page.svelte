@@ -46,6 +46,38 @@
 
 <h1>{m.account.title}</h1>
 
+<section aria-labelledby="reminder-preferences">
+	<h2 id="reminder-preferences">{m.reminder.preferences}</h2>
+	{@render problem('reminders')}
+	{#if !data.reminderMailAvailable}<p>{m.reminder.unavailable}</p>{/if}
+	<form method="POST" action="?/reminders">
+		<Field
+			name="timeZone"
+			label={m.event.timeZone}
+			hint={m.reminder.zoneHint}
+			value={data.reminderPreferences.timeZone}
+			error={invalidIn('reminders').has('timeZone') ? m.event.invalidField : null}
+			required
+			maxlength={100}
+		/>
+		<Field
+			name="email"
+			type="email"
+			label={m.reminder.email}
+			value={data.reminderPreferences.email}
+			error={invalidIn('reminders').has('email') ? m.event.invalidField : null}
+			autocomplete="email"
+			maxlength={254}
+		/>
+		<label class="reminder-option">
+			<input type="checkbox" name="enabled" checked={data.reminderPreferences.enabled} />
+			{m.reminder.enable}
+		</label>
+		<p>{m.reminder.privacy}</p>
+		<button>{m.reminder.savePreferences}</button>
+	</form>
+</section>
+
 <section aria-labelledby="password-title">
 	<h2 id="password-title">{m.account.passwordTitle}</h2>
 	{@render problem('password')}
@@ -164,6 +196,11 @@
 </section>
 
 <style>
+	.reminder-option {
+		display: flex;
+		gap: 0.5rem;
+		align-items: center;
+	}
 	ul {
 		padding: 0;
 		list-style: none;

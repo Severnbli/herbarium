@@ -44,6 +44,25 @@ export function messages(locale: Locale) {
 			busy: m.memory_busy({}, { locale }),
 			unavailable: m.memory_unavailable({}, { locale })
 		},
+		reminder: {
+			title: m.reminder_title({}, { locale }),
+			preferences: m.reminder_preferences({}, { locale }),
+			unavailable: m.reminder_unavailable({}, { locale }),
+			zoneHint: m.reminder_zoneHint({}, { locale }),
+			email: m.reminder_email({}, { locale }),
+			enable: m.reminder_enable({}, { locale }),
+			privacy: m.reminder_privacy({}, { locale }),
+			savePreferences: m.reminder_savePreferences({}, { locale }),
+			sharedHint: m.reminder_sharedHint({}, { locale }),
+			preciseOnly: m.reminder_preciseOnly({}, { locale }),
+			atStart: m.reminder_atStart({}, { locale }),
+			minutes15: m.reminder_minutes15({}, { locale }),
+			hour1: m.reminder_hour1({}, { locale }),
+			day1: m.reminder_day1({}, { locale }),
+			week1: m.reminder_week1({}, { locale }),
+			saveOffsets: m.reminder_saveOffsets({}, { locale }),
+			subject: m.reminder_subject({}, { locale })
+		},
 		calendar: {
 			title: m.calendar_title({}, { locale }),
 			views: m.calendar_views({}, { locale }),

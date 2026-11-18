@@ -7,6 +7,14 @@ import { z } from 'zod';
  *
  * Secrets (the master key) are kept out of error messages and are never logged.
  */
+export interface SmtpConfig {
+	host: string;
+	port: number;
+	from: string;
+	tls: 'implicit' | 'starttls';
+	auth: { user: string; pass: string };
+}
+
 export interface Config {
 	/** Public origin of the app, e.g. `https://herbarium.example.org`. */
 	origin: URL;
@@ -21,6 +29,7 @@ export interface Config {
 		maxRequestBytes: number;
 	};
 	mediaToolEnv: { PATH: string; PERL5LIB?: string };
+	smtp: SmtpConfig | null;
 	production: boolean;
 }
 
@@ -49,7 +58,12 @@ const envSchema = z.object({
 	MAX_FILE_BYTES: byteLimit(128 * MiB, GiB),
 	MAX_REQUEST_BYTES: byteLimit(129 * MiB, MAX_UPLOAD_BYTES),
 	PATH: z.string().min(1).default('/usr/local/bin:/usr/bin:/bin'),
-	PERL5LIB: z.string().optional()
+	PERL5LIB: z.string().optional(),
+	SMTP_HOST: z.hostname().max(253).optional(),
+	SMTP_PORT: z.coerce.number().int().min(1).max(65535).optional(),
+	SMTP_FROM: z.email().max(254).optional(),
+	SMTP_TLS: z.enum(['implicit', 'starttls']).optional(),
+	SMTP_CREDENTIALS_FILE: z.string().trim().min(1).optional()
 });
 
 export type Env = Record<string, string | undefined>;
@@ -89,6 +103,7 @@ export function loadConfig(env: Env, options: LoadOptions): Config {
 
 	const origin = parseOrigin(vars.ORIGIN, production, issues);
 	const masterKey = loadMasterKey(vars.MASTER_KEY, vars.MASTER_KEY_FILE, readFile, issues);
+	const smtp = loadSmtpConfig(vars, readFile, issues);
 
 	if (production && !vars.DATA_DIR) {
 		issues.push('DATA_DIR is required in production');
@@ -109,8 +124,48 @@ export function loadConfig(env: Env, options: LoadOptions): Config {
 		masterKey,
 		limits: { maxFileBytes: vars.MAX_FILE_BYTES, maxRequestBytes: vars.MAX_REQUEST_BYTES },
 		mediaToolEnv: { PATH: vars.PATH, PERL5LIB: vars.PERL5LIB },
+		smtp,
 		production
 	};
+}
+
+const smtpCredentials = z.strictObject({
+	user: z.string().min(1).max(1024),
+	pass: z.string().min(1).max(4096)
+});
+
+function loadSmtpConfig(
+	vars: z.output<typeof envSchema>,
+	readFile: (path: string) => string,
+	issues: string[]
+): SmtpConfig | null {
+	const {
+		SMTP_HOST: host,
+		SMTP_PORT: port,
+		SMTP_FROM: from,
+		SMTP_TLS: tls,
+		SMTP_CREDENTIALS_FILE: secretFile
+	} = vars;
+	if (!host && !port && !from && !tls && !secretFile) return null;
+	if (!host || !from || !secretFile) {
+		issues.push('SMTP_HOST, SMTP_FROM and SMTP_CREDENTIALS_FILE are required to enable mail');
+		return null;
+	}
+	let raw: string;
+	try {
+		raw = readFile(secretFile);
+	} catch {
+		issues.push('SMTP_CREDENTIALS_FILE could not be read');
+		return null;
+	}
+	try {
+		const auth = smtpCredentials.parse(JSON.parse(raw));
+		const mode = tls ?? (port === 465 ? 'implicit' : 'starttls');
+		return { host, port: port ?? (mode === 'implicit' ? 465 : 587), from, tls: mode, auth };
+	} catch {
+		issues.push('SMTP_CREDENTIALS_FILE must contain a JSON object with user and pass strings');
+		return null;
+	}
 }
 
 function parseOrigin(raw: string | undefined, production: boolean, issues: string[]) {

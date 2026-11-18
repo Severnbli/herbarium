@@ -117,9 +117,11 @@ test('rejects anonymous access to every route', async ({ browser }) => {
 	for (const path of [
 		'/members?/invite',
 		'/account?/changePassword',
+		'/account?/reminders',
 		'/logout',
 		'/events/new',
 		'/events/' + 'a'.repeat(22) + '?/complete',
+		'/events/' + 'a'.repeat(22) + '?/reminders',
 		'/events/' + 'a'.repeat(22) + '?/delete',
 		'/events/' + 'a'.repeat(22) + '/edit',
 		'/memories/new',
@@ -353,6 +355,51 @@ test('calendar expands occasions and creates events from a date on a phone witho
 		expect((await page.request.get('/calendar?' + query)).status()).toBe(400);
 	}
 	expect((await page.request.get('/events/new?date=2100-02-29')).status()).toBe(400);
+	await page.context().close();
+});
+
+test('members set their own email preferences and shared event reminders without JavaScript', async ({
+	browser
+}) => {
+	const page = await newPage(browser, { javaScriptEnabled: false });
+	await login(page, member.username, member.password);
+	await page.goto('/account');
+	const preferences = page.getByRole('region', { name: 'Calendar and email preferences' });
+	await expect(preferences.getByText('The owner has not configured email delivery.')).toBeVisible();
+	await preferences.getByLabel('Time zone').fill('America/New_York');
+	await preferences.getByLabel('Reminder email address').fill('synthetic.member@example.test');
+	await preferences.getByLabel('Send me email reminders').check();
+	await preferences.getByRole('button', { name: 'Save preferences' }).click();
+	await expect(page).toHaveURL('/account#reminder-preferences');
+	await expect(preferences.getByLabel('Send me email reminders')).toBeChecked();
+	await expect(preferences.getByLabel('Time zone')).toHaveValue('America/New_York');
+
+	await page.goto('/calendar?view=day&date=2100-02-28');
+	await page.getByRole('link', { name: 'Add an event on February 28, 2100' }).click();
+	await expect(page.getByLabel('Time zone', { exact: true })).toHaveValue('America/New_York');
+	await page.goto('/calendar?view=day&date=2100-02-28');
+	await page.getByRole('link', { name: 'Synthetic calendar plan' }).click();
+	const eventUrl = new URL(page.url()).pathname;
+	const reminder = page.getByRole('region', { name: 'Reminders', exact: true });
+	await reminder.getByLabel('15 minutes before').check();
+	await reminder.getByLabel('1 day before').check();
+	await reminder.getByRole('button', { name: 'Save reminder times' }).click();
+	await expect(page).toHaveURL(eventUrl + '#event-reminders');
+
+	const other = await newPage(browser, { javaScriptEnabled: false });
+	await login(other, owner.username, owner.password);
+	await other.goto(eventUrl);
+	await expect(other.getByLabel('15 minutes before')).toBeChecked();
+	await expect(other.getByLabel('1 day before')).toBeChecked();
+	await other.goto('/account');
+	await expect(other.getByLabel('Reminder email address')).toHaveValue('');
+	await expect(other.getByLabel('Send me email reminders')).not.toBeChecked();
+	const invalid = await page.request.post(eventUrl + '?/reminders', {
+		form: { unknownOffset: 'on' },
+		headers: { origin: ORIGIN }
+	});
+	expect(invalid.status()).toBe(400);
+	await other.context().close();
 	await page.context().close();
 });
 

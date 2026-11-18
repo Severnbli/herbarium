@@ -278,5 +278,22 @@
 	"calendar_jump": "Перайсці да даты",
 	"calendar_go": "Перайсці",
 	"calendar_createOn": "Дадаць падзею на {date}",
-	"calendar_empty": "На гэтую дату няма падзей."
+	"calendar_empty": "На гэтую дату няма падзей.",
+	"reminder_title": "Напаміны",
+	"reminder_preferences": "Налады календара і пошты",
+	"reminder_unavailable": "Уладальнік яшчэ не наладзіў адпраўку лістоў.",
+	"reminder_zoneHint": "Пазначце гадзінны пояс IANA, напрыклад Europe/Minsk. Ён вызначае, які дзень лічыць сённяшнім, а для падзей на ўвесь дзень напаміны адлічваюцца ад 09:00.",
+	"reminder_email": "Адрас для напамінаў",
+	"reminder_enable": "Дасылаць мне напаміны па пошце",
+	"reminder_privacy": "На гэты адрас будуць прыходзіць напаміны з назвай і датай падзеі і спасылкай, для адкрыцця якой трэба ўвайсці.",
+	"reminder_savePreferences": "Захаваць налады",
+	"reminder_sharedHint": "Гэты час дзейнічае для ўсіх удзельнікаў, якія ўключылі напаміны па пошце.",
+	"reminder_preciseOnly": "Для напамінаў трэба пазначыць дакладную дату падзеі.",
+	"reminder_atStart": "У момант пачатку",
+	"reminder_minutes15": "За 15 хвілін",
+	"reminder_hour1": "За 1 гадзіну",
+	"reminder_day1": "За 1 дзень",
+	"reminder_week1": "За 1 тыдзень",
+	"reminder_saveOffsets": "Захаваць час напамінаў",
+	"reminder_subject": "Напамін з календара"
 }

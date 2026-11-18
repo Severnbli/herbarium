@@ -75,6 +75,32 @@ environment:
 
 Never set them without a proxy in front: clients could then forge their address.
 
+## Reminder email
+
+Email delivery is off by default. To enable it, configure an authenticated SMTP relay that you operate or trust with event titles and dates. Herbarium sends each opted-in member a plain-text message with the event title, date and a link that requires sign-in. The connection to the configured relay uses TLS with certificate verification. Delivery from the relay to the recipient is governed by the relay.
+
+Write a file under `secrets/` with a JSON object containing the strings `user` and `pass`. Restrict access as for the master key secret. Add the following Compose override, substituting the relay's certificate hostname and permitted sender address:
+
+```yaml
+services:
+  herbarium:
+    environment:
+      SMTP_HOST: mail.example.org
+      SMTP_FROM: herbarium@example.org
+      SMTP_TLS: starttls
+      SMTP_CREDENTIALS_FILE: /run/secrets/smtp_credentials
+    secrets:
+      - smtp_credentials
+
+secrets:
+  smtp_credentials:
+    file: ./secrets/smtp_credentials
+```
+
+STARTTLS defaults to port 587. Set `SMTP_TLS: implicit` for implicit TLS on port 465. Use `SMTP_PORT` for a different port. For a relay using a private CA, mount the CA certificate read-only and configure Node's `NODE_EXTRA_CA_CERTS` to point at it. Once the server restarts with SMTP configured, members can opt in on **Account** and set reminder times on individual events.
+
+The scheduler queues reminders up to 14 days ahead. Reminders that were configured before their due time can be delivered up to 24 hours late, including after a restart. A failed attempt is retried only when SMTP reports a temporary rejection or the connection failed before message submission. If the server stops during delivery or the relay disconnects without confirming acceptance, the delivery is treated as attempted and stays out of the retry queue.
+
 ## Sessions and sign-in
 
 - Sessions last up to 60 days and end after 14 days without activity. Members can see their devices and sign them out on the **Account** page, or sign out everywhere.

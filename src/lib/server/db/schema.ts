@@ -1,3 +1,4 @@
+import type { ReminderOffset } from '#lib/domain/reminder.ts';
 import { sql } from 'drizzle-orm';
 import {
 	blob,
@@ -195,6 +196,57 @@ export const event = sqliteTable(
 			'event_dates',
 			sql`(${table.dateMode} = 'date' AND ${table.startDate} IS NOT NULL AND ${table.startsAt} IS NULL AND ${table.endsAt} IS NULL AND ${table.timeZone} IS NULL) OR (${table.dateMode} = 'timed' AND ${table.precision} = 'day' AND ${table.startsAt} IS NOT NULL AND ${table.timeZone} IS NOT NULL AND ${table.startDate} IS NULL AND ${table.endDate} IS NULL)`
 		)
+	]
+);
+
+export const reminderPreference = sqliteTable('reminder_preference', {
+	userId: text('user_id')
+		.primaryKey()
+		.notNull()
+		.references(() => user.id, { onDelete: 'cascade' }),
+	email: text('email').notNull(),
+	enabled: integer('enabled', { mode: 'boolean' }).notNull(),
+	timeZone: text('time_zone').notNull(),
+	/** Last request locale, used for members who follow their browser language. */
+	locale: text('locale', { enum: ['be', 'ru', 'en'] }).notNull(),
+	changedAt: timestamp('changed_at').notNull()
+});
+
+export const eventReminder = sqliteTable(
+	'event_reminder',
+	{
+		eventId: text('event_id')
+			.notNull()
+			.references(() => event.id, { onDelete: 'cascade' }),
+		minutes: integer('minutes').$type<ReminderOffset>().notNull(),
+		createdAt: createdAt()
+	},
+	(table) => [primaryKey({ columns: [table.eventId, table.minutes] })]
+);
+
+/** The queue and its receipts keep the same identity even if an offset is removed and re-added. */
+export const reminderDelivery = sqliteTable(
+	'reminder_delivery',
+	{
+		eventId: text('event_id')
+			.notNull()
+			.references(() => event.id, { onDelete: 'cascade' }),
+		userId: text('user_id')
+			.notNull()
+			.references(() => user.id, { onDelete: 'cascade' }),
+		occurrence: text('occurrence').notNull(),
+		minutes: integer('minutes').$type<ReminderOffset>().notNull(),
+		dueAt: timestamp('due_at').notNull(),
+		nextAttemptAt: timestamp('next_attempt_at').notNull(),
+		attempts: integer('attempts').notNull().default(0),
+		status: text('status', { enum: ['pending', 'claimed', 'sent', 'failed', 'uncertain'] })
+			.notNull()
+			.default('pending')
+	},
+	(table) => [
+		primaryKey({ columns: [table.eventId, table.userId, table.occurrence, table.minutes] }),
+		index('reminder_delivery_due_idx').on(table.status, table.nextAttemptAt),
+		index('reminder_delivery_user_idx').on(table.userId)
 	]
 );
 

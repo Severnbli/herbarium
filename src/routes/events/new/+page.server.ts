@@ -5,16 +5,22 @@ import { calendarDate, calendarToday } from '#lib/server/events/calendar.ts';
 import { createEvent } from '#lib/server/events/events.ts';
 import { parseEventForm } from '#lib/server/events/forms.ts';
 import { emptyEventForm, type EventForm } from '#lib/server/events/schemas.ts';
+import { getReminderPreferences } from '#lib/server/reminders/preferences.ts';
 import type { Actions, PageServerLoad } from './$types';
 export const load: PageServerLoad = (event) => {
-	requireUser(event);
+	const member = requireUser(event);
 	const query = [...event.url.searchParams];
 	if (query.length === 0) return { values: { ...emptyEventForm }, calendarDate: null };
 	const [key, value] = query[0]!;
 	const date = calendarDate.safeParse(value);
 	if (query.length !== 1 || key !== 'date' || !date.success) error(400, 'invalid');
-	const kind: EventForm['kind'] = date.data < calendarToday(new Date()) ? 'moment' : 'plan';
-	return { values: { ...emptyEventForm, kind, start: date.data }, calendarDate: date.data };
+	const { timeZone } = getReminderPreferences(db(), member.id);
+	const kind: EventForm['kind'] =
+		date.data < calendarToday(new Date(), timeZone) ? 'moment' : 'plan';
+	return {
+		values: { ...emptyEventForm, kind, start: date.data, timeZone },
+		calendarDate: date.data
+	};
 };
 export const actions: Actions = {
 	default: async (event) => {

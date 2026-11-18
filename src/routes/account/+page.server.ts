@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { updateLocale, localeSchema } from '#lib/server/auth/preferences.ts';
 import { audit } from '#lib/server/audit.ts';
 import { db, keys } from '#lib/server/app.ts';
+import { getConfig } from '#lib/server/config.ts';
 import { clearSessionCookie } from '#lib/server/auth/cookies.ts';
 import { requireUser } from '#lib/server/auth/guard.ts';
 import { confirmPassword } from '#lib/server/auth/login.ts';
@@ -26,6 +27,11 @@ import {
 	totpUri
 } from '#lib/server/auth/totp.ts';
 import { clientIp, minutesUntil, startSession } from '#lib/server/http/request.ts';
+import {
+	getReminderPreferences,
+	reminderPreferencesForm,
+	saveReminderPreferences
+} from '#lib/server/reminders/preferences.ts';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = (event) => {
@@ -33,6 +39,8 @@ export const load: PageServerLoad = (event) => {
 	const currentId = event.locals.session?.id;
 	return {
 		now: Date.now(),
+		reminderPreferences: getReminderPreferences(db(), user.id),
+		reminderMailAvailable: getConfig().smtp !== null,
 		totpEnabled: user.totpEnabled,
 		recoveryCodesLeft: user.totpEnabled ? remainingRecoveryCodes(db(), user.id) : 0,
 		sessions: listSessions(db(), user.id).map((session) => ({
@@ -99,6 +107,18 @@ function totpSetupView(secret: string, uri: string) {
 }
 
 export const actions: Actions = {
+	reminders: async (event) => {
+		const user = requireUser(event);
+		const parsed = fields.parseForm(reminderPreferencesForm, await event.request.formData());
+		if (!parsed.success)
+			return fail(400, {
+				section: 'reminders',
+				problem: 'invalid' as const,
+				fields: parsed.fields
+			});
+		saveReminderPreferences(db(), user.id, parsed.data, event.locals.locale);
+		redirect(303, '/account#reminder-preferences');
+	},
 	language: async (event) => {
 		const user = requireUser(event);
 		const parsed = fields.parseForm(localeSchema, await event.request.formData());

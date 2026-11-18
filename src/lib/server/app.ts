@@ -5,6 +5,8 @@ import { countUsers } from './auth/members.ts';
 import { ensureSetupCode, removeSetupCode } from './auth/setup.ts';
 import { pruneSessions } from './auth/session.ts';
 import { cleanOrphanMedia } from './media/cleanup.ts';
+import { startReminderScheduler } from './reminders/scheduler.ts';
+import { createReminderSender } from './reminders/smtp.ts';
 
 /**
  * Server state shared by all requests: the derived keys and the database. Set up once by the
@@ -13,6 +15,7 @@ import { cleanOrphanMedia } from './media/cleanup.ts';
 let state: { keys: Keys; db: Db; setupDone: boolean } | undefined;
 
 export function initApp(): void {
+	if (state) return;
 	// Everything the app writes (database, WAL, journal, setup code) is private to its user.
 	process.umask(0o077);
 	const config = getConfig();
@@ -31,6 +34,7 @@ export function initApp(): void {
 	}
 	pruneSessions(db);
 	state = { keys, db, setupDone };
+	if (config.smtp) startReminderScheduler(db, createReminderSender(config.smtp, config.origin));
 }
 
 function current() {

@@ -12,6 +12,11 @@ import { describeOccasion } from '#lib/server/events/occasion-labels.ts';
 import { renderNotes } from '#lib/server/events/notes.ts';
 import { listMemories } from '#lib/server/media/gallery.ts';
 import { clientIp, minutesUntil } from '#lib/server/http/request.ts';
+import {
+	getReminderOffsets,
+	reminderOffsetsForm,
+	saveReminderOffsets
+} from '#lib/server/reminders/preferences.ts';
 import type { Actions, PageServerLoad } from './$types';
 export const load: PageServerLoad = (event) => {
 	requireUser(event);
@@ -20,6 +25,7 @@ export const load: PageServerLoad = (event) => {
 		const row = findEvent(db(), id);
 		return {
 			event: row,
+			reminderOffsets: getReminderOffsets(db(), id),
 			memories: listMemories(db(), { eventId: id }),
 			dateLabel: formatEventDate(event.locals.locale, row),
 			notesHtml: renderNotes(row.notes),
@@ -38,6 +44,18 @@ export const load: PageServerLoad = (event) => {
 	}
 };
 export const actions: Actions = {
+	reminders: async (event) => {
+		requireUser(event);
+		const id = routeEventId(event.params);
+		const parsed = parseForm(reminderOffsetsForm, await event.request.formData());
+		if (!parsed.success) return fail(400, { reminderProblem: true });
+		try {
+			if (!saveReminderOffsets(db(), id, parsed.data)) return fail(400, { reminderProblem: true });
+		} catch (cause) {
+			handleEventError(cause);
+		}
+		redirect(303, `/events/${id}#event-reminders`);
+	},
 	complete: async (event) => {
 		requireUser(event);
 		const id = routeEventId(event.params);
