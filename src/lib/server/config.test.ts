@@ -169,3 +169,60 @@ describe('loadConfig', () => {
 		expect(issues).toHaveLength(3);
 	});
 });
+
+describe('SMTP config', () => {
+	const mailEnv = {
+		...prodEnv,
+		SMTP_HOST: 'mail.example.test',
+		SMTP_FROM: 'herbarium@example.test',
+		SMTP_CREDENTIALS_FILE: '/run/secrets/smtp_credentials'
+	};
+
+	it('defaults to disabled and uses authenticated STARTTLS when configured', () => {
+		expect(loadConfig(prodEnv, { production: true }).smtp).toBeNull();
+		const readFile = (path: string) => {
+			expect(path).toBe('/run/secrets/smtp_credentials');
+			return JSON.stringify({ user: 'example', pass: 'synthetic test value' });
+		};
+		expect(loadConfig(mailEnv, { production: true, readFile }).smtp).toMatchObject({
+			tls: 'starttls',
+			port: 587,
+			auth: { user: 'example', pass: 'synthetic test value' }
+		});
+		expect(
+			loadConfig({ ...mailEnv, SMTP_PORT: '465' }, { production: true, readFile }).smtp
+		).toMatchObject({ tls: 'implicit', port: 465 });
+	});
+
+	it('rejects partial settings, plaintext, and invalid secret files without exposing their contents', () => {
+		expect(
+			issuesOf(() =>
+				loadConfig(
+					{ ...prodEnv, SMTP_HOST: 'mail.example.test' },
+					{
+						production: true
+					}
+				)
+			)
+		).toEqual([expect.stringContaining('SMTP_CREDENTIALS_FILE')]);
+		expect(
+			issuesOf(() =>
+				loadConfig(
+					{ ...mailEnv, SMTP_TLS: 'off' },
+					{
+						production: true
+					}
+				)
+			)
+		).toEqual([expect.stringContaining('SMTP_TLS')]);
+		const secret = randomBytes(16).toString('hex');
+		const issues = issuesOf(() =>
+			loadConfig(mailEnv, {
+				production: true,
+				readFile: () => JSON.stringify({ pass: secret })
+			})
+		);
+		expect(issues).toEqual([expect.stringContaining('SMTP_CREDENTIALS_FILE')]);
+		expect(issues.join(' ')).not.toContain(secret);
+	});
+});

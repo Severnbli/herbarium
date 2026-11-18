@@ -3,6 +3,7 @@
 	import Field from '#lib/components/Field.svelte';
 	import Button from '#lib/components/Button.svelte';
 	import MemoryGrid from '#lib/components/MemoryGrid.svelte';
+	import { REMINDER_OFFSETS } from '#lib/domain/reminder.ts';
 	import { messages } from '#lib/i18n/index.ts';
 	import type { PageProps } from './$types';
 	let { data, form }: PageProps = $props();
@@ -59,6 +60,26 @@
 		{#if !data.canComplete}<p>{m.event.notFinished}</p>{/if}
 	</section>
 {/if}
+<section aria-labelledby="event-reminders">
+	<h2 id="event-reminders">{m.reminder.title}</h2>
+	{#if data.event.precision === 'day'}
+		<p>{m.reminder.sharedHint}</p>
+		{#if form?.reminderProblem}<p role="alert">{m.error.form}</p>{/if}
+		<form method="POST" action="?/reminders">
+			<div class="reminder-offsets">
+				{#each REMINDER_OFFSETS as { field, minutes } (field)}
+					<label>
+						<input type="checkbox" name={field} checked={data.reminderOffsets.includes(minutes)} />
+						{m.reminder[field]}
+					</label>
+				{/each}
+			</div>
+			<Button type="submit" variant="secondary">{m.reminder.saveOffsets}</Button>
+		</form>
+	{:else}
+		<p>{m.reminder.preciseOnly}</p>
+	{/if}
+</section>
 <section aria-labelledby="event-memories">
 	<h2 id="event-memories">{m.memory.title}</h2>
 	<!-- eslint-disable svelte/no-navigation-without-resolve -->
@@ -87,6 +108,17 @@
 </section>
 
 <style>
+	.reminder-offsets {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem 1rem;
+		margin-bottom: 0.75rem;
+	}
+	.reminder-offsets label {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.3rem;
+	}
 	p {
 		overflow-wrap: anywhere;
 	}

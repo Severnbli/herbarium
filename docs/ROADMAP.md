@@ -101,13 +101,13 @@ Done when: photos and videos upload, display and stream, and the media directory
 
 ## Phase 6 – Calendar
 
-- [ ] Month, week and day views over expanded events (moments, plans, occasions)
-- [ ] Locale-aware week start and formats; today indicator; navigation and jump-to-date
-- [ ] Quick create from a calendar cell
-- [ ] Reminders: per-event offsets, per-user preferences; background scheduler in the Node process that survives restarts (due reminders stored in the DB, sent at most once)
-- [ ] Email delivery via the owners' own SMTP server: optional config, TLS required, credentials as a Docker secret; emails in the recipient's locale, carrying only title, date and a link – never notes or media
-- [ ] Tests: scheduling across time zones and DST, no duplicate sends after restart, SMTP failure retries
-- [ ] Responsive layout: month view usable on a phone
+- [x] Month, week and day views over expanded events (moments, plans, occasions)
+- [x] Locale-aware week start and formats; today indicator; navigation and jump-to-date
+- [x] Quick create from a calendar cell
+- [x] Reminders: per-event offsets, per-user preferences; background scheduler in the Node process that survives restarts (due reminders stored in the DB, sent at most once)
+- [x] Email delivery via the owners' own SMTP server: optional config, TLS required, credentials as a Docker secret; emails in the recipient's locale, carrying only title, date and a link – never notes or media
+- [x] Tests: scheduling across time zones and DST, no duplicate sends after restart, SMTP failure retries
+- [x] Responsive layout: month view usable on a phone
 
 ## Phase 7 – Timeline
 

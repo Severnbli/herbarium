@@ -98,3 +98,11 @@ Use one random AES-256-GCM key per original, preview and thumbnail. A tagged hea
 Use Busboy (MIT) for bounded streaming multipart parsing and `sharp` (Apache-2.0, with LGPL-compatible libvips) for image derivatives. Some image and video readers need seekable input. A Python helper passes anonymous Linux memory files to ExifTool, FFmpeg and `sharp` so tools can seek without creating plaintext files on the data volume. Each tool process runs with Landlock, seccomp and resource limits. Uploads run one at a time to bound aggregate memory. Supported videos use H.264 or HEVC in MP4 or MOV, with an H.264/AAC derivative for browser playback.
 
 Image originals preserve compressed data, orientation, capture timestamps, color profiles and allowlisted camera settings. Video originals preserve compressed picture and audio samples, creation time and display rotation. Opaque tags, metadata tracks and supplementary video messages can carry location, so the cleaning step removes those carriers. This can discard some non-location camera or video metadata. Downloaded originals are the cleaned originals.
+
+## Reminder email and durable delivery claims
+
+Status: accepted.
+
+Use Nodemailer (MIT-0) for authenticated SMTP, certificate-verified TLS and plain-text MIME composition. Only the operator's configured relay receives connections, and its credentials come from a mounted secret file. Members opt in with an email address and time zone. A shared event can have several reminder offsets, but each delivery belongs to a single member and local event occurrence.
+
+Keep both pending deliveries and completed or ambiguous claims in SQLCipher. SMTP acceptance and a local database update cannot be atomic. Saving the claim before submission prevents a duplicate after a crash. This can omit a reminder when the process dies after claiming it or the relay disconnects after receiving the message. Retry explicit temporary rejections and known pre-submission failures. Keep claim records until the event or member is deleted so changing the same occurrence's settings cannot send the same reminder twice.

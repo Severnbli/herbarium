@@ -2,7 +2,7 @@
 
 ## Current implementation
 
-Herbarium is a SvelteKit application using Svelte 5 runes, strict TypeScript and `adapter-node`. One instance represents one shared circle. Foundation, security, the design system, three locales, moments, plans, recurring occasions and memories are implemented. Calendar and later phases remain planned in the [roadmap](ROADMAP.md).
+Herbarium is a SvelteKit application using Svelte 5 runes, strict TypeScript and `adapter-node`. One instance represents one shared circle. Foundation, security, the design system, three locales, moments, plans, recurring occasions, memories, calendar views and reminders are implemented. Later phases remain planned in the [roadmap](ROADMAP.md).
 
 | Location                   | Responsibility                                        |
 | -------------------------- | ----------------------------------------------------- |
@@ -37,7 +37,7 @@ Date-only formatting fixes the time zone to UTC to preserve the day; timed forma
 
 Events share one encrypted table with `moment`, `plan` and `occasion` kinds. The event services, schemas, date/notes modules and server-first screens are implemented. Date-only values stay `YYYY-MM-DD` strings, normalized to the first day for month/year precision. Timed events store UTC instants and an IANA time zone, plus the local start date for sorting and year filters.
 
-Maps will use locally served tiles and a local gazetteer. Reminder email will use optional operator-configured SMTP.
+Maps will use locally served tiles and a local gazetteer.
 
 The deployment remains one Node application and one data volume. Runtime assets are self-hosted; user data never goes to third-party APIs. Record boundary changes in [decisions.md](decisions.md).
 
@@ -76,3 +76,15 @@ The streaming multipart parser bounds each file and the entire request. A Linux 
 The chronological gallery uses capture dates, falling back to the UTC upload date. The event page lists its attachments and links to a filtered gallery for longer collections. The upload form can offer a photo's location for an event that has no coordinates. The suggestion is sealed, expires after 30 minutes and is bound to the uploading session and memory. Accepting it writes the coordinates directly to the event if its location is still unset.
 
 A memory can be uploaded on its own or attached to one event, and it can belong to several albums. Events and albums have independent lifecycles. Deleting an event detaches its files. Deleting an album removes its memberships. Deleting a memory removes every membership and discards its wrapped keys and files. Memory and album deletion require password confirmation and create a content-free audit entry.
+
+## Calendar
+
+The authenticated calendar uses inclusive local-date grids and expands occasions over the visible period. Timed events appear on the dates in their saved event time zone. The calendar shows each event across its span, including the latest ongoing occurrence that began before the grid. Approximate dates retain their precision label. Birthdays and anniversaries show the localized count for each occurrence. Today uses the member’s account time zone, which defaults to Europe/Minsk. Navigation and quick create use validated date links and forms rendered on the server.
+
+## Reminder scheduling
+
+Members can set shared reminder offsets on events with day precision. Each member controls their own email opt-in, address and time zone. A timed reminder uses the event's saved start instant, or the expanded start of a recurring occurrence. All-day reminders use 09:00 in the recipient's time zone. Offsets are elapsed minutes counted back from that start.
+
+When SMTP is configured, one scheduler in the Node process polls the encrypted database once a minute. It queues due times up to 14 days ahead and recovers eligible reminders that became due while the server was stopped. It rechecks the current event, offset, active membership and preference before claiming a delivery. Queued reminders remain eligible for up to 24 hours after the due time. Each event, local occurrence date, member and offset identifies one delivery. The scheduler commits the claim before contacting SMTP. Temporary explicit rejections and known pre-send failures retry with backoff. An interrupted or ambiguous submission keeps its claim so that the next process cannot submit the same reminder again.
+
+The SMTP message uses the member's saved language or the request locale recorded with their preferences. Its plain-text body contains the event title, formatted date and an authenticated event URL. The relay connection requires certificate-verified TLS. SMTP settings and credentials stay out of browser data, delivery rows and logs.
