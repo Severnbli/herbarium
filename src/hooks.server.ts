@@ -13,6 +13,7 @@ import { clearSessionCookie, sessionCookieName } from '#lib/server/auth/cookies.
 import { validateSession } from '#lib/server/auth/session.ts';
 import { ConfigError, getConfig, initConfig } from '#lib/server/config.ts';
 import { DatabaseKeyError } from '#lib/server/db/index.ts';
+import { limitFormBody } from '#lib/server/http/body-limit.ts';
 import { isPublicPath, MFA_PATHS, securityHeaders } from '#lib/server/http/security.ts';
 
 export const init: ServerInit = () => {
@@ -92,7 +93,7 @@ const headers: Handle = async ({ event, resolve }) => {
 	return response;
 };
 
-export const handle = sequence(headers, authenticate, locale, guard);
+export const handle = sequence(headers, authenticate, locale, guard, limitFormBody);
 
 /**
  * Only unexpected errors reach the log, with a reference id shown on the error page. The response

@@ -15,6 +15,8 @@ Follow `.env.example` to configure a local data directory and a development mast
 
 First-run setup requires the code stored in `setup-code` inside the configured data directory. The file is removed after the first owner is created. See [deployment.md](deployment.md#first-run-setup) for the setup flow.
 
+The media pipeline and its tests use Python 3, ExifTool, FFmpeg 8 with `libx264`, ffprobe and libseccomp on Linux with Landlock ABI 3 or newer. On Ubuntu 26.04, install them with `sudo apt-get install ffmpeg libimage-exiftool-perl libseccomp2 python3`. The production image bundles its own copies.
+
 ## Verification
 
 Before committing, run:

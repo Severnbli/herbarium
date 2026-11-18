@@ -20,6 +20,7 @@ export interface Config {
 		/** Maximum size of one upload request in bytes. */
 		maxRequestBytes: number;
 	};
+	mediaToolEnv: { PATH: string; PERL5LIB?: string };
 	production: boolean;
 }
 
@@ -33,24 +34,22 @@ export class ConfigError extends Error {
 const MASTER_KEY_BYTES = 32;
 const MiB = 1024 * 1024;
 const GiB = 1024 * MiB;
+const MAX_UPLOAD_BYTES = GiB + MiB;
 
 const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
 
-const byteLimit = (fallback: number) =>
-	z.coerce
-		.number()
-		.int()
-		.positive()
-		.max(64 * GiB)
-		.default(fallback);
+const byteLimit = (fallback: number, maximum: number) =>
+	z.coerce.number().int().positive().max(maximum).default(fallback);
 
 const envSchema = z.object({
 	ORIGIN: z.string().trim().optional(),
 	DATA_DIR: z.string().trim().min(1).optional(),
 	MASTER_KEY: z.string().trim().optional(),
 	MASTER_KEY_FILE: z.string().trim().optional(),
-	MAX_FILE_BYTES: byteLimit(GiB),
-	MAX_REQUEST_BYTES: byteLimit(2 * GiB)
+	MAX_FILE_BYTES: byteLimit(128 * MiB, GiB),
+	MAX_REQUEST_BYTES: byteLimit(129 * MiB, MAX_UPLOAD_BYTES),
+	PATH: z.string().min(1).default('/usr/local/bin:/usr/bin:/bin'),
+	PERL5LIB: z.string().optional()
 });
 
 export type Env = Record<string, string | undefined>;
@@ -109,6 +108,7 @@ export function loadConfig(env: Env, options: LoadOptions): Config {
 		dataDir,
 		masterKey,
 		limits: { maxFileBytes: vars.MAX_FILE_BYTES, maxRequestBytes: vars.MAX_REQUEST_BYTES },
+		mediaToolEnv: { PATH: vars.PATH, PERL5LIB: vars.PERL5LIB },
 		production
 	};
 }

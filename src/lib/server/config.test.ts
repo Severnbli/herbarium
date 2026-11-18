@@ -27,7 +27,7 @@ describe('loadConfig', () => {
 		expect(config.origin.href).toBe('https://herbarium.example.org/');
 		expect(config.dataDir).toBe('/data');
 		expect(config.masterKey).toEqual(Buffer.from(keyBase64, 'base64'));
-		expect(config.limits.maxFileBytes).toBe(1024 ** 3);
+		expect(config.limits.maxFileBytes).toBe(128 * 1024 ** 2);
 		expect(config.production).toBe(true);
 	});
 

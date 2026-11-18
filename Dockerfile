@@ -13,7 +13,8 @@ RUN npm run build && npm prune --omit=dev
 FROM node:24-alpine AS runtime
 
 # The package managers are not needed at runtime; removing them shrinks the attack surface.
-RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack \
+RUN apk add --no-cache exiftool ffmpeg libseccomp python3 \
+	&& rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack \
 	/usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack /opt/yarn* \
 	/usr/local/bin/yarn /usr/local/bin/yarnpkg \
 	&& mkdir -m 700 /data && chown node:node /data
@@ -21,6 +22,7 @@ RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack 
 ENV NODE_ENV=production \
 	HOST=0.0.0.0 \
 	PORT=3000 \
+	BODY_SIZE_LIMIT=1025M \
 	DATA_DIR=/data
 
 WORKDIR /app

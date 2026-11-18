@@ -31,7 +31,7 @@ export async function storeMediaFile(
 	bytes: AsyncIterable<Uint8Array> | Iterable<Uint8Array>
 ): Promise<{ id: string; size: number; wrappedKey: Buffer }> {
 	const dir = join(dataDir, 'media');
-	await mkdir(dir, { recursive: true, mode: 0o700 });
+	const created = await mkdir(dir, { recursive: true, mode: 0o700 });
 	const id = generateId();
 	const dataKey = generateDataKey();
 	const wrappedKey = wrapDataKey(wrappingKey, dataKey, `media:${id}`);
@@ -43,12 +43,8 @@ export async function storeMediaFile(
 		} finally {
 			await file.close();
 		}
-		const directory = await open(dir, constants.O_RDONLY | constants.O_DIRECTORY);
-		try {
-			await directory.sync();
-		} finally {
-			await directory.close();
-		}
+		await syncDirectory(dir);
+		if (created) await syncDirectory(dataDir);
 	} catch (cause) {
 		await removeMediaFile(dataDir, id);
 		throw cause;
@@ -56,4 +52,13 @@ export async function storeMediaFile(
 		dataKey.fill(0);
 	}
 	return { id, size, wrappedKey };
+}
+
+async function syncDirectory(path: string) {
+	const directory = await open(path, constants.O_RDONLY | constants.O_DIRECTORY);
+	try {
+		await directory.sync();
+	} finally {
+		await directory.close();
+	}
 }

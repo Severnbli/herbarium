@@ -61,7 +61,7 @@ npm run start        # run the production build (node build)
 npm run check        # svelte-check + TypeScript, warnings fail
 npm run lint         # prettier --check + eslint
 npm run format       # prettier --write
-npm run test         # vitest unit tests (src/**/*.test.ts)
+npm run test         # Vitest unit and media integration tests (src/**/*.test.ts)
 npm run test:e2e     # Playwright (tests/e2e/*.e2e.ts) against a production build
 npm run i18n:compile # compile typed messages from messages/{be,ru,en}.json
 npm run db:generate  # SQL migration from schema changes (drizzle-kit); the app applies migrations on startup
@@ -69,6 +69,8 @@ docker compose up    # local container; needs secrets/master_key, see docs/deplo
 ```
 
 CI (`.github/workflows/ci.yml`) runs audit, check, lint, unit and e2e tests in the `verify` job, then builds the image in the `docker` job and pushes it to Docker Hub (`severnbli/herbarium`) on pushes to `main`, `dev` and `v*` tags.
+
+Media processing and tests use native tools. See [local setup](docs/development.md#local-setup) for the Linux requirements.
 
 ## Architecture principles
 
