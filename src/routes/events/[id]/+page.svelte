@@ -17,6 +17,21 @@
 		: ''}
 </p>
 <p>{data.dateLabel}{data.event.timeZone ? ` (${data.event.timeZone})` : ''}</p>
+{#if data.recurrence}
+	<p>{m.event.recurrence}: {data.recurrence.summary}</p>
+	<section aria-labelledby="upcoming-title">
+		<h2 id="upcoming-title">{m.event.upcoming}</h2>
+		{#if data.recurrence.upcoming.length}
+			<ul>
+				{#each data.recurrence.upcoming as occurrence (occurrence.date)}
+					<li>{occurrence.date}{occurrence.label ? ` · ${occurrence.label}` : ''}</li>
+				{/each}
+			</ul>
+		{:else}
+			<p>{m.event.noneUpcoming}</p>
+		{/if}
+	</section>
+{/if}
 {#if data.event.place}<p>{data.event.place}</p>{/if}
 {#if data.event.lat !== null && data.event.lon !== null}<p>
 		{m.event.lat}: {data.event.lat}, {m.event.lon}: {data.event.lon}

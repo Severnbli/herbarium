@@ -8,6 +8,7 @@ import { confirmPassword } from '#lib/server/auth/login.ts';
 import { currentPassword, parseForm } from '#lib/server/auth/schemas.ts';
 import { EventError, completePlan, deleteEvent, findEvent } from '#lib/server/events/events.ts';
 import { handleEventError, routeEventId } from '#lib/server/events/forms.ts';
+import { describeOccasion } from '#lib/server/events/occasion-labels.ts';
 import { renderNotes } from '#lib/server/events/notes.ts';
 import { clientIp, minutesUntil } from '#lib/server/http/request.ts';
 import type { Actions, PageServerLoad } from './$types';
@@ -20,6 +21,14 @@ export const load: PageServerLoad = (event) => {
 			event: row,
 			dateLabel: formatEventDate(event.locals.locale, row),
 			notesHtml: renderNotes(row.notes),
+			recurrence:
+				row.recurrenceRule && row.occasionType
+					? describeOccasion(event.locals.locale, {
+							...row,
+							recurrenceRule: row.recurrenceRule,
+							occasionType: row.occasionType
+						})
+					: null,
 			canComplete: row.kind === 'plan' && hasHappened(row)
 		};
 	} catch (cause) {

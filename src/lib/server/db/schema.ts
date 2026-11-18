@@ -141,7 +141,7 @@ export const auditLog = sqliteTable(
 	(table) => [index('audit_log_created_idx').on(table.createdAt)]
 );
 
-/** Moments, plans and (from phase 4) recurring occasions share their identity. */
+/** Moments, plans and recurring occasions share their identity. */
 export const event = sqliteTable(
 	'event',
 	{
@@ -164,6 +164,8 @@ export const event = sqliteTable(
 		timeZone: text('time_zone'),
 		/** Local calendar date, also for timed events, for stable sorting and year filters. */
 		sortDate: text('sort_date').notNull(),
+		recurrenceRule: text('recurrence_rule'),
+		occasionType: text('occasion_type', { enum: ['general', 'anniversary', 'birthday'] }),
 		createdBy: text('created_by')
 			.notNull()
 			.references(() => user.id),

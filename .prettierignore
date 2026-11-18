@@ -22,3 +22,6 @@ bun.lockb
 /src/lib/i18n/paraglide
 /project.inlang/cache
 /project.inlang/local*
+
+# Vendored MIT dependencies
+/vendor/picomatch/
