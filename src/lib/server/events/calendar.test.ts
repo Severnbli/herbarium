@@ -34,6 +34,7 @@ it('keeps event-local clock dates, exclusive timed ends and ongoing recurring sp
 			...emptyEventForm,
 			title: 'Leap-day celebration',
 			kind: 'occasion',
+			occasionType: 'anniversary',
 			start: '2000-02-29',
 			end: '2000-03-02'
 		});
@@ -42,7 +43,12 @@ it('keeps event-local clock dates, exclusive timed ends and ongoing recurring sp
 			expect.objectContaining({ id: timed, date: '2024-01-01', end: '2024-01-01' })
 		]);
 		expect(calendarEntries(db, '2025-03-01', '2025-03-01', 'en')).toEqual([
-			expect.objectContaining({ id: occasion, date: '2025-02-28', end: '2025-03-02' })
+			expect.objectContaining({
+				id: occasion,
+				date: '2025-02-28',
+				end: '2025-03-02',
+				occasionCount: '25th anniversary'
+			})
 		]);
 	} finally {
 		fixture.cleanup();

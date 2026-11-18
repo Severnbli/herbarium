@@ -9,6 +9,19 @@ export function anniversarySuffix(locale: Locale, count: number) {
 	return ordinal === 'one' ? 'st' : ordinal === 'two' ? 'nd' : ordinal === 'few' ? 'rd' : 'th';
 }
 
+export function occasionCountLabel(
+	locale: Locale,
+	type: RecurringEvent['occasionType'],
+	count: number
+) {
+	if (type === 'general' || (type === 'anniversary' && count === 0)) return null;
+	const m = messages(locale).event;
+	const number = new Intl.NumberFormat(locale).format(count);
+	return type === 'birthday'
+		? m.birthdayAge(number)
+		: m.anniversaryCount(number, anniversarySuffix(locale, count));
+}
+
 export function describeOccasion(locale: Locale, event: RecurringEvent, now = new Date()) {
 	const m = messages(locale).event;
 	const { frequency, interval } = readRecurrence(event.recurrenceRule);
@@ -33,17 +46,9 @@ export function describeOccasion(locale: Locale, event: RecurringEvent, now = ne
 	const upcoming = expandOccasion(event, today.toString(), through.toString())
 		.filter(({ value }) => (value.endsAt ?? value.startsAt ?? now) >= now)
 		.slice(0, 5)
-		.map(({ value, count }) => {
-			const number = new Intl.NumberFormat(locale).format(count);
-			return {
-				date: formatEventDate(locale, value),
-				label:
-					event.occasionType === 'birthday'
-						? m.birthdayAge(number)
-						: event.occasionType === 'anniversary' && count > 0
-							? m.anniversaryCount(number, anniversarySuffix(locale, count))
-							: null
-			};
-		});
+		.map(({ value, count }) => ({
+			date: formatEventDate(locale, value),
+			label: occasionCountLabel(locale, event.occasionType, count)
+		}));
 	return { summary, upcoming };
 }

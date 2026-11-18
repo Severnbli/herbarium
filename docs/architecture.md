@@ -79,7 +79,7 @@ A memory can be uploaded on its own or attached to one event, and it can belong 
 
 ## Calendar
 
-The authenticated calendar uses inclusive local-date grids and expands occasions over the visible period. Timed events appear on the dates in their saved event time zone. The calendar shows each event across its span, including the latest ongoing occurrence that began before the grid. Approximate dates retain their precision label. Today uses the member’s account time zone, which defaults to Europe/Minsk. Navigation and quick create use validated date links and forms rendered on the server.
+The authenticated calendar uses inclusive local-date grids and expands occasions over the visible period. Timed events appear on the dates in their saved event time zone. The calendar shows each event across its span, including the latest ongoing occurrence that began before the grid. Approximate dates retain their precision label. Birthdays and anniversaries show the localized count for each occurrence. Today uses the member’s account time zone, which defaults to Europe/Minsk. Navigation and quick create use validated date links and forms rendered on the server.
 
 ## Reminder scheduling
 

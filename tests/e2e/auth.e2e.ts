@@ -318,13 +318,15 @@ test('calendar expands occasions and creates events from a date on a phone witho
 	await page.getByLabel('Event kind').selectOption('occasion');
 	await page.getByLabel('Title', { exact: true }).fill('Synthetic calendar anniversary');
 	await page.getByLabel('Start', { exact: true }).fill('2000-02-29');
+	await page.getByText('For occasions', { exact: true }).click();
+	await page.getByLabel('Occasion type').selectOption('anniversary');
 	await page.getByRole('button', { name: 'Save event', exact: true }).click();
 
 	await page.goto('/calendar?date=2100-02-01');
 	const leapFallback = page.getByRole('region', { name: 'February 28, 2100' });
 	await expect(
 		leapFallback.getByRole('link', { name: 'Synthetic calendar anniversary' })
-	).toBeVisible();
+	).toContainText('100th anniversary');
 	expect(await page.locator('body').evaluate((body) => body.scrollWidth)).toBeLessThanOrEqual(360);
 	await leapFallback.getByRole('link', { name: 'Add an event on February 28, 2100' }).click();
 	await expect(page.getByLabel('Start', { exact: true })).toHaveValue('2100-02-28');

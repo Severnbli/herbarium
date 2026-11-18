@@ -88,8 +88,8 @@
 										<span class="entry-detail">{entry.time}</span>
 									{/if}
 									{entry.title}
-									{#if entry.precision !== 'day'}
-										<span class="entry-detail">{entry.label}</span>
+									{#if entry.label || entry.occasionCount}
+										<span class="entry-detail">{entry.label ?? entry.occasionCount}</span>
 									{/if}
 								</a>
 							</li>

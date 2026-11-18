@@ -11,6 +11,7 @@ import { weekStartsOn } from '#lib/i18n/format.ts';
 import type { Locale } from '#lib/i18n/index.ts';
 import type { Db } from '../db/index.ts';
 import { event } from '../db/schema.ts';
+import { occasionCountLabel } from './occasion-labels.ts';
 import { expandOccasion } from './recurrence.ts';
 
 export const CALENDAR_VIEWS = ['month', 'week', 'day'] as const;
@@ -94,7 +95,9 @@ function lastCalendarDate(value: EventDate, start: string) {
 	if (value.endDate) return value.endDate.startsWith('+') ? LAST_DATE : value.endDate;
 	if (value.endsAt) {
 		const localEnd = instantToLocal(new Date(value.endsAt.getTime() - 1), value.timeZone!);
-		return localEnd.startsWith('+') ? LAST_DATE : localEnd.slice(0, 10);
+		if (localEnd.startsWith('+')) return LAST_DATE;
+		const date = localEnd.slice(0, 10);
+		return date < start ? start : date;
 	}
 	return start;
 }
@@ -134,14 +137,18 @@ export function calendarEntries(db: Db, first: string, last: string, locale: Loc
 		.all();
 
 	const entries = rows.flatMap((row) => {
-		const entry = (date: string, value: EventDate) => ({
+		const entry = (date: string, value: EventDate, count?: number) => ({
 			id: row.id,
 			title: row.title,
 			kind: row.kind,
 			precision: row.precision,
 			date,
 			end: lastCalendarDate(value, date),
-			label: formatEventDate(locale, value),
+			label: value.precision !== 'day' ? formatEventDate(locale, value) : null,
+			occasionCount:
+				count === undefined
+					? null
+					: occasionCountLabel(locale, row.occasionType ?? 'general', count),
 			time: value.startsAt
 				? new Intl.DateTimeFormat(locale, {
 						timeStyle: 'short',
@@ -183,7 +190,7 @@ export function calendarEntries(db: Db, first: string, last: string, locale: Loc
 			}
 			through = from.subtract({ days: 1 });
 		}
-		return occurrences.map(({ date, value }) => entry(date, value));
+		return occurrences.map(({ date, value, count }) => entry(date, value, count));
 	});
 	return entries.sort(
 		(a, b) =>
