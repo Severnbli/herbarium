@@ -327,6 +327,9 @@ test('calendar expands occasions and creates events from a date on a phone witho
 	await expect(
 		leapFallback.getByRole('link', { name: 'Synthetic calendar anniversary' })
 	).toContainText('100th anniversary');
+	const firstDay = await page.getByRole('region', { name: 'February 1, 2100' }).boundingBox();
+	const secondDay = await page.getByRole('region', { name: 'February 2, 2100' }).boundingBox();
+	expect(secondDay!.y - (firstDay!.y + firstDay!.height)).toBeLessThanOrEqual(2);
 	expect(await page.locator('body').evaluate((body) => body.scrollWidth)).toBeLessThanOrEqual(360);
 	await leapFallback.getByRole('link', { name: 'Add an event on February 28, 2100' }).click();
 	await expect(page.getByLabel('Start', { exact: true })).toHaveValue('2100-02-28');

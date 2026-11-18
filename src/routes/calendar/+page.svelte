@@ -167,6 +167,8 @@
 		background: var(--linen);
 	}
 	.cell {
+		margin: 0;
+		border: 0;
 		min-height: 6rem;
 		min-width: 0;
 	}
