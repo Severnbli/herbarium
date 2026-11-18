@@ -4,6 +4,7 @@
 FROM node:24-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json .npmrc ./
+COPY vendor/picomatch ./vendor/picomatch
 RUN npm ci
 COPY . .
 RUN npm run build && npm prune --omit=dev
