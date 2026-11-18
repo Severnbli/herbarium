@@ -1,7 +1,10 @@
-import { readFileSync } from 'node:fs';
+import { execFile } from 'node:child_process';
+import { mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { promisify } from 'node:util';
 import { expect, test, type Browser, type Page } from '@playwright/test';
 import { Secret, TOTP } from 'otpauth';
+import sharp from 'sharp';
 
 /**
  * The security core end to end, against a production build with a fresh encrypted data dir.
@@ -13,6 +16,8 @@ const dataDir = process.env.E2E_DATA_DIR as string;
 const ORIGIN = 'http://localhost:4173';
 const owner = { username: 'alice', name: 'Alice', password: 'alice has a long password' };
 const member = { username: 'bob', name: 'Bob', password: 'bob has a long password too' };
+const id = 'a'.repeat(22);
+const run = promisify(execFile);
 const PROTECTED = [
 	'/',
 	'/members',
@@ -20,7 +25,12 @@ const PROTECTED = [
 	'/events',
 	'/events/new',
 	'/events/' + 'a'.repeat(22),
-	'/events/' + 'a'.repeat(22) + '/edit'
+	'/events/' + 'a'.repeat(22) + '/edit',
+	'/memories',
+	'/memories/new',
+	`/memories/${id}`,
+	`/memories/albums/${id}`,
+	`/media/${id}/original`
 ];
 
 let recoveryCodes: string[] = [];
@@ -110,7 +120,15 @@ test('rejects anonymous access to every route', async ({ browser }) => {
 		'/events/new',
 		'/events/' + 'a'.repeat(22) + '?/complete',
 		'/events/' + 'a'.repeat(22) + '?/delete',
-		'/events/' + 'a'.repeat(22) + '/edit'
+		'/events/' + 'a'.repeat(22) + '/edit',
+		'/memories/new',
+		'/memories?/createAlbum',
+		`/memories/${id}?/description`,
+		`/memories/${id}?/album`,
+		`/memories/${id}?/coordinates`,
+		`/memories/${id}?/delete`,
+		`/memories/albums/${id}?/rename`,
+		`/memories/albums/${id}?/delete`
 	]) {
 		const response = await page.request.post(path, {
 			headers: { origin: ORIGIN },
@@ -146,6 +164,14 @@ test('sends security headers and a strict CSP', async ({ request }) => {
 	expect(headers['x-content-type-options']).toBe('nosniff');
 	expect(headers['permissions-policy']).toContain('camera=()');
 	expect(headers['cache-control']).toBe('no-store');
+});
+
+test('keeps the small request limit on sign-in forms', async ({ request }) => {
+	const response = await request.post('/login', {
+		headers: { origin: ORIGIN },
+		form: { username: 'synthetic', password: 'x'.repeat(513 * 1024) }
+	});
+	expect(response.status()).toBe(413);
 });
 
 test('login works without JavaScript and fails generically', async ({ browser }) => {
@@ -359,6 +385,148 @@ test('event screens render in three languages and both themes on a phone', async
 		}
 		await context.close();
 	}
+});
+
+test('uploads private memories, browses them by keyboard and manages independent albums', async ({
+	browser
+}, testInfo) => {
+	mkdirSync(testInfo.outputDir, { recursive: true });
+	const photo = testInfo.outputPath('synthetic-photo.jpg');
+	const video = testInfo.outputPath('synthetic-video.mp4');
+	await sharp({ create: { width: 64, height: 48, channels: 3, background: '#b87468' } })
+		.jpeg()
+		.toFile(photo);
+	await run('exiftool', [
+		'-overwrite_original',
+		'-GPSLatitude=12.34',
+		'-GPSLatitudeRef=N',
+		'-GPSLongitude=56.78',
+		'-GPSLongitudeRef=E',
+		'-DateTimeOriginal=2020:02:03 12:34:56',
+		photo
+	]);
+	await run('ffmpeg', [
+		'-v',
+		'error',
+		'-f',
+		'lavfi',
+		'-i',
+		'color=c=blue:s=64x48:r=10',
+		'-t',
+		'0.5',
+		'-c:v',
+		'libx264',
+		'-threads',
+		'1',
+		'-metadata',
+		'creation_time=2021-02-03T12:34:56Z',
+		video
+	]);
+
+	const offline = await newPage(browser, { javaScriptEnabled: false });
+	await login(offline, member.username, member.password);
+	await offline.goto('/events/new');
+	await offline.getByLabel('Title', { exact: true }).fill('Synthetic collection');
+	await offline.getByLabel('Start', { exact: true }).fill('2020-02-03');
+	await offline.getByRole('button', { name: 'Save event', exact: true }).click();
+	await expect(offline).toHaveURL(/\/events\/[\w-]{22}$/);
+	const eventUrl = offline.url();
+	await offline.getByRole('link', { name: 'Add a memory' }).click();
+	await offline.getByLabel('Photo or video').setInputFiles(photo);
+	await offline.getByLabel('Alt text').fill('A rose-coloured swatch');
+	await offline.getByLabel('Caption').fill('Winter swatch');
+	await offline.getByRole('button', { name: 'Upload', exact: true }).click();
+	await expect(offline.getByRole('heading', { name: 'Use the photo’s location?' })).toBeVisible();
+	const eventBefore = await offline.request.get(eventUrl);
+	expect(await eventBefore.text()).not.toContain('Latitude: 12.34');
+	await offline.getByRole('button', { name: 'Use coordinates' }).click();
+	await expect(offline).toHaveURL(eventUrl);
+	await expect(offline.getByText('Latitude: 12.34, Longitude: 56.78')).toBeVisible();
+	await offline.getByRole('link', { name: /Winter swatch/ }).click();
+	await expect(offline.getByRole('img', { name: 'A rose-coloured swatch' })).toBeVisible();
+	const photoUrl = offline.url();
+	const downloadUrl = await offline
+		.getByRole('link', { name: 'Download original' })
+		.getAttribute('href');
+	const download = await offline.request.get(downloadUrl!);
+	expect(download.headers()['content-disposition']).toContain('attachment');
+	expect(download.headers()['content-type']).toBe('image/jpeg');
+	expect((await download.body()).equals(readFileSync(photo))).toBe(false);
+
+	await offline.goto('/memories');
+	await offline.getByLabel('Album name').fill('Synthetic album');
+	await offline.getByRole('button', { name: 'Create album' }).click();
+	await expect(offline.getByRole('heading', { name: 'Synthetic album' })).toBeVisible();
+	const albumUrl = offline.url();
+	await offline.goto(photoUrl);
+	await offline.getByLabel('Album name').selectOption({ label: 'Synthetic album' });
+	await offline.getByRole('button', { name: 'Add to album' }).click();
+	await offline.getByRole('link', { name: 'Synthetic album' }).click();
+	await expect(offline).toHaveURL(albumUrl);
+	await expect(offline.getByRole('link', { name: /Winter swatch/ })).toBeVisible();
+
+	await offline.goto('/memories/new');
+	const rejected = await offline.request.post('/memories/new', {
+		headers: { origin: ORIGIN },
+		multipart: {
+			altText: '',
+			caption: '',
+			file: { name: 'oversized.jpg', mimeType: 'image/jpeg', buffer: Buffer.alloc(1048577) }
+		}
+	});
+	expect(rejected.status()).toBe(413);
+	await offline.getByLabel('Photo or video').setInputFiles(video);
+	await offline.getByLabel('Caption').fill('Spring clip');
+	await offline.getByRole('button', { name: 'Upload', exact: true }).click();
+	await expect(offline.getByRole('heading', { name: 'synthetic-video.mp4' })).toBeVisible();
+	const preview = (await offline.locator('video').getAttribute('src'))!;
+	const ranged = await offline.request.get(preview, { headers: { range: 'bytes=0-7' } });
+	expect(ranged.status()).toBe(206);
+	expect(ranged.headers()['content-range']).toMatch(/^bytes 0-7\/\d+$/);
+	expect(ranged.headers()['content-type']).toBe('video/mp4');
+	expect(ranged.headers()['cache-control']).toContain('no-store');
+	expect((await ranged.body()).length).toBe(8);
+
+	const other = await newPage(browser);
+	await login(other, owner.username, owner.password);
+	await other.goto('/memories');
+	await expect(other.locator('li a').filter({ hasText: /Spring clip|Winter swatch/ })).toHaveText([
+		/Spring clip/,
+		/Winter swatch/
+	]);
+	const clip = other.getByRole('link', { name: /Spring clip/ });
+	await clip.focus();
+	await other.keyboard.press('Enter');
+	await expect(other.getByRole('dialog', { name: 'Spring clip' })).toBeVisible();
+	await other.keyboard.press('ArrowRight');
+	await expect(other.getByRole('dialog', { name: 'Winter swatch' })).toBeVisible();
+	await other.keyboard.press('Escape');
+	await expect(other.getByRole('dialog')).toHaveCount(0);
+	await expect(clip).toBeFocused();
+
+	await offline.goto(eventUrl);
+	await offline.getByLabel('Current password').fill(member.password);
+	await offline.getByRole('button', { name: 'Delete event', exact: true }).click();
+	await expect(offline).toHaveURL('/events');
+	await offline.goto(albumUrl);
+	await expect(offline.getByRole('link', { name: /Winter swatch/ })).toBeVisible();
+	await offline
+		.locator('summary')
+		.filter({ hasText: /^Delete album$/ })
+		.click();
+	await offline.getByLabel('Current password').fill(member.password);
+	await offline.getByRole('button', { name: 'Delete album', exact: true }).click();
+	await expect(offline).toHaveURL('/memories');
+	await expect(offline.getByRole('link', { name: /Winter swatch/ })).toBeVisible();
+	await offline.goto(photoUrl);
+	await offline
+		.locator('summary')
+		.filter({ hasText: /^Delete memory$/ })
+		.click();
+	await offline.getByLabel('Current password').fill(member.password);
+	await offline.getByRole('button', { name: 'Delete memory', exact: true }).click();
+	await expect(offline).toHaveURL('/memories');
+	expect((await offline.request.get(downloadUrl!)).status()).toBe(404);
 });
 
 test('a revoked invite cannot be used', async ({ browser }) => {

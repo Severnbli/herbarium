@@ -8,7 +8,7 @@ This file is the source of truth for project context and instructions. Keep shar
 
 **Herbarium** is a self-hosted shared calendar for a small circle of people – a couple, a family, close friends. It preserves their shared history, organizes their present and plans their future. It should feel like a personal botanical chronicle or an enchanted herbarium – a place where memories are collected, pressed, preserved and allowed to grow.
 
-Status: phases 0 (foundation), 1 (security core), 2 (design system and i18n), 3 (moments and plans) and 4 (occasions and recurrence) are in place. When you add tooling, update the **Commands** section so it always matches reality.
+Status: phases 0 (foundation), 1 (security core), 2 (design system and i18n), 3 (moments and plans), 4 (occasions and recurrence) and 5 (memories) are in place. When you add tooling, update the **Commands** section so it always matches reality.
 
 The development plan lives in `docs/ROADMAP.md`. Work phase by phase, and tick off items there as they are completed.
 
@@ -61,7 +61,7 @@ npm run start        # run the production build (node build)
 npm run check        # svelte-check + TypeScript, warnings fail
 npm run lint         # prettier --check + eslint
 npm run format       # prettier --write
-npm run test         # vitest unit tests (src/**/*.test.ts)
+npm run test         # Vitest unit and media integration tests (src/**/*.test.ts)
 npm run test:e2e     # Playwright (tests/e2e/*.e2e.ts) against a production build
 npm run i18n:compile # compile typed messages from messages/{be,ru,en}.json
 npm run db:generate  # SQL migration from schema changes (drizzle-kit); the app applies migrations on startup
@@ -69,6 +69,8 @@ docker compose up    # local container; needs secrets/master_key, see docs/deplo
 ```
 
 CI (`.github/workflows/ci.yml`) runs audit, check, lint, unit and e2e tests in the `verify` job, then builds the image in the `docker` job and pushes it to Docker Hub (`severnbli/herbarium`) on pushes to `main`, `dev` and `v*` tags.
+
+Media processing and tests use native tools. See [local setup](docs/development.md#local-setup) for the Linux requirements.
 
 ## Architecture principles
 

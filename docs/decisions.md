@@ -88,3 +88,13 @@ Status: accepted.
 CVE-2026-112366 affects Picomatch through version 4.0.7, and the advisory lists no fixed release. Vite, Vitest, Svelte Check and Paraglide bring it into the development dependency tree. Use a local MIT-licensed fork of 4.0.7 for those tools until a fixed upstream release is available. The fork rejects repeated extglobs before producing their regular expressions. Ordinary wildcards, brace alternatives and non-repeating extglobs remain available.
 
 The override resolves to the tracked source under `vendor/picomatch`, which GitHub Actions and Docker both install with `npm ci`. The fork is development-only. Keep the full audit at its existing severity threshold. npm identifies the fork separately, so maintainers must track upstream Picomatch advisories while the override is present. After a patched upstream version is available, remove the local dependency and override, regenerate the lockfile and verify the full audit, tests and Docker build.
+
+## Media processing and encrypted files
+
+Status: accepted.
+
+Use one random AES-256-GCM key per original, preview and thumbnail. A tagged header and 256 KiB authenticated segments let the server verify and return only the bytes requested by a browser. Wrap file keys in SQLite and keep ciphertext on the data volume. Write and sync the files before publishing their rows in one transaction. A restart can reclaim encrypted files left outside that transaction.
+
+Use Busboy (MIT) for bounded streaming multipart parsing and `sharp` (Apache-2.0, with LGPL-compatible libvips) for image derivatives. Some image and video readers need seekable input. A Python helper passes anonymous Linux memory files to ExifTool, FFmpeg and `sharp` so tools can seek without creating plaintext files on the data volume. Each tool process runs with Landlock, seccomp and resource limits. Uploads run one at a time to bound aggregate memory. Supported videos use H.264 or HEVC in MP4 or MOV, with an H.264/AAC derivative for browser playback.
+
+Image originals preserve compressed data, orientation, capture timestamps, color profiles and allowlisted camera settings. Video originals preserve compressed picture and audio samples, creation time and display rotation. Opaque tags, metadata tracks and supplementary video messages can carry location, so the cleaning step removes those carriers. This can discard some non-location camera or video metadata. Downloaded originals are the cleaned originals.

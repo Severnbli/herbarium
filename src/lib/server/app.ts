@@ -4,6 +4,7 @@ import { initDatabase, type Db } from './db/index.ts';
 import { countUsers } from './auth/members.ts';
 import { ensureSetupCode, removeSetupCode } from './auth/setup.ts';
 import { pruneSessions } from './auth/session.ts';
+import { cleanOrphanMedia } from './media/cleanup.ts';
 
 /**
  * Server state shared by all requests: the derived keys and the database. Set up once by the
@@ -17,6 +18,7 @@ export function initApp(): void {
 	const config = getConfig();
 	const keys = deriveKeys(config.masterKey);
 	const db = initDatabase(config.dataDir, keys.database);
+	cleanOrphanMedia(db, config.dataDir);
 	const setupDone = countUsers(db) > 0;
 	if (setupDone) {
 		removeSetupCode(config.dataDir);

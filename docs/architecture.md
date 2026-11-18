@@ -2,7 +2,7 @@
 
 ## Current implementation
 
-Herbarium is a SvelteKit application using Svelte 5 runes, strict TypeScript and `adapter-node`. One instance represents one shared circle. Foundation, security, the design system, three locales, moments, plans and recurring occasions are implemented. Calendar and media remain planned in the [roadmap](ROADMAP.md).
+Herbarium is a SvelteKit application using Svelte 5 runes, strict TypeScript and `adapter-node`. One instance represents one shared circle. Foundation, security, the design system, three locales, moments, plans, recurring occasions and memories are implemented. Calendar and later phases remain planned in the [roadmap](ROADMAP.md).
 
 | Location                   | Responsibility                                        |
 | -------------------------- | ----------------------------------------------------- |
@@ -37,7 +37,7 @@ Date-only formatting fixes the time zone to UTC to preserve the day; timed forma
 
 Events share one encrypted table with `moment`, `plan` and `occasion` kinds. The event services, schemas, date/notes modules and server-first screens are implemented. Date-only values stay `YYYY-MM-DD` strings, normalized to the first day for month/year precision. Timed events store UTC instants and an IANA time zone, plus the local start date for sorting and year filters.
 
-Media will live as encrypted files on the data volume and will be served through authenticated routes. Maps will use locally served tiles and a local gazetteer. Reminder email will use optional operator-configured SMTP. These are design commitments, not implemented services.
+Maps will use locally served tiles and a local gazetteer. Reminder email will use optional operator-configured SMTP.
 
 The deployment remains one Node application and one data volume. Runtime assets are self-hosted; user data never goes to third-party APIs. Record boundary changes in [decisions.md](decisions.md).
 
@@ -64,3 +64,15 @@ Event forms accept bounded text dates in the displayed formats, so selecting a d
 Occasions share the event table and store a single RRULE and occasion type alongside their original event dates. `listOccurrences` expands starts over an inclusive local-date range of at most 367 dates. Occurrence rows are computed on demand. The event list still shows one row per original event and filters by its original local start year. Event details show the recurrence summary and up to five occurrences in the coming year.
 
 The server accepts yearly and monthly presets, and custom daily, weekly, monthly or yearly intervals from 1 to 99. Anniversaries and birthdays use the yearly preset and count the years elapsed since the original date. Yearly February 29 occasions fall on February 28 in non-leap years. Monthly rules skip months without the original day. Timed occurrences retain local wall time and elapsed duration. DST gaps are skipped, future repeated clock times use the earlier instant and the original occurrence retains its saved instant.
+
+## Media storage
+
+The encrypted database stores memory metadata and the wrapped key for each original, preview and thumbnail. The media directory holds ciphertext files named by random IDs. [`/media/[id]/[variant]`](../src/routes/media/%5Bid%5D/%5Bvariant%5D/+server.ts) requires a fully authenticated member session and serves private `GET` and `HEAD` responses with a fixed media type and filename disposition. `GET` supports single byte ranges. The server authenticates the header and each requested segment and aborts delivery if a segment fails verification. See [key management](key-management.md) for the file format.
+
+The streaming multipart parser bounds each file and the entire request. A Linux helper holds media in anonymous memory files and identifies JPEG, PNG, HEIC, MP4 and MOV from their bytes. Landlock and seccomp restrict the image and video tools, which receive media through inherited descriptors and run under time, memory, output and pixel limits. `sharp` generates JPEG image derivatives. FFmpeg creates a JPEG video poster and an H.264/AAC playback derivative. ExifTool cleans image originals without changing compressed image data. FFmpeg copies compressed audio and video into a fresh container, retaining capture time and display rotation while removing metadata tracks and supplementary video messages that can carry location. The database transaction publishes a memory only after its encrypted assets are durable. On restart the server removes encrypted files left without a database row.
+
+## Memories and albums
+
+The chronological gallery uses capture dates, falling back to the UTC upload date. The event page lists its attachments and links to a filtered gallery for longer collections. The upload form can offer a photo's location for an event that has no coordinates. The suggestion is sealed, expires after 30 minutes and is bound to the uploading session and memory. Accepting it writes the coordinates directly to the event if its location is still unset.
+
+A memory can be uploaded on its own or attached to one event, and it can belong to several albums. Events and albums have independent lifecycles. Deleting an event detaches its files. Deleting an album removes its memberships. Deleting a memory removes every membership and discards its wrapped keys and files. Memory and album deletion require password confirmation and create a content-free audit entry.

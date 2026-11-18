@@ -28,7 +28,10 @@ export default defineConfig({
 		env: {
 			ORIGIN: `http://localhost:${port}`,
 			DATA_DIR: process.env.E2E_DATA_DIR,
-			MASTER_KEY: process.env.E2E_MASTER_KEY
+			MASTER_KEY: process.env.E2E_MASTER_KEY,
+			BODY_SIZE_LIMIT: '1025M',
+			MAX_FILE_BYTES: '1048576',
+			MAX_REQUEST_BYTES: '1052672'
 		}
 	}
 });
