@@ -265,5 +265,18 @@
 	"memory_size": "Памер файла перавышае дапушчальны.",
 	"memory_unsupported": "Не ўдалося адкрыць файл як фота або відэа падтрыманага фармату.",
 	"memory_busy": "Ідзе іншая загрузка. Паўтарыце спробу крыху пазней.",
-	"memory_unavailable": "Апрацоўка файлаў часова недаступная."
+	"memory_unavailable": "Апрацоўка файлаў часова недаступная.",
+	"calendar_title": "Каляндар",
+	"calendar_views": "Віды календара",
+	"calendar_navigation": "Навігацыя па календары",
+	"calendar_month": "Месяц",
+	"calendar_week": "Тыдзень",
+	"calendar_day": "Дзень",
+	"calendar_previous": "Назад",
+	"calendar_next": "Наперад",
+	"calendar_today": "Сёння",
+	"calendar_jump": "Перайсці да даты",
+	"calendar_go": "Перайсці",
+	"calendar_createOn": "Дадаць падзею на {date}",
+	"calendar_empty": "На гэтую дату няма падзей."
 }

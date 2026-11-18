@@ -29,6 +29,10 @@
 				>{m.nav.home}</a
 			>
 			<a
+				href={resolve('/calendar')}
+				aria-current={page.url.pathname === '/calendar' ? 'page' : undefined}>{m.calendar.title}</a
+			>
+			<a
 				href={resolve('/events')}
 				aria-current={page.url.pathname.startsWith('/events') ? 'page' : undefined}
 				>{m.nav.events}</a
@@ -62,7 +66,7 @@
 	</header>
 {/if}
 
-<main id="content" tabindex="-1">
+<main id="content" tabindex="-1" class:calendar={page.url.pathname === '/calendar'}>
 	<Ornament kind={data.user ? 'divider' : 'flower'} />
 	{@render children()}
 </main>
@@ -116,6 +120,9 @@
 		border-radius: var(--radius);
 		box-shadow: var(--shadow);
 	}
+	main.calendar {
+		max-width: 76rem;
+	}
 	.skip {
 		position: absolute;
 		top: -6rem;
@@ -126,6 +133,11 @@
 	}
 	.skip:focus {
 		top: 1rem;
+	}
+	@media (max-width: 78rem) {
+		main.calendar {
+			margin-inline: 1rem;
+		}
 	}
 	@media (max-width: 50rem) {
 		main {

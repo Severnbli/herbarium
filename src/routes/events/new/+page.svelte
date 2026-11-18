@@ -15,5 +15,7 @@
 	fields={form?.fields}
 	problem={form?.problem}
 	submitLabel={m.event.create}
-	cancelHref={resolve('/events')}
+	cancelHref={data.calendarDate
+		? `${resolve('/calendar')}?view=day&date=${data.calendarDate}`
+		: resolve('/events')}
 />

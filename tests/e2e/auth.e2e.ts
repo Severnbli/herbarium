@@ -22,6 +22,7 @@ const PROTECTED = [
 	'/',
 	'/members',
 	'/account',
+	'/calendar',
 	'/events',
 	'/events/new',
 	'/events/' + 'a'.repeat(22),
@@ -302,6 +303,56 @@ test('members create and edit recurring occasions without JavaScript', async ({ 
 
 	await page.goto('/events?kind=occasion');
 	await expect(page.getByRole('link', { name: 'Synthetic leap-day celebration' })).toBeVisible();
+	await page.context().close();
+});
+
+test('calendar expands occasions and creates events from a date on a phone without JavaScript', async ({
+	browser
+}) => {
+	const page = await newPage(browser, { javaScriptEnabled: false });
+	await page.setViewportSize({ width: 360, height: 800 });
+	await login(page, member.username, member.password);
+	await page.goto('/events/new');
+	await page.getByLabel('Event kind').selectOption('occasion');
+	await page.getByLabel('Title', { exact: true }).fill('Synthetic calendar anniversary');
+	await page.getByLabel('Start', { exact: true }).fill('2000-02-29');
+	await page.getByRole('button', { name: 'Save event', exact: true }).click();
+
+	await page.goto('/calendar?date=2100-02-01');
+	const leapFallback = page.getByRole('region', { name: 'February 28, 2100' });
+	await expect(
+		leapFallback.getByRole('link', { name: 'Synthetic calendar anniversary' })
+	).toBeVisible();
+	expect(await page.locator('body').evaluate((body) => body.scrollWidth)).toBeLessThanOrEqual(360);
+	await leapFallback.getByRole('link', { name: 'Add an event on February 28, 2100' }).click();
+	await expect(page.getByLabel('Start', { exact: true })).toHaveValue('2100-02-28');
+	await expect(page.getByLabel('Event kind')).toHaveValue('plan');
+	await page.getByLabel('Title', { exact: true }).fill('Synthetic calendar plan');
+	await page.getByRole('button', { name: 'Save event', exact: true }).click();
+
+	await page.goto('/calendar');
+	await page.getByRole('link', { name: 'Week', exact: true }).click();
+	await page.getByLabel('Jump to date').fill('2100-02-28');
+	await page.getByRole('button', { name: 'Go', exact: true }).click();
+	await expect(page).toHaveURL('/calendar?view=week&date=2100-02-28');
+	await expect(page.getByRole('link', { name: 'Synthetic calendar plan' })).toBeVisible();
+	await page.getByRole('link', { name: 'Day', exact: true }).click();
+	await expect(page.getByRole('link', { name: 'Synthetic calendar anniversary' })).toBeVisible();
+	await expect(page.getByRole('link', { name: 'Synthetic calendar plan' })).toBeVisible();
+	await expect(page.getByRole('link', { name: 'Today', exact: true })).toBeVisible();
+	await page.getByRole('link', { name: 'Next', exact: true }).click();
+	await expect(page).toHaveURL('/calendar?view=day&date=2100-03-01');
+	await expect(page.getByText('No events on this date.')).toBeVisible();
+
+	for (const query of [
+		'date=2100-02-29',
+		'date=2026-11-18&date=2026-11-19',
+		'view=year',
+		'other=1'
+	]) {
+		expect((await page.request.get('/calendar?' + query)).status()).toBe(400);
+	}
+	expect((await page.request.get('/events/new?date=2100-02-29')).status()).toBe(400);
 	await page.context().close();
 });
 

@@ -2,7 +2,7 @@
 
 ## Current implementation
 
-Herbarium is a SvelteKit application using Svelte 5 runes, strict TypeScript and `adapter-node`. One instance represents one shared circle. Foundation, security, the design system, three locales, moments, plans, recurring occasions and memories are implemented. Calendar and later phases remain planned in the [roadmap](ROADMAP.md).
+Herbarium is a SvelteKit application using Svelte 5 runes, strict TypeScript and `adapter-node`. One instance represents one shared circle. Foundation, security, the design system, three locales, moments, plans, recurring occasions, memories and calendar views are implemented. Reminders and later phases remain planned in the [roadmap](ROADMAP.md).
 
 | Location                   | Responsibility                                        |
 | -------------------------- | ----------------------------------------------------- |
@@ -76,3 +76,7 @@ The streaming multipart parser bounds each file and the entire request. A Linux 
 The chronological gallery uses capture dates, falling back to the UTC upload date. The event page lists its attachments and links to a filtered gallery for longer collections. The upload form can offer a photo's location for an event that has no coordinates. The suggestion is sealed, expires after 30 minutes and is bound to the uploading session and memory. Accepting it writes the coordinates directly to the event if its location is still unset.
 
 A memory can be uploaded on its own or attached to one event, and it can belong to several albums. Events and albums have independent lifecycles. Deleting an event detaches its files. Deleting an album removes its memberships. Deleting a memory removes every membership and discards its wrapped keys and files. Memory and album deletion require password confirmation and create a content-free audit entry.
+
+## Calendar
+
+The authenticated calendar uses inclusive local-date grids and expands occasions over the visible period. Timed events appear on the dates in their saved event time zone. The calendar shows each event across its span, including the latest ongoing occurrence that began before the grid. Approximate dates retain their precision label. Today uses Europe/Minsk, the default zone on the event form. Navigation and quick create use validated date links and forms rendered on the server.

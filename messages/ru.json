@@ -265,5 +265,18 @@
 	"memory_size": "Размер загрузки превышает допустимый.",
 	"memory_unsupported": "Не удалось открыть файл как фото или видео поддерживаемого формата.",
 	"memory_busy": "Выполняется другая загрузка. Повторите попытку чуть позже.",
-	"memory_unavailable": "Обработка файлов временно недоступна."
+	"memory_unavailable": "Обработка файлов временно недоступна.",
+	"calendar_title": "Календарь",
+	"calendar_views": "Виды календаря",
+	"calendar_navigation": "Навигация по календарю",
+	"calendar_month": "Месяц",
+	"calendar_week": "Неделя",
+	"calendar_day": "День",
+	"calendar_previous": "Назад",
+	"calendar_next": "Вперёд",
+	"calendar_today": "Сегодня",
+	"calendar_jump": "Перейти к дате",
+	"calendar_go": "Перейти",
+	"calendar_createOn": "Добавить событие на {date}",
+	"calendar_empty": "На эту дату нет событий."
 }

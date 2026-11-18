@@ -62,3 +62,7 @@ For an occasion, use day precision and open **For occasions** to set the repeat 
 Choose **Add a memory** from an event to attach a photo or video, or from **Memories** to upload it to the gallery. Supported files are JPEG, PNG, HEIC and H.264 or HEVC videos in MP4 or MOV. Members can edit alt text and captions, download cleaned originals and organize memories in multiple albums. With JavaScript enabled, the gallery opens a lightbox with Previous and Next buttons, left and right arrow keys, and Escape to close. The same links open memory pages without JavaScript.
 
 The media integration tests use synthetic JPEG, PNG, HEIC, MP4 and MOV files. They check compressed image and media samples, location stripping, authenticated downloads, corrupted files and size limits. Playwright covers event attachments, coordinate consent, albums, keyboard navigation and video range responses.
+
+## Calendar
+
+Open **Calendar** to switch between month, week and day views or jump to any date. On narrow screens, the month and week are displayed as stacked days. Use the plus button on a date to prefill a new event. Past dates default to moments and today or future dates default to plans. The kind can still be changed on the event form.

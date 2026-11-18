@@ -44,6 +44,21 @@ export function messages(locale: Locale) {
 			busy: m.memory_busy({}, { locale }),
 			unavailable: m.memory_unavailable({}, { locale })
 		},
+		calendar: {
+			title: m.calendar_title({}, { locale }),
+			views: m.calendar_views({}, { locale }),
+			navigation: m.calendar_navigation({}, { locale }),
+			month: m.calendar_month({}, { locale }),
+			week: m.calendar_week({}, { locale }),
+			day: m.calendar_day({}, { locale }),
+			previous: m.calendar_previous({}, { locale }),
+			next: m.calendar_next({}, { locale }),
+			today: m.calendar_today({}, { locale }),
+			jump: m.calendar_jump({}, { locale }),
+			go: m.calendar_go({}, { locale }),
+			createOn: (date: string) => m.calendar_createOn({ date }, { locale }),
+			empty: m.calendar_empty({}, { locale })
+		},
 		event: {
 			recurrence: m.event_recurrence({}, { locale }),
 			occasionSettings: m.event_occasionSettings({}, { locale }),
