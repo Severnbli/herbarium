@@ -77,11 +77,11 @@ Done when: all members can record and edit past and future events with correct d
 
 ## Phase 4 – Occasions and recurrence
 
-- [ ] RRULE storage on occasions; expansion at query time for a given range
-- [ ] Yearly occasions from an original date: anniversaries with ordinal count ("5th"), birthdays with age
-- [ ] 29 February → 28 February in non-leap years
-- [ ] Recurrence editor UI (yearly / monthly / custom) with human-readable summary in all locales
-- [ ] Tests: expansion across DST, leap years, ranges, ordinals per locale
+- [x] RRULE storage on occasions; expansion at query time for a given range
+- [x] Yearly occasions from an original date: anniversaries with ordinal count ("5th"), birthdays with age
+- [x] 29 February → 28 February in non-leap years
+- [x] Recurrence editor UI (yearly / monthly / custom) with human-readable summary in all locales
+- [x] Tests: expansion across DST, leap years, ranges, ordinals per locale
 
 Done when: occasions recur correctly and show their count.
 

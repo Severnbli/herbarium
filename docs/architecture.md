@@ -2,7 +2,7 @@
 
 ## Current implementation
 
-Herbarium is a SvelteKit application using Svelte 5 runes, strict TypeScript and `adapter-node`. One instance represents one shared circle. Foundation, security, the design system, three locales and moments/plans are implemented. Recurrence, calendar and media remain planned in the [roadmap](ROADMAP.md).
+Herbarium is a SvelteKit application using Svelte 5 runes, strict TypeScript and `adapter-node`. One instance represents one shared circle. Foundation, security, the design system, three locales, moments, plans and recurring occasions are implemented. Calendar and media remain planned in the [roadmap](ROADMAP.md).
 
 | Location                   | Responsibility                                        |
 | -------------------------- | ----------------------------------------------------- |
@@ -35,7 +35,7 @@ Date-only formatting fixes the time zone to UTC to preserve the day; timed forma
 
 ## Planned boundaries
 
-Events share one encrypted table with `moment`, `plan` and `occasion` kinds. The event services, schemas, date/notes modules and server-first screens are implemented. Date-only values stay `YYYY-MM-DD` strings, normalized to the first day for month/year precision. Timed events store UTC instants and an IANA time zone, plus the local start date for sorting and year filters. Recurrence remains planned for phase 4.
+Events share one encrypted table with `moment`, `plan` and `occasion` kinds. The event services, schemas, date/notes modules and server-first screens are implemented. Date-only values stay `YYYY-MM-DD` strings, normalized to the first day for month/year precision. Timed events store UTC instants and an IANA time zone, plus the local start date for sorting and year filters.
 
 Media will live as encrypted files on the data volume and will be served through authenticated routes. Maps will use locally served tiles and a local gazetteer. Reminder email will use optional operator-configured SMTP. These are design commitments, not implemented services.
 
@@ -58,3 +58,9 @@ DatePicker submits the selected precision separately from its date value (day: Y
 `src/lib/server/events/events.ts` provides validated create/update/delete operations, author-preserving plan completion and paginated list queries. Lists filter by the local start year and kind and return 30 records per page, ordered by local start date and random identifier. SQL is built through Drizzle with bound parameters. Authenticated routes under `/events` provide a paginated list, kind/year filters, a create form, detail pages and edit forms. Every load and action checks its session independently of the hook. Members can edit all events; the author stays unchanged. Deleting an event requires rate-limited password confirmation and writes a content-free audit event in the same transaction.
 
 Event forms accept bounded text dates in the displayed formats, so selecting a different precision or timed mode works without client JavaScript. Failed submissions return known, bounded field values and field identifiers; password values are never returned. Kind, category and date/clock options are fully translated in all three locales. Detail pages render the server-sanitized notes HTML as the only user-content `{@html}` exception.
+
+## Occasions and recurrence
+
+Occasions share the event table and store a single RRULE and occasion type alongside their original event dates. `listOccurrences` expands starts over an inclusive local-date range of at most 367 dates. Occurrence rows are computed on demand. The event list still shows one row per original event and filters by its original local start year. Event details show the recurrence summary and up to five occurrences in the coming year.
+
+The server accepts yearly and monthly presets, and custom daily, weekly, monthly or yearly intervals from 1 to 99. Anniversaries and birthdays use the yearly preset and count the years elapsed since the original date. Yearly February 29 occasions fall on February 28 in non-leap years. Monthly rules skip months without the original day. Timed occurrences retain local wall time and elapsed duration. DST gaps are skipped, future repeated clock times use the earlier instant and the original occurrence retains its saved instant.

@@ -41,7 +41,8 @@
 		aria-invalid={invalid.has('kind')}
 		options={[
 			{ value: 'moment', label: m.event.moment },
-			{ value: 'plan', label: m.event.plan }
+			{ value: 'plan', label: m.event.plan },
+			{ value: 'occasion', label: m.event.occasion }
 		]}
 	/>
 	<Field
@@ -124,6 +125,49 @@
 			/>
 		</details>
 	</fieldset>
+	<details
+		open={values.kind === 'occasion' || invalid.has('occasionType') || invalid.has('interval')}
+	>
+		<summary>{m.event.occasionSettings}</summary>
+		<p>{m.event.recurrenceHint}</p>
+		<Select
+			name="repeat"
+			label={m.event.repeat}
+			value={values.repeat}
+			options={(['yearly', 'monthly', 'custom'] as const).map((value) => ({
+				value,
+				label: m.event[value]
+			}))}
+		/>
+		<Select
+			name="frequency"
+			label={m.event.frequency}
+			value={values.frequency}
+			options={(['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'] as const).map((value) => ({
+				value,
+				label: m.event[value]
+			}))}
+		/>
+		<Field
+			name="interval"
+			label={m.event.interval}
+			value={values.interval}
+			inputmode="numeric"
+			maxlength={2}
+			pattern="[1-9][0-9]?"
+			error={errorFor('interval')}
+		/>
+		<Select
+			name="occasionType"
+			label={m.event.occasionType}
+			value={values.occasionType}
+			aria-invalid={invalid.has('occasionType')}
+			options={(['general', 'anniversary', 'birthday'] as const).map((value) => ({
+				value,
+				label: m.event[value]
+			}))}
+		/>
+	</details>
 	<Field
 		name="place"
 		label={m.event.place}

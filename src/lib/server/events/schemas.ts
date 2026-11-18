@@ -7,6 +7,8 @@ import {
 	validTimeZone
 } from '#lib/domain/event-date.ts';
 
+import { FREQUENCIES, OCCASION_TYPES } from './recurrence.ts';
+
 export const eventId = z.string().regex(/^[A-Za-z0-9_-]{22}$/);
 export const CATEGORIES = ['none', 'trip', 'date', 'milestone'] as const;
 const coordinate = (min: number, max: number) =>
@@ -25,7 +27,14 @@ const coordinate = (min: number, max: number) =>
 
 export const eventFormSchema = z
 	.strictObject({
-		kind: z.enum(['moment', 'plan']),
+		kind: z.enum(['moment', 'plan', 'occasion']),
+		repeat: z.enum(['yearly', 'monthly', 'custom']).default('yearly'),
+		frequency: z.enum(FREQUENCIES).default('WEEKLY'),
+		interval: z
+			.string()
+			.regex(/^[1-9]\d?$/)
+			.default('1'),
+		occasionType: z.enum(OCCASION_TYPES).default('general'),
 		title: z.string().trim().min(1).max(200),
 		notes: z.string().max(20_000),
 		place: z.string().trim().max(200),
@@ -43,6 +52,11 @@ export const eventFormSchema = z
 	.superRefine((value, context) => {
 		const issue = (path: string, message: string) =>
 			context.addIssue({ code: 'custom', path: [path], message });
+		if (value.kind === 'occasion') {
+			if (value.precision !== 'day') issue('precision', 'Occasions require day precision');
+			if (value.occasionType !== 'general' && value.repeat !== 'yearly')
+				issue('occasionType', 'Birthdays and anniversaries require yearly recurrence');
+		}
 		if ((value.lat === '') !== (value.lon === '')) issue('lat', 'Coordinates require a pair');
 		if (value.dateMode === 'timed' && value.precision !== 'day')
 			issue('precision', 'Timed dates require day precision');
@@ -76,6 +90,10 @@ export const eventFormSchema = z
 export type EventForm = z.infer<typeof eventFormSchema>;
 export const emptyEventForm: EventForm = {
 	kind: 'moment',
+	repeat: 'yearly',
+	frequency: 'WEEKLY',
+	interval: '1',
+	occasionType: 'general',
 	title: '',
 	notes: '',
 	place: '',
@@ -92,7 +110,7 @@ export const emptyEventForm: EventForm = {
 };
 
 export const eventFilters = z.strictObject({
-	kind: z.enum(['', 'moment', 'plan']).default(''),
+	kind: z.enum(['', 'moment', 'plan', 'occasion']).default(''),
 	year: z
 		.string()
 		.regex(/^(?:[0-9]{4})?$/)

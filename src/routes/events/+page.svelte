@@ -25,7 +25,8 @@
 		options={[
 			{ value: '', label: m.event.all },
 			{ value: 'moment', label: m.event.moment },
-			{ value: 'plan', label: m.event.plan }
+			{ value: 'plan', label: m.event.plan },
+			{ value: 'occasion', label: m.event.occasion }
 		]}
 	/>
 	<Field

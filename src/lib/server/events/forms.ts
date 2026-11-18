@@ -2,6 +2,7 @@ import { error } from '@sveltejs/kit';
 import { z } from 'zod';
 import { formObject } from '../auth/schemas.ts';
 import { emptyEventForm, eventFormSchema, eventId, type EventForm } from './schemas.ts';
+import { FREQUENCIES, OCCASION_TYPES } from './recurrence.ts';
 import { EventError } from './events.ts';
 
 export function routeEventId(params: Record<string, string | undefined>): string {
@@ -21,7 +22,10 @@ export function parseEventForm(data: FormData) {
 		// Enum values fall back if invalid, rather than adding attacker-chosen options to the form.
 		if (typeof text === 'string' && typeof emptyEventForm[key] === 'string') {
 			const enumValues: Partial<Record<keyof EventForm, readonly string[]>> = {
-				kind: ['moment', 'plan'],
+				kind: ['moment', 'plan', 'occasion'],
+				repeat: ['yearly', 'monthly', 'custom'],
+				frequency: FREQUENCIES,
+				occasionType: OCCASION_TYPES,
 				dateMode: ['date', 'timed'],
 				precision: ['day', 'month', 'year'],
 				category: ['none', 'trip', 'date', 'milestone'],

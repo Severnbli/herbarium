@@ -72,3 +72,11 @@ Status: accepted.
 Event forms use explicit text date formats with separate mode and precision selectors. This keeps every create/edit flow usable without JavaScript, including approximate dates and arbitrary time zones. The shared native DatePicker remains available for progressively enhanced feature screens; it is not the event validation boundary. Server errors preserve bounded known fields, reject duplicate and unknown fields and never echo passwords.
 
 Every member can edit or delete any event, preserving the circle's equal content access. Deletion is permanent and requires the acting member's password through the existing rate-limited re-authentication service. Record only the event identifier, actor and client address in the audit log, atomically with deletion; never include title, notes, place or coordinates. Completing a plan changes its kind in place, and the edit path enforces the same elapsed-period rule.
+
+## Occasion rules and local-date expansion
+
+Status: accepted.
+
+Store an RFC 5545 frequency and interval on the original encrypted event row. The BSD-3-Clause `rrule` library generates candidate dates within the requested range. The editor exposes yearly and monthly presets and custom daily, weekly, monthly and yearly intervals. Keeping the supported rule fields bounded limits query cost and makes every supported rule editable and summarizable in all three locales.
+
+Use the original date and local clock as the anchor. For yearly February 29 occasions, choose the last of February 28 and 29 so the occasion occurs once every selected year. For timed occasions, resolve each candidate with Temporal in the saved time zone, skip gaps and use the earlier instant for future folds. Preserve the original instant and the elapsed duration of timed events. Date-only event spans retain their original number of days.

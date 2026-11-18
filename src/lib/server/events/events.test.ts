@@ -8,6 +8,7 @@ import {
 	createEvent,
 	findEvent,
 	listEvents,
+	listOccurrences,
 	updateEvent,
 	completePlan,
 	deleteEvent,
@@ -103,6 +104,32 @@ describe('shared events', () => {
 		expect(completed.createdAt).toEqual(row.createdAt);
 		expect(completed.createdBy).toBe(row.createdBy);
 		expect(listEvents(db, {}).total).toBe(1);
+	});
+	it('stores one occasion, expands by range and removes the rule when changing kind', async () => {
+		const { db } = fixture;
+		const actor = await addUser(db, 'alice');
+		const id = createEvent(db, actor, {
+			...base,
+			kind: 'occasion',
+			start: '2020-02-29',
+			occasionType: 'birthday'
+		});
+		const row = findEvent(db, id);
+		expect(row.recurrenceRule).toBe('FREQ=YEARLY;INTERVAL=1');
+		expect(eventToForm(row)).toMatchObject({
+			kind: 'occasion',
+			repeat: 'yearly',
+			occasionType: 'birthday'
+		});
+		expect(listEvents(db, { kind: 'occasion' }).total).toBe(1);
+		expect(listOccurrences(db, '2025-02-01', '2025-02-28')).toMatchObject([
+			{ eventId: id, count: 5, date: '2025-02-28' }
+		]);
+		expect(listEvents(db, {}).total).toBe(1);
+
+		updateEvent(db, id, { ...eventToForm(row), kind: 'moment' });
+		expect(findEvent(db, id)).toMatchObject({ recurrenceRule: null, occasionType: null });
+		expect(listOccurrences(db, '2025-02-01', '2025-02-28')).toEqual([]);
 	});
 	it('paginates predictably and caps out-of-range pages', async () => {
 		const { db } = fixture;

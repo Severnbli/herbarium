@@ -1,4 +1,4 @@
-import { and, count, desc, eq, gte, inArray, lte } from 'drizzle-orm';
+import { and, count, desc, eq, gte, lte } from 'drizzle-orm';
 import {
 	disambiguationFor,
 	hasHappened,
@@ -9,6 +9,12 @@ import {
 import { generateId } from '../crypto/tokens.ts';
 import type { Db } from '../db/index.ts';
 import { event, user } from '../db/schema.ts';
+import {
+	expandOccasion,
+	readRecurrence,
+	recurrenceRule,
+	validateOccurrenceRange
+} from './recurrence.ts';
 import { eventFilters, eventFormSchema, eventId, type EventForm } from './schemas.ts';
 
 export class EventError extends Error {
@@ -27,6 +33,18 @@ function storage(input: EventForm) {
 	const startDate = timed ? null : normalizeDate(value.start, value.precision);
 	return {
 		kind: value.kind,
+		recurrenceRule:
+			value.kind === 'occasion'
+				? recurrenceRule(
+						value.repeat === 'custom'
+							? value.frequency
+							: value.repeat === 'yearly'
+								? 'YEARLY'
+								: 'MONTHLY',
+						value.repeat === 'custom' ? Number(value.interval) : 1
+					)
+				: null,
+		occasionType: value.kind === 'occasion' ? value.occasionType : null,
 		title: value.title,
 		notes: value.notes,
 		place: value.place,
@@ -64,7 +82,7 @@ export function findEvent(db: Db, id: string) {
 		.innerJoin(user, eq(event.createdBy, user.id))
 		.where(eq(event.id, id))
 		.get();
-	if (!row || row.event.kind === 'occasion') throw new EventError('not_found');
+	if (!row) throw new EventError('not_found');
 	return { ...row.event, createdByName: row.createdByName };
 }
 
@@ -106,8 +124,6 @@ export function listEvents(db: Db, input: { kind?: string; year?: string; page?:
 	const filters = eventFilters.parse(input);
 	const where = and(
 		filters.kind ? eq(event.kind, filters.kind) : undefined,
-		// Occasions are stored here but their UI arrives in phase 4.
-		filters.kind ? undefined : inArray(event.kind, ['moment', 'plan']),
 		filters.year ? gte(event.sortDate, `${filters.year}-01-01`) : undefined,
 		filters.year ? lte(event.sortDate, `${filters.year}-12-31`) : undefined
 	);
@@ -131,11 +147,47 @@ export function listEvents(db: Db, input: { kind?: string; year?: string; page?:
 	};
 }
 
+export function listOccurrences(db: Db, from: string, through: string) {
+	validateOccurrenceRange(from, through);
+	const rows = db
+		.select()
+		.from(event)
+		.where(and(eq(event.kind, 'occasion'), lte(event.sortDate, through)))
+		.all();
+	return rows
+		.flatMap((row) =>
+			row.recurrenceRule
+				? expandOccasion(
+						{
+							...row,
+							recurrenceRule: row.recurrenceRule,
+							occasionType: row.occasionType ?? 'general'
+						},
+						from,
+						through
+					).map((occurrence) => ({ ...occurrence, eventId: row.id }))
+				: []
+		)
+		.sort((a, b) => a.date.localeCompare(b.date) || a.eventId.localeCompare(b.eventId));
+}
+
 export function eventToForm(value: EventRecord): EventForm {
 	const timed = value.dateMode === 'timed';
+	const rule = value.recurrenceRule ? readRecurrence(value.recurrenceRule) : null;
 	const length = { day: 10, month: 7, year: 4 }[value.precision];
 	return {
-		kind: value.kind === 'plan' ? 'plan' : 'moment',
+		kind: value.kind,
+		repeat:
+			rule?.interval === 1 && rule.frequency === 'YEARLY'
+				? 'yearly'
+				: rule?.interval === 1 && rule.frequency === 'MONTHLY'
+					? 'monthly'
+					: rule
+						? 'custom'
+						: 'yearly',
+		frequency: rule?.frequency ?? 'WEEKLY',
+		interval: String(rule?.interval ?? 1),
+		occasionType: value.occasionType ?? 'general',
 		title: value.title,
 		notes: value.notes,
 		place: value.place,

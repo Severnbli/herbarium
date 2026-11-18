@@ -247,6 +247,38 @@ test('members create, edit, filter, complete and delete shared events without Ja
 	expect(missing?.status()).toBe(404);
 });
 
+test('members create and edit recurring occasions without JavaScript', async ({ browser }) => {
+	const page = await newPage(browser, { javaScriptEnabled: false });
+	await login(page, member.username, member.password);
+	await page.goto('/events/new');
+	await page.getByLabel('Event kind').selectOption('occasion');
+	await page.getByLabel('Title', { exact: true }).fill('Synthetic leap-day celebration');
+	await page.getByLabel('Start', { exact: true }).fill('2000-02-29');
+	await page.getByText('For occasions', { exact: true }).click();
+	await page.getByLabel('Occasion type').selectOption('anniversary');
+	await page.getByRole('button', { name: 'Save event', exact: true }).click();
+	await expect(page.getByText('Recurrence: yearly', { exact: true })).toBeVisible();
+	await expect(
+		page
+			.getByRole('listitem')
+			.filter({ hasText: /anniversary$/i })
+			.first()
+	).toBeVisible();
+
+	await page.getByRole('link', { name: 'Edit', exact: true }).click();
+	await expect(page.getByLabel('Occasion type')).toHaveValue('anniversary');
+	await page.getByLabel('Occasion type').selectOption('general');
+	await page.getByLabel('Repeat', { exact: true }).selectOption('custom');
+	await page.getByLabel('Custom frequency').selectOption('WEEKLY');
+	await page.getByLabel('Custom interval').fill('2');
+	await page.getByRole('button', { name: 'Save changes', exact: true }).click();
+	await expect(page.getByText('Recurrence: Every 2 weeks', { exact: true })).toBeVisible();
+
+	await page.goto('/events?kind=occasion');
+	await expect(page.getByRole('link', { name: 'Synthetic leap-day celebration' })).toBeVisible();
+	await page.context().close();
+});
+
 test('timed events retain their local year and future plans cannot be completed early', async ({
 	browser
 }) => {
