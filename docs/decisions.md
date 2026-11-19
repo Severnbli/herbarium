@@ -124,3 +124,11 @@ Use Protomaps v4 MVT archives in PMTiles v3 so operators can pick the coverage a
 MapLibre 6 supports a locally bundled module worker. `worker-src 'self'` works on the initial document and after SvelteKit client navigation. The map makes same-origin requests for every resource under the existing CSP.
 
 Bundle a read-only GeoNames SQLite FTS5 snapshot for Belarus and worldwide cities from the GeoNames cities5000 extract. Keep the public dataset separate from SQLCipher so the app can replace it with the build and keep member records and backups independent of the gazetteer. A reproducible importer indexes alternate names in the three supported locales where GeoNames provides them. Place search does not require a basemap archive.
+
+## Dashboard and the time-together anchor
+
+Status: accepted.
+
+Use the earliest started occasion of type Anniversary as the time-together anchor. Its original date already records a milestone the circle chose to celebrate. This reuses shared event editing and avoids a separate instance preference. Circles with several anniversaries use the earliest one, and editing or deleting it can change the count. The anniversary highlight uses the next occurrence across all anniversaries.
+
+Upcoming shows the next start per occasion so frequent recurrences leave room for other events. The dashboard uses the member's calendar day and shows timed starts in that member's time zone. On this day recalls original dates, so a recurring occasion contributes its original entry and a leap-day entry is recalled on February 29. Recent memories follow upload order. The gallery retains chronological capture order.

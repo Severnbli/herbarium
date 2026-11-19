@@ -49,14 +49,33 @@ const card = {
 	sortDate: memory.sortDate
 };
 
-export function listMemories(db: Db, filter: { albumId?: string; eventId?: string }, page = 1) {
-	const query = db
+function selectMemoryCards(db: Db) {
+	return db
 		.select({ ...card, contentType: mediaFile.contentType })
 		.from(memory)
 		.innerJoin(
 			mediaFile,
 			and(eq(mediaFile.memoryId, memory.id), eq(mediaFile.variant, 'original'))
 		);
+}
+
+function memoryCard({
+	contentType,
+	...row
+}: Omit<MemoryCard, 'isVideo'> & { contentType: string }): MemoryCard {
+	return { ...row, isVideo: contentType.startsWith('video/') };
+}
+
+export function listRecentMemories(db: Db) {
+	return selectMemoryCards(db)
+		.orderBy(desc(memory.createdAt), desc(memory.id))
+		.limit(4)
+		.all()
+		.map(memoryCard);
+}
+
+export function listMemories(db: Db, filter: { albumId?: string; eventId?: string }, page = 1) {
+	const query = selectMemoryCards(db);
 	const scope = filter.albumId
 		? query.innerJoin(
 				albumMemory,
@@ -70,10 +89,7 @@ export function listMemories(db: Db, filter: { albumId?: string; eventId?: strin
 		.offset((page - 1) * PAGE_SIZE)
 		.all();
 	return {
-		rows: rows.slice(0, PAGE_SIZE).map(({ contentType, ...row }): MemoryCard => ({
-			...row,
-			isVideo: contentType.startsWith('video/')
-		})),
+		rows: rows.slice(0, PAGE_SIZE).map(memoryCard),
 		page,
 		hasNext: rows.length > PAGE_SIZE
 	};

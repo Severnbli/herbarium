@@ -76,7 +76,7 @@
 <main
 	id="content"
 	tabindex="-1"
-	class:wide={page.url.pathname === '/calendar' || page.url.pathname === '/map'}
+	class:wide={['/', '/calendar', '/map'].includes(page.url.pathname)}
 >
 	<Ornament kind={data.user ? 'divider' : 'flower'} />
 	{@render children()}
