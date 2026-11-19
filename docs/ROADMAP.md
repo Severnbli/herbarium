@@ -158,8 +158,8 @@ Done when: events can be pinned and browsed on a map that works fully offline fr
 - [x] Performance pass: query indexes, image sizes, bundle size
 - [x] Full accessibility audit in both themes and all locales
 - [x] Security review against the **Security** section of `AGENTS.md`; dependency review
-- [ ] README: features, screenshots, deployment with reverse proxy and HTTPS, configuration reference
-- [ ] **v1.0 release**
+- [x] README: features, screenshots, deployment with reverse proxy and HTTPS, configuration reference
+- [x] **v1.0 release** (`v1.0.0`)
 
 ---
 

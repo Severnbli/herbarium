@@ -1,6 +1,6 @@
 {
 	"name": "herbarium",
-	"version": "0.0.1",
+	"version": "1.0.0",
 	"description": "Self-hosted shared calendar and chronicle for a small circle of people",
 	"license": "GPL-3.0-only",
 	"private": true,

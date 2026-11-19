@@ -2,7 +2,7 @@
 
 ## Current implementation
 
-Herbarium is a SvelteKit application using Svelte 5 runes, strict TypeScript and `adapter-node`. One instance represents one shared circle. Foundation, security, the design system, three locales, moments, plans, recurring occasions, memories, calendar views, reminders, the timeline, maps, the dashboard and data ownership operations are implemented. Later phases remain planned in the [roadmap](ROADMAP.md).
+Herbarium is a SvelteKit application using Svelte 5 runes, strict TypeScript and `adapter-node`. One instance represents one shared circle. The v1.0 roadmap covers the security foundation, three locales, moments, plans, recurring occasions, memories, calendar views, reminders, the timeline, maps, the dashboard, data ownership operations and browser installation. [Roadmap](ROADMAP.md)
 
 | Location                   | Responsibility                                        |
 | -------------------------- | ----------------------------------------------------- |

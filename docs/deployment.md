@@ -15,17 +15,50 @@ Images are built for `linux/amd64` and `linux/arm64`.
 
 ## Quick start
 
+Check out the release and generate a new master key for the instance.
+
 ```bash
-mkdir -p secrets
+git clone --branch v1.0.0 https://github.com/Severnbli/herbarium.git
+cd herbarium
+install -d -m 0700 secrets
 (umask 077; openssl rand -base64 32 > secrets/master_key)
+chmod 0444 secrets/master_key
+```
+
+Keep the `secrets` directory at mode `0700`. The read permission on the file lets the container's `node` user read the mounted secret. Back up the key separately before starting the instance.
+
+The example `docker-compose.yml` binds the app to `127.0.0.1:3000`. Save the following as `compose.release.yml` in the checkout. Replace `herbarium.example.org` with your own hostname.
+
+```yaml
+services:
+  herbarium:
+    build: !reset null
+    image: severnbli/herbarium:1.0.0
+    environment:
+      ORIGIN: https://herbarium.example.org
+      ADDRESS_HEADER: X-Forwarded-For
+      XFF_DEPTH: '1'
+```
+
+With Compose, the override selects the prebuilt image and keeps the base file's volume, secret and container restrictions. [Compose merge reference](https://docs.docker.com/reference/compose-file/merge/#reset-value)
+
+```bash
+export COMPOSE_FILE=docker-compose.yml:compose.release.yml
+docker compose pull
 docker compose up -d
 ```
 
-The example `docker-compose.yml` listens on `127.0.0.1:3000` only. Put a reverse proxy with HTTPS in front of it (Caddy, nginx, Traefik) and set `ORIGIN` to the public URL:
+For Caddy running directly on the same host, point the hostname at the server and allow Caddy to receive traffic on ports 80 and 443. Use this Caddyfile and replace the hostname with the same name used in `ORIGIN`.
 
-```bash
-ORIGIN=https://herbarium.example.org docker compose up -d
+```caddyfile
+herbarium.example.org {
+    reverse_proxy 127.0.0.1:3000
+}
 ```
+
+Caddy handles TLS and HTTP-to-HTTPS redirects and supplies the client address to Herbarium. This example assumes Caddy is the only reverse proxy. Keep the app port on loopback and leave proxy request buffering and shared caching disabled. [Caddy automatic HTTPS](https://caddyserver.com/docs/automatic-https) · [Caddy reverse proxy](https://caddyserver.com/docs/caddyfile/directives/reverse_proxy)
+
+For a loopback trial, run `docker compose up -d` with the base Compose file and open `http://localhost:3000`. The base file builds the local checkout. Use the same Compose file selection for subsequent backup and maintenance commands.
 
 ## First-run setup
 
@@ -37,7 +70,7 @@ docker compose exec herbarium cat /data/setup-code
 
 Enter it on `/setup` together with the owner's username, name and password. The file is deleted as soon as the owner exists, and `/setup` returns 404 from then on. The owner invites everyone else from the **Members** page; there is no open registration.
 
-The container runs as the `node` user (uid 1000). The secret file must be readable by that uid: either own it as uid 1000 with mode `0400`, or keep it world-readable (`0444`) inside a directory only you can enter (`0700`).
+The container runs as the `node` user (uid 1000). When using `0400` instead of the quick start's `0444`, make uid 1000 the owner of the secret file.
 
 ## The master key
 
