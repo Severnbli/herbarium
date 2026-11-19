@@ -1,0 +1,15 @@
+# Keep the build context minimal and free of secrets and data.
+.git
+node_modules
+build
+.svelte-kit
+data
+secrets
+.env
+.env.*
+test-results
+playwright-report
+blob-report
+Dockerfile
+docker-compose*.yml
+.dockerignore
