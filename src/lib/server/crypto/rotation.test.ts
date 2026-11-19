@@ -58,7 +58,7 @@ it.each(['before staging', 'after staging', 'after rekeying'] as const)(
 			opened.close();
 
 			if (phase !== 'before staging') {
-				const before = openDatabase({ path, key: previous.database, forRekey: true });
+				const before = openDatabase({ path, key: previous.database, exclusive: true });
 				try {
 					stageRotation(before.db, previous, next, rotationFingerprint(newMaster));
 					if (phase === 'after rekeying') before.rekey(next.database);

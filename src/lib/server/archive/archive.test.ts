@@ -81,6 +81,24 @@ it('streams a consistent snapshot and restores content to a different encrypted 
 			updatedAt: date
 		})
 		.run();
+	from.db.transaction((tx) => {
+		for (let index = 0; index < 250; index++) {
+			tx.insert(event)
+				.values({
+					id: generateId(),
+					kind: 'moment',
+					title: `Synthetic event ${index}`,
+					dateMode: 'date',
+					precision: 'day',
+					startDate: '2020-02-29',
+					sortDate: '2020-02-29',
+					createdBy: author,
+					createdAt: date,
+					updatedAt: date
+				})
+				.run();
+		}
+	});
 	from.db.insert(eventReminder).values({ eventId, minutes: 1440, createdAt: date }).run();
 	from.db
 		.insert(memory)
@@ -143,7 +161,9 @@ it('streams a consistent snapshot and restores content to a different encrypted 
 
 	await writeFile(archive, bytes);
 	await restoreArchive(to.db, to.config, to.keyWrap, archive, signal);
-	expect(to.db.select().from(event).all()).toEqual(from.db.select().from(event).all());
+	expect(to.db.select().from(event).orderBy(event.id).all()).toEqual(
+		from.db.select().from(event).orderBy(event.id).all()
+	);
 	expect(to.db.select().from(albumMemory).all()).toEqual([{ albumId, memoryId }]);
 	expect(to.db.select().from(eventReminder).all()).toMatchObject([{ eventId, minutes: 1440 }]);
 	expect(to.db.select().from(memory).all()).toMatchObject([

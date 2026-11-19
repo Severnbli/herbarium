@@ -15,7 +15,8 @@ async function main() {
 	const { db, close } = openDatabase({
 		path: join(config.dataDir, DATABASE_FILE),
 		key: keys.database,
-		fileMustExist: true
+		fileMustExist: true,
+		exclusive: true
 	});
 	const shutdown = new AbortController();
 	const stop = () => shutdown.abort();

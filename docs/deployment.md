@@ -148,7 +148,9 @@ Set up an empty destination instance with one owner and stop it before restoring
 
 ```bash
 docker compose stop herbarium
-docker compose run --rm --no-deps   -v /secure/path/herbarium-export.zip:/restore.zip:ro   herbarium node build/operations/restore.js /restore.zip
+docker compose run --rm --no-deps \
+  -v /secure/path/herbarium-export.zip:/restore.zip:ro \
+  herbarium node build/operations/restore.js /restore.zip
 docker compose up -d
 ```
 
@@ -158,21 +160,21 @@ For a bare install, run `node build/operations/restore.js /secure/path/herbarium
 
 A cold backup preserves the entire instance, including accounts, 2FA, reminders and audit history. Back up the master key separately. Use the same application version for the first start after restore. Stop the server before copying any data files so the database, its sidecars and the encrypted media represent the same point in time.
 
-From the Compose project directory, with a private backup destination that has enough space:
+From the Compose project directory, choose a private backup path outside the checkout with enough space.
 
 ```bash
 docker compose stop herbarium
-(umask 077; docker compose run --rm --no-deps -T --entrypoint tar herbarium -cpf - -C /data . > herbarium-volume.tar)
+(umask 077; docker compose run --rm --no-deps -T --entrypoint tar herbarium -cpf - -C /data . > /secure/backups/herbarium-volume.tar)
 docker compose up -d
 ```
 
-For a bare install, stop the Node service and run `tar -cpf herbarium-volume.tar -C "$DATA_DIR" .` with a private umask. Copy the archive and the matching master key to separate protected locations.
+For a bare install, stop the Node service and run `tar -cpf /secure/backups/herbarium-volume.tar -C "$DATA_DIR" .` with a private umask. Copy the archive and the matching master key to separate protected locations.
 
 Restore into an empty volume. Configure the original master key and the chosen origin first. This example uses a separate Compose project, which gives the destination its own named volume. Keep the old service stopped if both projects bind the same port.
 
 ```bash
 docker compose -p herbarium-restore run --rm --no-deps -T --entrypoint sh herbarium \
-  -c 'test -z "$(ls -A /data)" && tar -xpf - -C /data' < herbarium-volume.tar
+  -c 'test -z "$(ls -A /data)" && tar -xpf - -C /data' < /secure/backups/herbarium-volume.tar
 docker compose -p herbarium-restore up -d
 ```
 

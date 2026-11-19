@@ -27,7 +27,7 @@ export interface OpenOptions {
 	/** Folder with the drizzle-kit migrations. Defaults to `./drizzle`. */
 	migrationsFolder?: string;
 	fileMustExist?: boolean;
-	forRekey?: boolean;
+	exclusive?: boolean;
 }
 
 /**
@@ -41,7 +41,7 @@ export function openDatabase({
 	key,
 	migrationsFolder,
 	fileMustExist = false,
-	forRekey = false
+	exclusive = false
 }: OpenOptions) {
 	if (key.length !== 32) throw new Error('Expected a 32-byte database key');
 
@@ -63,12 +63,14 @@ export function openDatabase({
 			throw cause;
 		}
 		sqlite.pragma('busy_timeout = 5000');
-		if (forRekey) {
+		if (exclusive) {
 			if (sqlite.pragma('journal_mode = DELETE', { simple: true }) !== 'delete') {
-				throw new Error('Could not enable the rotation rollback journal');
+				throw new Error('Could not open the database for exclusive maintenance');
 			}
 			sqlite.pragma('locking_mode = EXCLUSIVE');
 			sqlite.pragma('synchronous = EXTRA');
+			// Take the lock now and keep it across transactions until the connection closes.
+			sqlite.transaction(() => undefined).exclusive();
 		} else {
 			sqlite.pragma('journal_mode = WAL');
 		}
@@ -81,7 +83,7 @@ export function openDatabase({
 			db,
 			close: () => sqlite.close(),
 			rekey(newKey: Buffer) {
-				if (!forRekey || newKey.length !== 32) throw new Error('Invalid database rekey operation');
+				if (!exclusive || newKey.length !== 32) throw new Error('Invalid database rekey operation');
 				const result = sqlite.pragma(`rekey = "x'${newKey.toString('hex')}'"`, { simple: true });
 				if (result !== 'ok') throw new Error('Database rekey failed');
 			}

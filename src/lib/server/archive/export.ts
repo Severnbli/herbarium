@@ -1,5 +1,5 @@
 import { Readable, addAbortSignal } from 'node:stream';
-import { eq, getTableColumns } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { ZipFile } from 'yazl';
 import { audit } from '#lib/server/audit.ts';
 import { unwrapDataKey } from '#lib/server/crypto/keys.ts';
@@ -19,67 +19,75 @@ import { MANIFEST_PATH, MAX_ARCHIVE_ROWS, MAX_MANIFEST_BYTES, originalPath } fro
 
 let exporting = false;
 
+function* queryRows<T>(query: {
+	limit: (size: number) => { offset: (start: number) => { all: () => T[] } };
+}) {
+	const batchSize = 250;
+	for (let offset = 0; ; offset += batchSize) {
+		const rows = query.limit(batchSize).offset(offset).all();
+		yield* rows;
+		if (rows.length < batchSize) return;
+	}
+}
+
 function snapshot(db: Db) {
 	return db.transaction((tx) => {
-		const originals = tx
-			.select()
-			.from(mediaFile)
-			.where(eq(mediaFile.variant, 'original'))
-			.limit(MAX_ARCHIVE_ROWS + 1)
-			.all();
-		const assets = new Map(originals.map((asset) => [asset.memoryId, asset]));
-		const manifest = {
-			version: 1,
-			exportedAt: new Date(),
-			authors: tx
-				.select({ id: user.id, displayName: user.displayName, createdAt: user.createdAt })
-				.from(user)
-				.limit(MAX_ARCHIVE_ROWS + 1)
-				.all(),
-			events: tx
-				.select()
-				.from(event)
-				.limit(MAX_ARCHIVE_ROWS + 1)
-				.all(),
-			memories: tx
-				.select(getTableColumns(memory))
-				.from(memory)
-				.limit(MAX_ARCHIVE_ROWS + 1)
-				.all()
-				.map((row) => {
-					const asset = assets.get(row.id);
-					if (!asset) throw new Error('Original unavailable');
-					return { ...row, original: { contentType: asset.contentType, size: asset.size } };
-				}),
-			albums: tx
-				.select()
-				.from(album)
-				.limit(MAX_ARCHIVE_ROWS + 1)
-				.all(),
-			albumMemories: tx
-				.select()
-				.from(albumMemory)
-				.limit(MAX_ARCHIVE_ROWS + 1)
-				.all(),
-			reminders: tx
-				.select()
-				.from(eventReminder)
-				.limit(MAX_ARCHIVE_ROWS + 1)
-				.all()
-		};
-		for (const rows of [
-			manifest.authors,
-			manifest.events,
-			manifest.memories,
-			manifest.albums,
-			manifest.albumMemories,
-			manifest.reminders
-		]) {
-			if (rows.length > MAX_ARCHIVE_ROWS) throw new Error('Too many archive records');
+		const assets = new Map<string, typeof mediaFile.$inferSelect>();
+		for (const asset of queryRows(
+			tx.select().from(mediaFile).where(eq(mediaFile.variant, 'original')).orderBy(mediaFile.id)
+		)) {
+			if (assets.size >= MAX_ARCHIVE_ROWS) throw new Error('Too many archived originals');
+			assets.set(asset.memoryId, asset);
 		}
-		const json = Buffer.from(JSON.stringify(manifest));
-		if (json.length > MAX_MANIFEST_BYTES) throw new Error('Archive manifest is too large');
-		return { json, memories: manifest.memories, assets };
+
+		const originals: { path: string; asset: typeof mediaFile.$inferSelect }[] = [];
+		function* memoryRows() {
+			for (const row of queryRows(tx.select().from(memory).orderBy(memory.id))) {
+				const asset = assets.get(row.id);
+				if (!asset) throw new Error('Original unavailable');
+				const archived = { ...row, original: { contentType: asset.contentType, size: asset.size } };
+				originals.push({ path: originalPath(archived), asset });
+				yield archived;
+			}
+		}
+
+		const collections = {
+			authors: queryRows(
+				tx
+					.select({ id: user.id, displayName: user.displayName, createdAt: user.createdAt })
+					.from(user)
+					.orderBy(user.id)
+			),
+			events: queryRows(tx.select().from(event).orderBy(event.id)),
+			memories: memoryRows(),
+			albums: queryRows(tx.select().from(album).orderBy(album.id)),
+			albumMemories: queryRows(
+				tx.select().from(albumMemory).orderBy(albumMemory.albumId, albumMemory.memoryId)
+			),
+			reminders: queryRows(
+				tx.select().from(eventReminder).orderBy(eventReminder.eventId, eventReminder.minutes)
+			)
+		};
+		const chunks: string[] = [];
+		let size = 0;
+		function append(part: string) {
+			size += Buffer.byteLength(part);
+			if (size > MAX_MANIFEST_BYTES) throw new Error('Archive manifest is too large');
+			chunks.push(part);
+		}
+
+		append(`{"version":1,"exportedAt":${JSON.stringify(new Date())}`);
+		for (const [name, rows] of Object.entries(collections)) {
+			append(`,"${name}":[`);
+			let count = 0;
+			for (const row of rows) {
+				if (count >= MAX_ARCHIVE_ROWS) throw new Error('Too many archive records');
+				append(`${count++ ? ',' : ''}${JSON.stringify(row)}`);
+			}
+			append(']');
+		}
+		append('}');
+		return { json: Buffer.from(chunks.join('')), originals };
 	});
 }
 
@@ -116,11 +124,11 @@ export function createExport(
 	requestSignal: AbortSignal
 ): ReadableStream<Uint8Array> | null {
 	if (exporting) return null;
-	const { json, memories, assets } = snapshot(db);
+	const { json, originals } = snapshot(db);
 	audit(db, 'export_started', { actorId, ip });
 	const release = holdMediaFiles(
 		dataDir,
-		[...assets.values()].map(({ id }) => id)
+		originals.map(({ asset }) => asset.id)
 	);
 	exporting = true;
 	const zip = new ZipFile();
@@ -140,10 +148,9 @@ export function createExport(
 	addAbortSignal(signal, output);
 	try {
 		zip.addBuffer(json, MANIFEST_PATH, { mode: 0o600 });
-		for (const row of memories) {
-			const asset = assets.get(row.id)!;
+		for (const { path, asset } of originals) {
 			zip.addReadStreamLazy(
-				originalPath(row),
+				path,
 				{ size: asset.size, compress: false, mode: 0o600 },
 				(callback) => {
 					const source = Readable.from(readOriginal(dataDir, wrappingKey, asset, signal), {

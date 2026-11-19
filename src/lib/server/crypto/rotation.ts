@@ -105,7 +105,12 @@ export function openInstanceDatabase(
 	} catch (cause) {
 		if (!(cause instanceof DatabaseKeyError) || !masterKeyPrevious) throw cause;
 		const previous = deriveKeys(masterKeyPrevious);
-		const old = openDatabase({ path, key: previous.database, fileMustExist: true, forRekey: true });
+		const old = openDatabase({
+			path,
+			key: previous.database,
+			fileMustExist: true,
+			exclusive: true
+		});
 		try {
 			stageRotation(old.db, previous, next, target);
 			old.rekey(next.database);
