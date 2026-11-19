@@ -2,7 +2,7 @@
 
 ## Current implementation
 
-Herbarium is a SvelteKit application using Svelte 5 runes, strict TypeScript and `adapter-node`. One instance represents one shared circle. Foundation, security, the design system, three locales, moments, plans, recurring occasions, memories, calendar views, reminders, the timeline and maps are implemented. Later phases remain planned in the [roadmap](ROADMAP.md).
+Herbarium is a SvelteKit application using Svelte 5 runes, strict TypeScript and `adapter-node`. One instance represents one shared circle. Foundation, security, the design system, three locales, moments, plans, recurring occasions, memories, calendar views, reminders, the timeline, maps and the dashboard are implemented. Later phases remain planned in the [roadmap](ROADMAP.md).
 
 | Location                   | Responsibility                                        |
 | -------------------------- | ----------------------------------------------------- |
@@ -100,3 +100,9 @@ The authenticated `/map` load selects events with both coordinates from SQLCiphe
 MapLibre and its stylesheet load when an interactive map mounts. A local style uses the active theme and selects the member's language where names are present in the Protomaps v4 vector tiles. The asset route requires a full session for requests for the PMTiles archive, glyphs and marker sprites. It serves a fixed allowlist with single byte ranges and version validators. The only operator-supplied file is `basemap.pmtiles` at the root of the data directory. An instance without the archive can still use place search, coordinate fields and event pins.
 
 The place picker queries a bundled read-only SQLite gazetteer using bound FTS expressions built from name tokens. Search terms travel in the request body. GeoNames names and coordinates are public reference data in a separate database. Choosing a result fills the place and coordinate fields for the normal event save. Memory upload displays a photo GPS suggestion on a local map and retains the existing session-bound consent action.
+
+## Dashboard
+
+The authenticated root page shows up to six event starts within the next 30 calendar days and includes the current day. Each occasion contributes its first upcoming recurrence in the window, using the same recurrence expansion as the calendar. Timed events must still be upcoming by instant. The dashboard displays those instants and counts down in the member's account time zone. All-day events retain their calendar dates. Month and year precision keep their original labels and can appear while the start period is current or begins in the window.
+
+The anniversary panel finds the next anniversary even beyond the upcoming window. Time together counts calendar days since the earliest anniversary that has started. On this day shows up to five day-precision moments and occasions by their original local month and day in previous years. The recent memories panel shows the last four uploads and fetches thumbnails through the authenticated media route. The server load checks for a full session and returns display data for these sections. The root page remains the default after sign-in, with existing return links to protected pages preserved.

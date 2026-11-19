@@ -137,11 +137,11 @@ Done when: events can be pinned and browsed on a map that works fully offline fr
 
 ## Phase 9 – Dashboard
 
-- [ ] Upcoming events and occasions with countdowns
-- [ ] Recent memories
-- [ ] "On this day" from previous years
-- [ ] Next anniversary highlight; time together counter
-- [ ] Becomes the home page after login
+- [x] Upcoming events and occasions with countdowns
+- [x] Recent memories
+- [x] "On this day" from previous years
+- [x] Next anniversary highlight; time together counter
+- [x] Becomes the home page after login
 
 ## Phase 10 – Data ownership and operations
 

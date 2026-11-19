@@ -86,3 +86,9 @@ Open **Map** to filter pinned events by kind, local start year and category. The
 Playwright installs a small [Belarus tileset fixture](../tests/fixtures/maps/README.md) and blocks outbound HTTP requests during the map flow. It checks authenticated ranges, glyph and sprite delivery, pin editing, event previews and keyboard access to the list. See the [deployment guide](deployment.md#offline-maps) to install a larger map for development.
 
 To refresh place search, download the current `BY.zip`, `cities5000.zip` and `alternateNamesV2.zip` exports from [GeoNames](https://download.geonames.org/export/dump/) into one directory. Run `python3 scripts/build-gazetteer.py <source-dir>` from the repository root with a Python build that includes SQLite FTS5. Update the snapshot date and hashes in [the asset notice](../map-assets/README.md), then run the map tests. The build and runtime use the checked-in SQLite file.
+
+## Dashboard
+
+Open **Home** after signing in. **Coming up** counts down to event starts in the next 30 days, including today. Set the time zone under **Account** to change the local day and timed-event labels. Create a yearly occasion of type **Anniversary** with its original date to populate the anniversary highlight and time-together count. **On this day** uses exact original dates from previous years. **Recent memories** shows the latest uploads, including newly added photos with old capture dates.
+
+Tests cover member time zones, elapsed starts, approximate dates, anniversary selection, leap days, historical matching and upload order. Playwright checks the home page with JavaScript disabled and follows the event and memory links.

@@ -2,6 +2,7 @@ import { execFile } from 'node:child_process';
 import { copyFileSync, mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
+import { Temporal } from '@js-temporal/polyfill';
 import { expect, test, type Browser, type Page } from '@playwright/test';
 import { Secret, TOTP } from 'otpauth';
 import sharp from 'sharp';
@@ -100,6 +101,8 @@ test('first-run setup needs the setup code and creates the owner', async ({ page
 	await fill(readFileSync(join(dataDir, 'setup-code'), 'utf8').trim());
 	await expect(page).toHaveURL('/');
 	await expect(page.getByText(`Welcome, ${owner.name}.`)).toBeVisible();
+	await expect(page.getByText('No events in the next 30 days.')).toBeVisible();
+	await expect(page.getByRole('heading', { name: 'Recent memories' })).toBeVisible();
 
 	// The code is gone and setup cannot run again.
 	expect(() => readFileSync(join(dataDir, 'setup-code'))).toThrow();
@@ -459,13 +462,13 @@ test('timed events retain their local year and future plans cannot be completed 
 	await expect(page).toHaveURL('/events');
 });
 
-test('event and timeline screens render in three languages and both themes on a phone', async ({
+test('dashboard, event and timeline screens render in three languages and both themes on a phone', async ({
 	browser
 }) => {
-	for (const [locale, heading, save, timeline] of [
-		['en', 'New event', 'Save event', 'Timeline'],
-		['be', 'Новая падзея', 'Захаваць падзею', 'Храналогія'],
-		['ru', 'Новое событие', 'Сохранить событие', 'Хронология']
+	for (const [locale, heading, save, timeline, upcoming] of [
+		['en', 'New event', 'Save event', 'Timeline', 'Coming up'],
+		['be', 'Новая падзея', 'Захаваць падзею', 'Храналогія', 'Бліжэйшыя падзеі'],
+		['ru', 'Новое событие', 'Сохранить событие', 'Хронология', 'Ближайшие события']
 	]) {
 		const context = await browser.newContext({ locale, viewport: { width: 375, height: 812 } });
 		const page = await context.newPage();
@@ -475,6 +478,13 @@ test('event and timeline screens render in three languages and both themes on a 
 		await page.locator('input[name="password"]').fill(member.password);
 		await page.locator('main form button').click();
 		await expect(page).toHaveURL('/');
+		await expect(page.getByRole('heading', { name: upcoming, exact: true })).toBeVisible();
+		for (const colorScheme of ['light', 'dark'] as const) {
+			await page.emulateMedia({ colorScheme });
+			expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+				true
+			);
+		}
 		await page.goto('/events/new');
 		await expect(page.getByRole('heading', { name: heading, exact: true })).toBeVisible();
 		await page.locator('input[name="title"]').fill(`Synthetic ${locale} event`);
@@ -530,7 +540,7 @@ test('timeline groups dates and pages through filtered events without JavaScript
 		expect(response.status()).toBe(303);
 	}
 
-	await page.getByRole('link', { name: 'Timeline', exact: true }).click();
+	await page.getByRole('navigation').getByRole('link', { name: 'Timeline', exact: true }).click();
 	const anniversary = page.getByRole('region', { name: '2000' });
 	await expect(
 		anniversary.getByRole('link', { name: 'Synthetic calendar anniversary' })
@@ -619,6 +629,11 @@ test('uploads private memories, browses them by keyboard and manages independent
 	await offline.getByRole('link', { name: /Winter swatch/ }).click();
 	await expect(offline.getByRole('img', { name: 'A rose-coloured swatch' })).toBeVisible();
 	const photoUrl = offline.url();
+	await offline.goto('/');
+	const recent = offline.getByRole('region', { name: 'Recent memories' });
+	await expect(recent.getByRole('img', { name: 'A rose-coloured swatch' })).toBeVisible();
+	await recent.getByRole('link', { name: /Winter swatch/ }).click();
+	await expect(offline).toHaveURL(photoUrl);
 	await offline.goto('/timeline');
 	const timelinePhoto = offline.getByRole('img', { name: 'A rose-coloured swatch' });
 	await expect(timelinePhoto).toHaveAttribute('loading', 'lazy');
@@ -852,6 +867,50 @@ test('loads local tiles and glyphs, searches for places and edits pins without o
 		expect((await page.request.get('/map?' + query)).status()).toBe(400);
 	expect(outbound).toEqual([]);
 	expect(violations).toEqual([]);
+});
+
+test('the dashboard opens after login and shows upcoming and past dates without JavaScript', async ({
+	browser
+}) => {
+	const page = await newPage(browser, { javaScriptEnabled: false });
+	await page.setViewportSize({ width: 360, height: 800 });
+	await login(page, member.username, member.password);
+	await expect(page).toHaveURL('/');
+	const today = Temporal.PlainDate.from(
+		(await page.locator('main time').first().getAttribute('datetime'))!
+	);
+	for (const input of [
+		{ title: 'Synthetic tomorrow', start: today.add({ days: 1 }).toString(), kind: 'plan' },
+		{
+			title: 'Synthetic past on this day',
+			start: today.with({ year: 1996 }).toString(),
+			kind: 'moment'
+		}
+	]) {
+		const response = await page.request.post('/events/new', {
+			headers: { origin: ORIGIN, accept: 'text/html' },
+			form: { ...emptyEventForm, ...input },
+			maxRedirects: 0
+		});
+		expect(response.status()).toBe(303);
+	}
+	const response = await page.reload();
+	expect(response?.headers()['cache-control']).toBe('no-store');
+	const upcoming = page.getByRole('region', { name: 'Coming up' });
+	await expect(
+		upcoming.getByRole('listitem').filter({ hasText: 'Synthetic tomorrow' })
+	).toContainText('tomorrow');
+	const anniversary = page.getByRole('region', { name: 'Next anniversary' });
+	await expect(
+		anniversary.getByRole('link', { name: 'Synthetic calendar anniversary' })
+	).toBeVisible();
+	await expect(anniversary.getByRole('heading', { name: 'Time together' })).toBeVisible();
+	const history = page.getByRole('region', { name: 'On this day' });
+	await expect(history.getByRole('link', { name: 'Synthetic past on this day' })).toBeVisible();
+	expect(await page.locator('body').evaluate((body) => body.scrollWidth)).toBeLessThanOrEqual(360);
+	await upcoming.getByRole('link', { name: 'Synthetic tomorrow' }).click();
+	await expect(page.getByRole('heading', { name: 'Synthetic tomorrow' })).toBeVisible();
+	await page.context().close();
 });
 
 test('a revoked invite cannot be used', async ({ browser }) => {

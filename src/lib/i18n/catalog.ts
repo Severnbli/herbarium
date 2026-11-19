@@ -282,7 +282,15 @@ export function messages(locale: Locale) {
 		},
 		home: {
 			greeting: (name: string) => m.home_greeting({ name }, { locale }),
-			intro: m.home_intro({}, { locale })
+			upcoming: m.home_upcoming({}, { locale }),
+			upcomingEmpty: m.home_upcomingEmpty({}, { locale }),
+			anniversary: m.home_anniversary({}, { locale }),
+			anniversaryEmpty: m.home_anniversaryEmpty({}, { locale }),
+			together: m.home_together({}, { locale }),
+			since: (date: string) => m.home_since({ date }, { locale }),
+			history: m.home_history({}, { locale }),
+			historyEmpty: m.home_historyEmpty({}, { locale }),
+			recent: m.home_recent({}, { locale })
 		},
 		members: {
 			title: m.members_title({}, { locale }),
