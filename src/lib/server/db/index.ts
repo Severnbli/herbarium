@@ -1,5 +1,4 @@
-import { chmodSync, existsSync, mkdirSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { resolve } from 'node:path';
 // `better-sqlite3` is an npm alias for `better-sqlite3-multiple-ciphers` (see package.json), so the
 // Drizzle driver and this module share the SQLCipher-enabled build.
 import Database, { type RunResult } from 'better-sqlite3';
@@ -28,6 +27,7 @@ export interface OpenOptions {
 	/** Folder with the drizzle-kit migrations. Defaults to `./drizzle`. */
 	migrationsFolder?: string;
 	fileMustExist?: boolean;
+	forRekey?: boolean;
 }
 
 /**
@@ -36,10 +36,13 @@ export interface OpenOptions {
  * The cipher is SQLCipher v4, so the file stays readable with the stock `sqlcipher` tool given the
  * derived key (see docs/key-management.md).
  */
-export function openDatabase({ path, key, migrationsFolder, fileMustExist = false }: OpenOptions): {
-	db: Db;
-	close: () => void;
-} {
+export function openDatabase({
+	path,
+	key,
+	migrationsFolder,
+	fileMustExist = false,
+	forRekey = false
+}: OpenOptions) {
 	if (key.length !== 32) throw new Error('Expected a 32-byte database key');
 
 	const sqlite = new Database(path, { fileMustExist });
@@ -55,40 +58,38 @@ export function openDatabase({ path, key, migrationsFolder, fileMustExist = fals
 		sqlite.pragma(`key = "x'${key.toString('hex')}'"`);
 		try {
 			sqlite.prepare('SELECT count(*) FROM sqlite_master').get();
-		} catch {
-			throw new DatabaseKeyError();
+		} catch (cause) {
+			if ((cause as { code?: string }).code === 'SQLITE_NOTADB') throw new DatabaseKeyError();
+			throw cause;
 		}
-		sqlite.pragma('journal_mode = WAL');
-		sqlite.pragma('foreign_keys = ON');
 		sqlite.pragma('busy_timeout = 5000');
+		if (forRekey) {
+			if (sqlite.pragma('journal_mode = DELETE', { simple: true }) !== 'delete') {
+				throw new Error('Could not enable the rotation rollback journal');
+			}
+			sqlite.pragma('locking_mode = EXCLUSIVE');
+			sqlite.pragma('synchronous = EXTRA');
+		} else {
+			sqlite.pragma('journal_mode = WAL');
+		}
+		sqlite.pragma('foreign_keys = ON');
 		sqlite.pragma('secure_delete = ON');
 
 		const db = drizzle({ client: sqlite, schema });
 		migrate(db, { migrationsFolder: migrationsFolder ?? resolve('drizzle') });
-		return { db, close: () => sqlite.close() };
+		return {
+			db,
+			close: () => sqlite.close(),
+			rekey(newKey: Buffer) {
+				if (!forRekey || newKey.length !== 32) throw new Error('Invalid database rekey operation');
+				const result = sqlite.pragma(`rekey = "x'${newKey.toString('hex')}'"`, { simple: true });
+				if (result !== 'ok') throw new Error('Database rekey failed');
+			}
+		};
 	} catch (error) {
 		sqlite.close();
 		throw error;
 	}
-}
-
-let current: Db | undefined;
-
-/** Opens the database in the data directory once at server start. */
-export function initDatabase(dataDir: string, key: Buffer): Db {
-	if (!existsSync(dataDir)) {
-		mkdirSync(dataDir, { recursive: true, mode: 0o700 });
-	}
-	const path = join(dataDir, DATABASE_FILE);
-	const isNew = !existsSync(path);
-	current = openDatabase({ path, key }).db;
-	if (isNew) chmodSync(path, 0o600);
-	return current;
-}
-
-export function getDb(): Db {
-	if (!current) throw new Error('Database accessed before initDatabase() was called');
-	return current;
 }
 
 export { schema };

@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { isAbsolute, resolve } from 'node:path';
 import { z } from 'zod';
@@ -22,6 +23,8 @@ export interface Config {
 	dataDir: string;
 	/** 256-bit master key. Never log or serialize this value. */
 	masterKey: Buffer;
+	/** Optional previous key for startup rotation. */
+	masterKeyPrevious?: Buffer;
 	limits: {
 		/** Maximum size of one uploaded file in bytes. */
 		maxFileBytes: number;
@@ -55,6 +58,7 @@ const envSchema = z.object({
 	DATA_DIR: z.string().trim().min(1).optional(),
 	MASTER_KEY: z.string().trim().optional(),
 	MASTER_KEY_FILE: z.string().trim().optional(),
+	MASTER_KEY_PREVIOUS_FILE: z.string().trim().optional(),
 	MAX_FILE_BYTES: byteLimit(128 * MiB, GiB),
 	MAX_REQUEST_BYTES: byteLimit(129 * MiB, MAX_UPLOAD_BYTES),
 	PATH: z.string().min(1).default('/usr/local/bin:/usr/bin:/bin'),
@@ -103,6 +107,12 @@ export function loadConfig(env: Env, options: LoadOptions): Config {
 
 	const origin = parseOrigin(vars.ORIGIN, production, issues);
 	const masterKey = loadMasterKey(vars.MASTER_KEY, vars.MASTER_KEY_FILE, readFile, issues);
+	const masterKeyPrevious = vars.MASTER_KEY_PREVIOUS_FILE
+		? readKeyFile(vars.MASTER_KEY_PREVIOUS_FILE, 'MASTER_KEY_PREVIOUS_FILE', readFile, issues)
+		: undefined;
+	if (masterKey && masterKeyPrevious && timingSafeEqual(masterKey, masterKeyPrevious)) {
+		issues.push('MASTER_KEY_PREVIOUS_FILE must contain a different master key');
+	}
 	const smtp = loadSmtpConfig(vars, readFile, issues);
 
 	if (production && !vars.DATA_DIR) {
@@ -122,6 +132,7 @@ export function loadConfig(env: Env, options: LoadOptions): Config {
 		origin,
 		dataDir,
 		masterKey,
+		masterKeyPrevious,
 		limits: { maxFileBytes: vars.MAX_FILE_BYTES, maxRequestBytes: vars.MAX_REQUEST_BYTES },
 		mediaToolEnv: { PATH: vars.PATH, PERL5LIB: vars.PERL5LIB },
 		smtp,
@@ -224,19 +235,8 @@ function loadMasterKey(
 		return undefined;
 	}
 
-	let encoded: string;
-	if (file) {
-		try {
-			encoded = readFile(file).trim();
-		} catch {
-			issues.push('MASTER_KEY_FILE could not be read');
-			return undefined;
-		}
-	} else {
-		encoded = inline as string;
-	}
-
-	const key = decodeKey(encoded);
+	if (file) return readKeyFile(file, 'MASTER_KEY_FILE', readFile, issues);
+	const key = decodeKey(inline!);
 	if (!key) {
 		issues.push(
 			`the master key must be exactly ${MASTER_KEY_BYTES} bytes, encoded as base64 or hex. ` +
@@ -244,6 +244,24 @@ function loadMasterKey(
 		);
 		return undefined;
 	}
+	return key;
+}
+
+function readKeyFile(
+	path: string,
+	variable: 'MASTER_KEY_FILE' | 'MASTER_KEY_PREVIOUS_FILE',
+	readFile: (path: string) => string,
+	issues: string[]
+): Buffer | undefined {
+	let encoded: string;
+	try {
+		encoded = readFile(path).trim();
+	} catch {
+		issues.push(`${variable} could not be read`);
+		return undefined;
+	}
+	const key = decodeKey(encoded);
+	if (!key) issues.push(`${variable} must contain a 32-byte key encoded as base64 or hex`);
 	return key;
 }
 

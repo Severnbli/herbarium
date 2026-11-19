@@ -148,8 +148,8 @@ Done when: events can be pinned and browsed on a map that works fully offline fr
 - [x] Full export (JSON + original files without location metadata, zip, streamed) behind re-auth; audit-logged; event coordinates included in the JSON
 - [x] Import from an export (restore into a fresh instance)
 - [ ] Bulk photo/video import from a phone gallery or folder: multi-file upload with progress and resume, grouped by EXIF capture date into suggested moments/albums the user confirms; GPS suggestions as in phase 5; duplicate detection by a keyed hash (HMAC) of the uploaded bytes, computed before metadata removal
-- [ ] Master key rotation (re-wrap data keys, re-key SQLCipher)
-- [ ] Backup and restore guide; a tested restore procedure in CI
+- [x] Master key rotation (re-wrap data keys, re-key SQLCipher)
+- [x] Backup and restore guide; a tested restore procedure in CI
 - [x] Optional TOTP 2FA (implemented in phase 1)
 
 ## Phase 11 – Polish and v1.0

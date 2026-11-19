@@ -46,14 +46,25 @@ Work on a copy of the file, never on the live database.
 
 ## Rotating the master key
 
-Rotation is designed now and implemented in phase 10. Until then, the master key cannot be changed.
+Before rotating, stop all Herbarium processes using the data directory and take an [encrypted volume backup](deployment.md#encrypted-volume-backup). Retain the old key separately to open that backup. Then configure the new 32-byte key through `MASTER_KEY_FILE` (or `MASTER_KEY`) and set `MASTER_KEY_PREVIOUS_FILE` to the old key file. Start one Herbarium process.
 
-The procedure is resumable, so a crash at any point leaves a state the next start can finish:
+The server tries the new database key first. If only the previous key works, it re-wraps the media data keys, re-seals active and pending TOTP secrets and writes an HMAC fingerprint of the intended new key in one transaction. It then changes the SQLCipher key with `PRAGMA rekey` using a rollback journal. After reopening with the new key, the server clears the marker and records rotation in the audit log in a single transaction. Media ciphertext is unchanged.
 
-1. The operator backs up the volume, then starts the app with the new key in `MASTER_KEY_FILE` and the old one in `MASTER_KEY_PREVIOUS_FILE`.
-2. The app opens the database with the old `database` subkey. In one transaction it re-wraps every data key from the old `key-wrap` subkey to the new one, re-seals every `field` value, and records a fingerprint of the new master key (an HMAC of a fixed label, never the key itself) in a `key_info` row.
-3. It re-keys the database with `PRAGMA rekey` to the new `database` subkey.
-4. On every start the app first tries the new key. If that fails and a previous key is configured, it opens the database with the previous key, checks the `key_info` fingerprint to see whether step 2 already ran, and continues from there.
-5. Once the app reports that rotation is complete (and an audit event is written), the operator removes `MASTER_KEY_PREVIOUS_FILE` and destroys the old key.
+Keep both keys configured if startup is interrupted. The next start resumes a prepared rotation or finalizes a database already keyed with the new key. A server started with the previous key as its only key refuses to serve a partially rotated database. After the server reports `Herbarium completed master key rotation.`, remove `MASTER_KEY_PREVIOUS_FILE` and restart. Take a new encrypted backup with the new key. When all backups made with the previous key have been retired, discard that key.
 
-Media files are not touched by rotation, because their data keys do not change.
+For the example Compose deployment, place the previous key in `./secrets/master_key.previous` with the same ownership and permissions as the current key. Replace the contents of `./secrets/master_key` with the newly generated key. Use this temporary `docker-compose.rotate.yml` alongside `docker-compose.yml`:
+
+```yaml
+services:
+  herbarium:
+    environment:
+      MASTER_KEY_PREVIOUS_FILE: /run/secrets/master_key_previous
+    secrets:
+      - master_key_previous
+
+secrets:
+  master_key_previous:
+    file: ./secrets/master_key.previous
+```
+
+Start with `docker compose -f docker-compose.yml -f docker-compose.rotate.yml up -d` and check the service logs. Once confirmed, recreate the service with the original Compose file alone.

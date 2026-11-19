@@ -157,6 +157,12 @@ export const auditLog = sqliteTable(
 	(table) => [index('audit_log_created_idx').on(table.createdAt)]
 );
 
+/** A singleton marker between re-sealing fields and re-keying SQLCipher. */
+export const keyRotation = sqliteTable('key_rotation', {
+	id: integer('id').primaryKey(),
+	target: blob('target', { mode: 'buffer' }).notNull()
+});
+
 /** Moments, plans and recurring occasions share their identity. */
 export const event = sqliteTable(
 	'event',

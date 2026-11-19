@@ -14,6 +14,7 @@ import {
 	event,
 	eventReminder,
 	invite,
+	keyRotation,
 	mediaFile,
 	memory,
 	user
@@ -43,6 +44,7 @@ function checkFresh(db: Db) {
 		extra ||
 		owner.role !== 'owner' ||
 		owner.deactivatedAt ||
+		db.select({ id: keyRotation.id }).from(keyRotation).limit(1).get() ||
 		db
 			.select({ id: auditLog.id })
 			.from(auditLog)
