@@ -41,6 +41,9 @@
 				href={resolve('/timeline')}
 				aria-current={page.url.pathname === '/timeline' ? 'page' : undefined}>{m.timeline.title}</a
 			>
+			<a href={resolve('/map')} aria-current={page.url.pathname === '/map' ? 'page' : undefined}
+				>{m.map.nav}</a
+			>
 			<a
 				href={resolve('/memories')}
 				aria-current={page.url.pathname.startsWith('/memories') ? 'page' : undefined}
@@ -70,7 +73,11 @@
 	</header>
 {/if}
 
-<main id="content" tabindex="-1" class:calendar={page.url.pathname === '/calendar'}>
+<main
+	id="content"
+	tabindex="-1"
+	class:wide={page.url.pathname === '/calendar' || page.url.pathname === '/map'}
+>
 	<Ornament kind={data.user ? 'divider' : 'flower'} />
 	{@render children()}
 </main>
@@ -100,7 +107,7 @@
 	nav {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 1.5rem;
+		gap: 0.75rem;
 	}
 	nav a[aria-current='page'] {
 		font-weight: bold;
@@ -124,7 +131,7 @@
 		border-radius: var(--radius);
 		box-shadow: var(--shadow);
 	}
-	main.calendar {
+	main.wide {
 		max-width: 76rem;
 	}
 	.skip {
@@ -139,7 +146,7 @@
 		top: 1rem;
 	}
 	@media (max-width: 78rem) {
-		main.calendar {
+		main.wide {
 			margin-inline: 1rem;
 		}
 	}

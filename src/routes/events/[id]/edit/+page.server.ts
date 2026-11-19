@@ -1,14 +1,20 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { db } from '#lib/server/app.ts';
 import { requireUser } from '#lib/server/auth/guard.ts';
+import { getConfig } from '#lib/server/config.ts';
+import { hasBasemap } from '#lib/server/maps/assets.ts';
 import { EventError, eventToForm, findEvent, updateEvent } from '#lib/server/events/events.ts';
 import { handleEventError, parseEventForm, routeEventId } from '#lib/server/events/forms.ts';
 import type { Actions, PageServerLoad } from './$types';
-export const load: PageServerLoad = (event) => {
+export const load: PageServerLoad = async (event) => {
 	requireUser(event);
 	const id = routeEventId(event.params);
 	try {
-		return { id, values: eventToForm(findEvent(db(), id)) };
+		return {
+			id,
+			values: eventToForm(findEvent(db(), id)),
+			basemap: await hasBasemap(getConfig().dataDir)
+		};
 	} catch (cause) {
 		handleEventError(cause);
 	}

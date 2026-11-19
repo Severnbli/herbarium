@@ -1,3 +1,4 @@
+import type { ByteRange } from '#lib/server/http/byte-range.ts';
 import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
 import type { FileHandle } from 'node:fs/promises';
 import { DecryptionError, KEY_BYTES } from '#lib/server/crypto/keys.ts';
@@ -7,11 +8,6 @@ const TAG_BYTES = 16;
 const MAGIC = Buffer.from('HMEDIA\x01\0');
 const HEADER_BYTES = 24;
 const MAX_BYTES = SEGMENT_BYTES * (2 ** 32 - 1);
-
-export interface ByteRange {
-	start: number;
-	end: number;
-}
 
 function nonce(header: Buffer, counter: number): Buffer {
 	const value = Buffer.alloc(12);

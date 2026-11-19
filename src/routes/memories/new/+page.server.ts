@@ -5,6 +5,7 @@ import { db, keys } from '#lib/server/app.ts';
 import { requireUser } from '#lib/server/auth/guard.ts';
 import { getConfig } from '#lib/server/config.ts';
 import { event } from '#lib/server/db/schema.ts';
+import { hasBasemap } from '#lib/server/maps/assets.ts';
 import { offerCoordinates } from '#lib/server/media/coordinates.ts';
 import { queryFields } from '#lib/server/media/gallery.ts';
 import { UploadError } from '#lib/server/media/process.ts';
@@ -56,6 +57,7 @@ export const actions: Actions = {
 		if (row && row.lat === null && uploaded.coordinates) {
 			return {
 				suggestion: {
+					basemap: await hasBasemap(getConfig().dataDir),
 					id: uploaded.id,
 					token: offerCoordinates(
 						keys().field,

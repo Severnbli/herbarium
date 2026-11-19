@@ -1,6 +1,6 @@
 # Deployment
 
-Herbarium ships as one Docker image (`severnbli/herbarium`) plus one volume that holds everything the instance knows: the encrypted SQLite database and the encrypted media.
+Herbarium ships as one Docker image (`severnbli/herbarium`) plus one volume that holds everything the instance knows: the encrypted SQLite database, the encrypted media and the optional public basemap archive.
 
 ## Images
 
@@ -100,6 +100,28 @@ secrets:
 STARTTLS defaults to port 587. Set `SMTP_TLS: implicit` for implicit TLS on port 465. Use `SMTP_PORT` for a different port. For a relay using a private CA, mount the CA certificate read-only and configure Node's `NODE_EXTRA_CA_CERTS` to point at it. Once the server restarts with SMTP configured, members can opt in on **Account** and set reminder times on individual events.
 
 The scheduler queues reminders up to 14 days ahead. Reminders that were configured before their due time can be delivered up to 24 hours late, including after a restart. A failed attempt is retried only when SMTP reports a temporary rejection or the connection failed before message submission. If the server stops during delivery or the relay disconnects without confirming acceptance, the delivery is treated as attempted and stays out of the retry queue.
+
+## Offline maps
+
+Install one Protomaps v4 vector basemap archive as `basemap.pmtiles` at the root of the data volume. The archive must contain MVT tiles in PMTiles v3 format. Place search and event pins work before installation. The app opens the archive locally; the browser gets byte ranges from Herbarium after sign-in.
+
+On a computer with Internet access, install the [PMTiles CLI](https://docs.protomaps.com/pmtiles/cli) and choose a v4 archive URL from the [Protomaps build list](https://maps.protomaps.com/builds). Replace the example URL and adjust the bounding box and zoom for your coverage. This example covers Belarus and nearby countries at up to zoom 11. Higher maximum zooms increase the download and storage requirements.
+
+```sh
+pmtiles extract https://build.protomaps.com/YYYYMMDD.pmtiles basemap.pmtiles \
+  --bbox=20,49,33,57 --maxzoom=11
+pmtiles verify basemap.pmtiles
+```
+
+Copy the verified file to the host. From the Compose project directory, install or update it with an atomic rename on the mounted volume:
+
+```sh
+docker compose exec -T herbarium sh -c \
+  'umask 077; cat > /data/basemap.pmtiles.next && mv /data/basemap.pmtiles.next /data/basemap.pmtiles' \
+  < basemap.pmtiles
+```
+
+For a bare Node installation, put the file in `DATA_DIR` with read access for the process. Reload the map after replacing the archive. Keep HTTP range headers intact through the reverse proxy and disable shared caching for authenticated responses. The map shows [OpenStreetMap](https://www.openstreetmap.org/copyright) attribution. Glyphs, marker sprites and the GeoNames place database ship with Herbarium.
 
 ## Sessions and sign-in
 

@@ -2,7 +2,7 @@
 
 ## Current implementation
 
-Herbarium is a SvelteKit application using Svelte 5 runes, strict TypeScript and `adapter-node`. One instance represents one shared circle. Foundation, security, the design system, three locales, moments, plans, recurring occasions, memories, calendar views, reminders and the timeline are implemented. Later phases remain planned in the [roadmap](ROADMAP.md).
+Herbarium is a SvelteKit application using Svelte 5 runes, strict TypeScript and `adapter-node`. One instance represents one shared circle. Foundation, security, the design system, three locales, moments, plans, recurring occasions, memories, calendar views, reminders, the timeline and maps are implemented. Later phases remain planned in the [roadmap](ROADMAP.md).
 
 | Location                   | Responsibility                                        |
 | -------------------------- | ----------------------------------------------------- |
@@ -36,8 +36,6 @@ Date-only formatting fixes the time zone to UTC to preserve the day; timed forma
 ## Planned boundaries
 
 Events share one encrypted table with `moment`, `plan` and `occasion` kinds. The event services, schemas, date/notes modules and server-first screens are implemented. Date-only values stay `YYYY-MM-DD` strings, normalized to the first day for month/year precision. Timed events store UTC instants and an IANA time zone, plus the local start date for sorting and year filters.
-
-Maps will use locally served tiles and a local gazetteer.
 
 The deployment remains one Node application and one data volume. Runtime assets are self-hosted; user data never goes to third-party APIs. Record boundary changes in [decisions.md](decisions.md).
 
@@ -94,3 +92,11 @@ The SMTP message uses the member's saved language or the request locale recorded
 The authenticated `/timeline` load returns up to 24 events, newest local start date first, grouped by year. Each occasion appears once at its original date. Date labels use the stored precision and time zone. Filters use the shared event kinds and categories. Normalized dates position approximate entries in the sequence while their labels retain the original month or year precision.
 
 Newer and older links request one batch at a time using a validated local start date and event ID as the boundary. The query reuses the event date and ID index. For each entry, the attachment index selects the most recent attached memory by capture date, with upload date as the fallback. Page data is limited to event summaries and the selected preview identifiers and labels. The browser lazy-loads each thumbnail from the existing authenticated media route. Navigation and filtering use links and a GET form. CSS animates the stem and branches when the browser allows motion.
+
+## Map of memories
+
+The authenticated `/map` load selects events with both coordinates from SQLCipher and optionally filters by kind, original local start year and category. The list is rendered on the server and each event links to its detail page. The interactive map clusters GeoJSON points in a same-origin MapLibre worker. A popup uses the same indexed attachment lookup as the timeline and fetches its thumbnail only when opened. Coordinates stay in the encrypted event row and authenticated page data. Web Mercator clamps points to its latitude limit for display; coordinate fields and detail text keep the stored values.
+
+MapLibre and its stylesheet load when an interactive map mounts. A local style uses the active theme and selects the member's language where names are present in the Protomaps v4 vector tiles. The asset route requires a full session for requests for the PMTiles archive, glyphs and marker sprites. It serves a fixed allowlist with single byte ranges and version validators. The only operator-supplied file is `basemap.pmtiles` at the root of the data directory. An instance without the archive can still use place search, coordinate fields and event pins.
+
+The place picker queries a bundled read-only SQLite gazetteer using bound FTS expressions built from name tokens. Search terms travel in the request body. GeoNames names and coordinates are public reference data in a separate database. Choosing a result fills the place and coordinate fields for the normal event save. Memory upload displays a photo GPS suggestion on a local map and retains the existing session-bound consent action.

@@ -8,7 +8,7 @@ This file is the source of truth for project context and instructions. Keep shar
 
 **Herbarium** is a self-hosted shared calendar for a small circle of people – a couple, a family, close friends. It preserves their shared history, organizes their present and plans their future. It should feel like a personal botanical chronicle or an enchanted herbarium – a place where memories are collected, pressed, preserved and allowed to grow.
 
-Status: phases 0 (foundation), 1 (security core), 2 (design system and i18n), 3 (moments and plans), 4 (occasions and recurrence), 5 (memories), 6 (calendar and reminders) and 7 (timeline) are in place. When you add tooling, update the **Commands** section so it always matches reality.
+Status: phases 0 (foundation), 1 (security core), 2 (design system and i18n), 3 (moments and plans), 4 (occasions and recurrence), 5 (memories), 6 (calendar and reminders), 7 (timeline) and 8 (map of memories) are in place. When you add tooling, update the **Commands** section so it always matches reality.
 
 The development plan lives in `docs/ROADMAP.md`. Work phase by phase, and tick off items there as they are completed.
 
@@ -65,6 +65,7 @@ npm run test         # Vitest unit and integration tests (src/**/*.test.ts)
 npm run test:e2e     # Playwright (tests/e2e/*.e2e.ts) against a production build
 npm run i18n:compile # compile typed messages from messages/{be,ru,en}.json
 npm run db:generate  # SQL migration from schema changes (drizzle-kit); the app applies migrations on startup
+python3 scripts/build-gazetteer.py <source-dir> # rebuild the bundled GeoNames search database
 docker compose up    # local container; needs secrets/master_key, see docs/deployment.md
 ```
 
@@ -121,7 +122,7 @@ This app holds the most private data its members have. Security is a requirement
 ### Location data
 
 - Event coordinates reveal where the members live and travel – treat them as the most sensitive fields. They live only in the encrypted database, are never logged, never put in reminder emails and never sent to any external service (no external geocoding, tiles or map styles). Place search uses a bundled local gazetteer.
-- Map tiles, glyphs and sprites are served only through an authenticated route. CSP for map pages allows only what MapLibre strictly needs (`worker-src blob:`), never `unsafe-eval`.
+- Map tiles, glyphs and sprites are served only through an authenticated route. MapLibre uses a same-origin module worker under `worker-src 'self'`; CSP never allows `unsafe-eval`.
 
 ### File uploads
 

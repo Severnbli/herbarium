@@ -114,3 +114,13 @@ Status: accepted.
 Use the shared event's original local start date for its timeline position, including for occasions. This gives each event one entry in the story while the calendar expands recurring dates. Order ties by event ID and preserve the original precision in the visible date label. Use the existing categories for filtering.
 
 Fetch 24 events at a time and use the indexed date and ID pair as the boundary in either direction. This bounds the rendered entries per request, works without JavaScript and lets the link continue working if its anchor is deleted. A year can span multiple batches. Each event shows at most one thumbnail, so opening a timeline page keeps its media requests bounded.
+
+## Offline basemap and place search
+
+Status: accepted.
+
+Use Protomaps v4 MVT archives in PMTiles v3 so operators can pick the coverage and maximum zoom for their volume. MapLibre GL JS and the PMTiles client are BSD-3-Clause. A custom light and dark style, local Noto Sans glyphs and Herbarium marker sprites cover the map UI. The asset endpoint streams fixed files under session checks and sends an ETag for the open archive. Replacing the archive by rename lets a request finish against the file it opened.
+
+MapLibre 6 supports a locally bundled module worker. `worker-src 'self'` works on the initial document and after SvelteKit client navigation. The map makes same-origin requests for every resource under the existing CSP.
+
+Bundle a read-only GeoNames SQLite FTS5 snapshot for Belarus and worldwide cities from the GeoNames cities5000 extract. Keep the public dataset separate from SQLCipher so the app can replace it with the build and keep member records and backups independent of the gazetteer. A reproducible importer indexes alternate names in the three supported locales where GeoNames provides them. Place search does not require a basemap archive.
