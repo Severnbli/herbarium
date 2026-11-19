@@ -78,3 +78,11 @@ Tests cover all-day and timed schedules across DST, durable claims and retries a
 Open **Timeline** to browse the shared story by year. Use the kind and category filters to narrow the entries, and **Older events** or **Newer events** to move through the results. Choose an event title to open its details or a thumbnail to open the attached memory.
 
 Tests cover cursor boundaries with events on the same date, deleted anchors, combined filters and route authentication. Playwright checks navigation without JavaScript, mobile layout, reduced motion and authenticated thumbnails.
+
+## Maps
+
+Open **Map** to filter pinned events by kind, local start year and category. The list beside the map links to the same events and works without JavaScript. On a create or edit form, expand **Location on the map** to search for a place, paste a latitude and longitude pair, or set and drag a pin. The two coordinate fields also work without JavaScript. On an existing event, attach a photo to review its GPS suggestion before saving the point.
+
+Playwright installs a small [Belarus tileset fixture](../tests/fixtures/maps/README.md) and blocks outbound HTTP requests during the map flow. It checks authenticated ranges, glyph and sprite delivery, pin editing, event previews and keyboard access to the list. See the [deployment guide](deployment.md#offline-maps) to install a larger map for development.
+
+To refresh place search, download the current `BY.zip`, `cities5000.zip` and `alternateNamesV2.zip` exports from [GeoNames](https://download.geonames.org/export/dump/) into one directory. Run `python3 scripts/build-gazetteer.py <source-dir>` from the repository root with a Python build that includes SQLite FTS5. Update the snapshot date and hashes in [the asset notice](../map-assets/README.md), then run the map tests. The build and runtime use the checked-in SQLite file.

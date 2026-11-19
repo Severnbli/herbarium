@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import Button from '#lib/components/Button.svelte';
+	import MapCanvas from '#lib/components/MapCanvas.svelte';
 	import Field from '#lib/components/Field.svelte';
 	import Textarea from '#lib/components/Textarea.svelte';
 	import { messages } from '#lib/i18n/index.ts';
@@ -36,6 +37,7 @@
 			{new Intl.NumberFormat(data.locale, { maximumFractionDigits: 6 }).format(suggestion.lat)},
 			{new Intl.NumberFormat(data.locale, { maximumFractionDigits: 6 }).format(suggestion.lon)}
 		</p>
+		<MapCanvas locale={data.locale} {m} basemap={suggestion.basemap} position={suggestion} />
 		<!-- The action suffix targets the resolved memory page. -->
 		<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
 		<form method="POST" action={`${resolve('/memories/[id]', { id: suggestion.id })}?/coordinates`}>

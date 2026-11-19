@@ -121,17 +121,17 @@ Done when: photos and videos upload, display and stream, and the media directory
 
 Goal: see where the shared story happened, without any request leaving the server.
 
-- [ ] Self-hosted vector tiles: one PMTiles file (e.g. Belarus + Europe extract from OpenStreetMap) on the data volume; documented download/update step; OSM attribution shown
-- [ ] Tiles, glyphs (fonts) and sprites served from the app through an authenticated route with HTTP range support – no external tile, font or style URLs
-- [ ] MapLibre GL JS + `pmtiles` protocol, loaded only on map pages
-- [ ] Custom herbarium map style: linen land, muted ink roads, cornflower water, moss forests; a "Kupalle night" variant for the dark theme; labels in the active locale where data allows
-- [ ] Map picker on the event form: click/drag a pin, paste coordinates, or accept the point suggested from an uploaded photo's GPS; clear button
-- [ ] Local place search: bundled GeoNames gazetteer (populated places with `be`/`ru`/`en` names) in a local SQLite table with full-text search; no external geocoder; CC BY attribution to GeoNames
-- [ ] Map on the event detail page
-- [ ] Map of memories view: all events with coordinates as botanical markers, clustering, filters by kind/year/tag, popup with title, date and preview
-- [ ] CSP updated for MapLibre (`worker-src blob:` and the minimum needed – no `unsafe-eval`)
-- [ ] Keyboard-accessible alternative: list of places next to the map
-- [ ] Tests: coordinate validation, tile route rejects anonymous access, no outbound requests from map pages
+- [x] Self-hosted vector tiles: one PMTiles file (e.g. Belarus + Europe extract from OpenStreetMap) on the data volume; documented download/update step; OSM attribution shown
+- [x] Tiles, glyphs (fonts) and sprites served from the app through an authenticated route with HTTP range support – no external tile, font or style URLs
+- [x] MapLibre GL JS + `pmtiles` protocol, loaded only on map pages
+- [x] Custom herbarium map style: linen land, muted ink roads, cornflower water, moss forests; a "Kupalle night" variant for the dark theme; labels in the active locale where data allows
+- [x] Map picker on the event form with click/drag, pasted coordinates and a clear button; photo GPS preview and consent in the linked memory upload
+- [x] Local place search: bundled GeoNames gazetteer (populated places with `be`/`ru`/`en` names) in a local SQLite table with full-text search; no external geocoder; CC BY attribution to GeoNames
+- [x] Map on the event detail page
+- [x] Map of memories view: all events with coordinates as botanical markers, clustering, filters by kind/year/tag, popup with title, date and preview
+- [x] MapLibre uses a same-origin worker under the existing strict CSP (`worker-src 'self'`, no `unsafe-eval`)
+- [x] Keyboard-accessible alternative: list of places next to the map
+- [x] Tests: coordinate validation, tile route rejects anonymous access, no outbound requests from map pages
 
 Done when: events can be pinned and browsed on a map that works fully offline from the internet.
 

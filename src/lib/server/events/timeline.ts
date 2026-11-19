@@ -1,8 +1,8 @@
 import { and, asc, desc, eq, sql } from 'drizzle-orm';
-import { alias } from 'drizzle-orm/sqlite-core';
 import { z } from 'zod';
 import type { Db } from '../db/index.ts';
 import { event, memory } from '../db/schema.ts';
+import { latestEventAttachment } from './preview.ts';
 import { CATEGORIES } from './schemas.ts';
 
 const PAGE_SIZE = 24;
@@ -39,13 +39,6 @@ export function listTimeline(db: Db, query: z.input<typeof timelineQuery>) {
 		kind ? eq(event.kind, kind) : undefined,
 		category ? eq(event.category, category) : undefined
 	);
-	const attachment = alias(memory, 'attachment');
-	const latestAttachment = db
-		.select({ id: attachment.id })
-		.from(attachment)
-		.where(eq(attachment.eventId, event.id))
-		.orderBy(desc(attachment.sortDate), desc(attachment.id))
-		.limit(1);
 	const rows = db
 		.select({
 			id: event.id,
@@ -64,7 +57,7 @@ export function listTimeline(db: Db, query: z.input<typeof timelineQuery>) {
 			preview: { id: memory.id, altText: memory.altText, originalName: memory.originalName }
 		})
 		.from(event)
-		.leftJoin(memory, eq(memory.id, latestAttachment))
+		.leftJoin(memory, eq(memory.id, latestEventAttachment(db)))
 		.where(
 			and(
 				scope,

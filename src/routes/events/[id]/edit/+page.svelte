@@ -11,6 +11,9 @@
 <h1>{m.event.editTitle}</h1>
 <EventForm
 	{m}
+	locale={data.locale}
+	basemap={data.basemap}
+	eventId={data.id}
 	values={form?.values ?? data.values}
 	fields={form?.fields}
 	problem={form?.problem}

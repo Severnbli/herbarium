@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { readCoordinate } from '#lib/domain/location.ts';
 import {
 	DISAMBIGUATIONS,
 	PRECISIONS,
@@ -16,14 +17,7 @@ const coordinate = (min: number, max: number) =>
 		.string()
 		.trim()
 		.max(32)
-		.refine(
-			(value) =>
-				value === '' ||
-				(/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(value) &&
-					Number.isFinite(Number(value)) &&
-					Number(value) >= min &&
-					Number(value) <= max)
-		);
+		.refine((value) => value === '' || readCoordinate(value, min, max) !== null);
 
 export const eventFormSchema = z
 	.strictObject({

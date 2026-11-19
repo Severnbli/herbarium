@@ -1,7 +1,8 @@
 import { error } from '@sveltejs/kit';
 import { unwrapDataKey } from '#lib/server/crypto/keys.ts';
 import type { mediaFile } from '#lib/server/db/schema.ts';
-import { openMedia, type ByteRange } from './format.ts';
+import { parseRange } from '#lib/server/http/byte-range.ts';
+import { openMedia } from './format.ts';
 import { openMediaFile } from './store.ts';
 
 export const MEDIA_EXTENSIONS = {
@@ -11,20 +12,6 @@ export const MEDIA_EXTENSIONS = {
 	'video/mp4': 'mp4',
 	'video/quicktime': 'mov'
 } as const;
-
-// A single range is enough for browser playback. Unknown units are ignored per HTTP semantics.
-function parseRange(value: string | null, size: number): ByteRange | null | false {
-	if (!value?.toLowerCase().startsWith('bytes=')) return null;
-	const match = /^bytes=(\d{0,20})-(\d{0,20})$/i.exec(value);
-	if (!match || (!match[1] && !match[2])) return false;
-	if (!match[1]) {
-		const suffix = Number(match[2]);
-		return suffix > 0 ? { start: Math.max(0, size - suffix), end: size - 1 } : false;
-	}
-	const start = Number(match[1]);
-	const end = match[2] ? Math.min(Number(match[2]), size - 1) : size - 1;
-	return start < size && end >= start ? { start, end } : false;
-}
 
 function disposition(attachment: boolean, name: string, extension: string): string {
 	const fallback = `memory.${extension}`;

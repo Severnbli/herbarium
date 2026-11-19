@@ -2,6 +2,7 @@
 	import { resolve } from '$app/paths';
 	import Field from '#lib/components/Field.svelte';
 	import Button from '#lib/components/Button.svelte';
+	import MapCanvas from '#lib/components/MapCanvas.svelte';
 	import MemoryGrid from '#lib/components/MemoryGrid.svelte';
 	import { REMINDER_OFFSETS } from '#lib/domain/reminder.ts';
 	import { messages } from '#lib/i18n/index.ts';
@@ -35,9 +36,6 @@
 	</section>
 {/if}
 {#if data.event.place}<p>{data.event.place}</p>{/if}
-{#if data.event.lat !== null && data.event.lon !== null}<p>
-		{m.event.lat}: {data.event.lat}, {m.event.lon}: {data.event.lon}
-	</p>{/if}
 {#if data.notesHtml}
 	<section aria-labelledby="notes-title">
 		<h2 id="notes-title">{m.event.notes}</h2>
@@ -58,6 +56,18 @@
 			<Button type="submit" disabled={!data.canComplete}>{m.event.complete}</Button>
 		</form>
 		{#if !data.canComplete}<p>{m.event.notFinished}</p>{/if}
+	</section>
+{/if}
+{#if data.event.lat !== null && data.event.lon !== null}
+	<section aria-labelledby="event-location">
+		<h2 id="event-location">{m.map.location}</h2>
+		<p>{m.event.lat}: {data.event.lat}, {m.event.lon}: {data.event.lon}</p>
+		<MapCanvas
+			locale={data.locale}
+			{m}
+			basemap={data.basemap}
+			position={{ lat: data.event.lat, lon: data.event.lon }}
+		/>
 	</section>
 {/if}
 <section aria-labelledby="event-reminders">

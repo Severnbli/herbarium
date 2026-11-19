@@ -200,3 +200,13 @@ code {
 		scroll-behavior: auto !important;
 	}
 }
+
+/* The route announcer's inline styles are blocked by the document CSP. */
+#svelte-announcer {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}

@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process';
-import { mkdirSync, readFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
 import { expect, test, type Browser, type Page } from '@playwright/test';
@@ -29,6 +29,10 @@ const PROTECTED = [
 	'/events/' + 'a'.repeat(22),
 	'/events/' + 'a'.repeat(22) + '/edit',
 	'/timeline',
+	'/map',
+	'/map/assets/basemap.pmtiles',
+	'/map/assets/glyphs/Noto%20Sans%20Regular/0-255.pbf',
+	'/map/assets/markers.png',
 	'/memories',
 	'/memories/new',
 	`/memories/${id}`,
@@ -122,6 +126,7 @@ test('rejects anonymous access to every route', async ({ browser }) => {
 		'/account?/reminders',
 		'/logout',
 		'/events/new',
+		'/map/search',
 		'/events/' + 'a'.repeat(22) + '?/complete',
 		'/events/' + 'a'.repeat(22) + '?/reminders',
 		'/events/' + 'a'.repeat(22) + '?/delete',
@@ -704,6 +709,149 @@ test('uploads private memories, browses them by keyboard and manages independent
 	await offline.getByRole('button', { name: 'Delete memory', exact: true }).click();
 	await expect(offline).toHaveURL('/memories');
 	expect((await offline.request.get(downloadUrl!)).status()).toBe(404);
+});
+
+test('loads local tiles and glyphs, searches for places and edits pins without outbound requests', async ({
+	page,
+	browser
+}) => {
+	copyFileSync('tests/fixtures/maps/belarus.pmtiles', join(dataDir, 'basemap.pmtiles'));
+	await login(page, member.username, member.password);
+
+	const outbound: string[] = [];
+	const violations: string[] = [];
+	await page.context().route(/^https?:/, (route) => {
+		const url = new URL(route.request().url());
+		if (url.origin === ORIGIN) return route.continue();
+		outbound.push(url.origin);
+		return route.abort();
+	});
+	page.on('console', (message) => {
+		const text = message.text();
+		// SvelteKit's route announcer includes this fixed inline style on navigation.
+		if (
+			text.includes('Content Security Policy') &&
+			!text.includes('S8qMpvofolR8Mpjy4kQvEm7m1q8clzU4dfDH0AmvZjo=')
+		)
+			violations.push(text);
+	});
+
+	const create = async (
+		title: string,
+		start: string,
+		lat: string,
+		lon: string,
+		category: string
+	) => {
+		const response = await page.request.post('/events/new', {
+			headers: { origin: ORIGIN, accept: 'text/html' },
+			form: { ...emptyEventForm, title, start, lat, lon, category },
+			maxRedirects: 0
+		});
+		expect(response.status()).toBe(303);
+		return response.headers().location!;
+	};
+	await create('Synthetic second pin', '1982-05-17', '53.901', '27.563', 'date');
+	await create('Synthetic unpinned event', '1982-05-17', '', '', 'date');
+	await page.goto('/events/new');
+	await page.getByLabel('Title', { exact: true }).fill('Synthetic pinned visit');
+	await page.getByLabel('Start', { exact: true }).fill('1982-05-17');
+	await page.getByLabel('Category').selectOption('trip');
+	await page.getByText('Location on the map', { exact: true }).click();
+	await page.getByRole('searchbox', { name: 'Place name' }).fill('Minsk');
+	await page.getByRole('button', { name: 'Find places' }).click();
+	await page.getByRole('button', { name: 'Minsk Belarus', exact: true }).click();
+	await expect(page.getByLabel('Place', { exact: true })).toHaveValue('Minsk');
+	await expect(page.getByLabel('Latitude', { exact: true })).toHaveValue('53.90019');
+	await page.getByRole('button', { name: 'Clear pin' }).click();
+	await expect(page.getByLabel('Latitude', { exact: true })).toHaveValue('');
+	await page.getByLabel('Paste latitude, longitude').fill('91, 27.56');
+	await page.getByRole('button', { name: 'Set pin' }).click();
+	await expect(page.getByText('Enter a latitude from', { exact: false })).toBeVisible();
+	await page.getByLabel('Paste latitude, longitude').fill('53.90019, 27.56653');
+	await page.getByRole('button', { name: 'Set pin' }).click();
+	await expect(page.getByLabel('Longitude', { exact: true })).toHaveValue('27.56653');
+
+	const pickerMap = page.locator('.maplibregl-canvas');
+	await expect(pickerMap).toBeVisible();
+	await pickerMap.click({ position: { x: 135, y: 120 } });
+	await expect(page.getByLabel('Latitude', { exact: true })).not.toHaveValue('53.90019');
+	const pin = page.locator('.maplibregl-marker');
+	const bounds = (await pin.boundingBox())!;
+	const pinX = bounds.x + bounds.width / 2;
+	const pinY = bounds.y + bounds.height / 2;
+	const beforeDrag = await page.getByLabel('Longitude', { exact: true }).inputValue();
+	await page.mouse.move(pinX, pinY);
+	await page.mouse.down();
+	await page.mouse.move(pinX + 45, pinY - 10, { steps: 6 });
+	await page.mouse.up();
+	await expect(page.getByLabel('Longitude', { exact: true })).not.toHaveValue(beforeDrag);
+
+	// Restore a stable position for the overview assertions.
+	await page.getByLabel('Paste latitude, longitude').fill('53.90019, 27.56653');
+	await page.getByRole('button', { name: 'Set pin' }).click();
+	await page.getByRole('button', { name: 'Save event', exact: true }).click();
+	await expect(page).toHaveURL(/\/events\/[\w-]{22}$/);
+	const eventUrl = page.url();
+	await expect(page.getByText('Latitude: 53.90019, Longitude: 27.56653')).toBeVisible();
+	await expect(page.locator('.maplibregl-marker')).toBeVisible();
+
+	await page.getByRole('link', { name: 'Add a memory' }).click();
+	const photo = await sharp({
+		create: { width: 80, height: 64, channels: 3, background: '#a38768' }
+	})
+		.jpeg()
+		.toBuffer();
+	await page
+		.getByLabel('Photo or video')
+		.setInputFiles({ name: 'sample.jpg', mimeType: 'image/jpeg', buffer: photo });
+	await page.getByLabel('Alt text').fill('An ochre swatch');
+	await page.getByRole('button', { name: 'Upload', exact: true }).click();
+	await expect(page.getByRole('heading', { name: 'sample.jpg' })).toBeVisible();
+
+	const filters = '?kind=moment&year=1982&category=trip';
+	const tile = page.waitForResponse(
+		(response) => response.url().endsWith('/basemap.pmtiles') && response.status() === 206
+	);
+	const glyph = page.waitForResponse(
+		(response) => response.url().includes('/glyphs/') && response.ok()
+	);
+	const sprite = page.waitForResponse(
+		(response) => /markers(?:@2x)?\.png$/.test(response.url()) && response.ok()
+	);
+	const document = await page.goto('/map' + filters);
+	expect(document?.headers()['content-security-policy']).toMatch(/worker-src 'self'(?:;|$)/);
+	expect(document?.headers()['content-security-policy']).not.toContain('unsafe-eval');
+	const [range] = await Promise.all([tile, glyph, sprite]);
+	expect(range.headers()['content-range']).toMatch(/^bytes 0-\d+\/\d+$/);
+	const overview = page.locator('.maplibregl-canvas');
+	await expect(overview).toBeVisible();
+	const rect = (await overview.boundingBox())!;
+	await expect(async () => {
+		await overview.click({ position: { x: rect.width / 2, y: rect.height / 2 - 14 } });
+		await expect(
+			page.locator('.maplibregl-popup').getByRole('img', { name: 'An ochre swatch' })
+		).toBeVisible({ timeout: 1000 });
+	}).toPass({ timeout: 6500 });
+	await expect(page.locator('.maplibregl-popup')).toContainText('Synthetic pinned visit');
+	await expect(page.locator('.maplibregl-popup')).toContainText('May 17, 1982');
+	await page.getByRole('button', { name: 'Close event preview' }).click();
+
+	const offline = await newPage(browser, { javaScriptEnabled: false });
+	await login(offline, member.username, member.password);
+	await offline.goto('/map?year=1982');
+	await expect(offline.getByRole('link', { name: 'Synthetic second pin' })).toBeVisible();
+	await expect(offline.getByRole('link', { name: 'Synthetic unpinned event' })).toHaveCount(0);
+	const listLink = offline.getByRole('link', { name: 'Synthetic pinned visit' });
+	await listLink.focus();
+	await offline.keyboard.press('Enter');
+	await expect(offline).toHaveURL(eventUrl);
+	await offline.context().close();
+
+	for (const query of ['year=0000', 'kind=moment&kind=plan', 'category=invalid', 'lat=0'])
+		expect((await page.request.get('/map?' + query)).status()).toBe(400);
+	expect(outbound).toEqual([]);
+	expect(violations).toEqual([]);
 });
 
 test('a revoked invite cannot be used', async ({ browser }) => {

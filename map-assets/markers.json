@@ -1,0 +1,23 @@
+{
+	"moment": {
+		"x": 0,
+		"y": 0,
+		"width": 36,
+		"height": 36,
+		"pixelRatio": 1
+	},
+	"plan": {
+		"x": 36,
+		"y": 0,
+		"width": 36,
+		"height": 36,
+		"pixelRatio": 1
+	},
+	"occasion": {
+		"x": 72,
+		"y": 0,
+		"width": 36,
+		"height": 36,
+		"pixelRatio": 1
+	}
+}

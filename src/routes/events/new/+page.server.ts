@@ -1,16 +1,23 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import { db } from '#lib/server/app.ts';
 import { requireUser } from '#lib/server/auth/guard.ts';
+import { getConfig } from '#lib/server/config.ts';
+import { hasBasemap } from '#lib/server/maps/assets.ts';
 import { calendarDate, calendarToday } from '#lib/server/events/calendar.ts';
 import { createEvent } from '#lib/server/events/events.ts';
 import { parseEventForm } from '#lib/server/events/forms.ts';
 import { emptyEventForm, type EventForm } from '#lib/server/events/schemas.ts';
 import { getReminderPreferences } from '#lib/server/reminders/preferences.ts';
 import type { Actions, PageServerLoad } from './$types';
-export const load: PageServerLoad = (event) => {
+export const load: PageServerLoad = async (event) => {
 	const member = requireUser(event);
 	const query = [...event.url.searchParams];
-	if (query.length === 0) return { values: { ...emptyEventForm }, calendarDate: null };
+	if (query.length === 0)
+		return {
+			values: { ...emptyEventForm },
+			calendarDate: null,
+			basemap: await hasBasemap(getConfig().dataDir)
+		};
 	const [key, value] = query[0]!;
 	const date = calendarDate.safeParse(value);
 	if (query.length !== 1 || key !== 'date' || !date.success) error(400, 'invalid');
@@ -19,7 +26,8 @@ export const load: PageServerLoad = (event) => {
 		date.data < calendarToday(new Date(), timeZone) ? 'moment' : 'plan';
 	return {
 		values: { ...emptyEventForm, kind, start: date.data, timeZone },
-		calendarDate: date.data
+		calendarDate: date.data,
+		basemap: await hasBasemap(getConfig().dataDir)
 	};
 };
 export const actions: Actions = {

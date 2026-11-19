@@ -1,12 +1,16 @@
 <script lang="ts">
 	import Field from './Field.svelte';
+	import LocationPicker from './LocationPicker.svelte';
 	import Textarea from './Textarea.svelte';
 	import Select from './Select.svelte';
 	import Button from './Button.svelte';
-	import type { Messages } from '#lib/i18n/catalog.ts';
+	import type { Locale, Messages } from '#lib/i18n/index.ts';
 	import type { EventForm } from '#lib/server/events/schemas.ts';
 	let {
 		m,
+		locale,
+		basemap,
+		eventId,
 		values,
 		fields = [],
 		problem,
@@ -14,6 +18,9 @@
 		cancelHref
 	}: {
 		m: Messages;
+		locale: Locale;
+		basemap: boolean;
+		eventId?: string;
 		values: EventForm;
 		fields?: string[];
 		problem?: string;
@@ -168,32 +175,18 @@
 			}))}
 		/>
 	</details>
-	<Field
-		name="place"
-		label={m.event.place}
-		value={values.place}
-		error={errorFor('place')}
-		maxlength={200}
-	/>
-	<details open={invalid.has('lat') || invalid.has('lon')}>
-		<summary>{m.event.coordinatesHint}</summary>
-		<Field
-			name="lat"
-			label={m.event.lat}
-			value={values.lat}
-			inputmode="decimal"
-			error={errorFor('lat')}
-			maxlength={32}
+	{#key values}
+		<LocationPicker
+			{m}
+			{locale}
+			{basemap}
+			{eventId}
+			initial={values}
+			latError={errorFor('lat')}
+			lonError={errorFor('lon')}
+			placeError={errorFor('place')}
 		/>
-		<Field
-			name="lon"
-			label={m.event.lon}
-			value={values.lon}
-			inputmode="decimal"
-			error={errorFor('lon')}
-			maxlength={32}
-		/>
-	</details>
+	{/key}
 	<Textarea
 		name="notes"
 		label={m.event.notes}

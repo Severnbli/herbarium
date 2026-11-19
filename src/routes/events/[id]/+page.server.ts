@@ -4,6 +4,8 @@ import { formatEventDate, hasHappened } from '#lib/domain/event-date.ts';
 import { db } from '#lib/server/app.ts';
 import { audit } from '#lib/server/audit.ts';
 import { requireUser } from '#lib/server/auth/guard.ts';
+import { getConfig } from '#lib/server/config.ts';
+import { hasBasemap } from '#lib/server/maps/assets.ts';
 import { confirmPassword } from '#lib/server/auth/login.ts';
 import { currentPassword, parseForm } from '#lib/server/auth/schemas.ts';
 import { EventError, completePlan, deleteEvent, findEvent } from '#lib/server/events/events.ts';
@@ -18,13 +20,14 @@ import {
 	saveReminderOffsets
 } from '#lib/server/reminders/preferences.ts';
 import type { Actions, PageServerLoad } from './$types';
-export const load: PageServerLoad = (event) => {
+export const load: PageServerLoad = async (event) => {
 	requireUser(event);
 	const id = routeEventId(event.params);
 	try {
 		const row = findEvent(db(), id);
 		return {
 			event: row,
+			basemap: row.lat !== null && row.lon !== null && (await hasBasemap(getConfig().dataDir)),
 			reminderOffsets: getReminderOffsets(db(), id),
 			memories: listMemories(db(), { eventId: id }),
 			dateLabel: formatEventDate(event.locals.locale, row),
