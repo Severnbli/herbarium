@@ -64,6 +64,13 @@
       "when": 1795084854397,
       "tag": "0008_bulk_media_import",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1795118112711,
+      "tag": "0009_dashboard_indexes",
+      "breakpoints": true
     }
   ]
 }

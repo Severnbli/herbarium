@@ -1,11 +1,11 @@
 @font-face {
 	font-family: Herbarium Serif;
-	src: url('/fonts/herbarium-serif.ttf') format('truetype');
+	src: url('./assets/fonts/herbarium-serif.woff2') format('woff2');
 	font-display: swap;
 }
 @font-face {
 	font-family: Herbarium Sans;
-	src: url('/fonts/herbarium-sans.ttf') format('truetype');
+	src: url('./assets/fonts/herbarium-sans.woff2') format('woff2');
 	font-display: swap;
 }
 :root {
