@@ -335,5 +335,11 @@
 	"reminder_day1": "1 day before",
 	"reminder_week1": "1 week before",
 	"reminder_saveOffsets": "Save reminder times",
-	"reminder_subject": "Calendar reminder"
+	"reminder_subject": "Calendar reminder",
+	"archive_title": "Export shared data",
+	"archive_description": "The ZIP contains shared events, locations, albums and original photos and videos. The download is unencrypted. Store it somewhere private.",
+	"archive_download": "Download ZIP",
+	"archive_rate": "Wait a moment before trying again.",
+	"archive_busy": "An export is already running. Try again when it finishes.",
+	"archive_unavailable": "The export could not be prepared."
 }

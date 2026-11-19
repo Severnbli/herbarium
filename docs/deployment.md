@@ -138,3 +138,17 @@ For a bare Node installation, put the file in `DATA_DIR` with read access for th
 - Health check at `/healthz`, which reveals nothing about the instance
 - Database, WAL and setup code are created with mode `0600`, the data directory with `0700`
 - Strict Content Security Policy with nonces, `frame-ancestors 'none'`, HSTS over HTTPS, `Referrer-Policy: same-origin`, a restrictive `Permissions-Policy`, `Cross-Origin-Opener-Policy: same-origin`, and `Cache-Control: no-store` on every page
+
+## Restore a portable ZIP
+
+Any member can download a portable ZIP from **Account → Export shared data** after confirming their password. It contains an unencrypted JSON manifest, event coordinates and original media with location metadata removed. Store the ZIP privately.
+
+Set up an empty destination instance with one owner and stop it before restoring. Keep the archive on a protected filesystem. For Compose, substitute a host file that the container's `node` user can read:
+
+```bash
+docker compose stop herbarium
+docker compose run --rm --no-deps   -v /secure/path/herbarium-export.zip:/restore.zip:ro   herbarium node build/operations/restore.js /restore.zip
+docker compose up -d
+```
+
+For a bare install, run `node build/operations/restore.js /secure/path/herbarium-export.zip` from the built application's root with its normal configuration. Set `MAX_FILE_BYTES` high enough for the largest original in the ZIP. The archive format allows a manifest up to 64 MiB and 100,000 rows per collection. The destination keeps its new owner and encryption key. Historical attribution is preserved, derivatives are regenerated and the new owner can send invitations.

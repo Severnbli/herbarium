@@ -1,11 +1,16 @@
 import { execFile } from 'node:child_process';
 import { copyFileSync, mkdirSync, readFileSync } from 'node:fs';
+import { randomBytes } from 'node:crypto';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
 import { Temporal } from '@js-temporal/polyfill';
 import { expect, test, type Browser, type Page } from '@playwright/test';
 import { Secret, TOTP } from 'otpauth';
 import sharp from 'sharp';
+import { addUser } from '../../src/lib/server/auth/fixtures.ts';
+import { deriveKeys } from '../../src/lib/server/crypto/keys.ts';
+import { DATABASE_FILE, openDatabase } from '../../src/lib/server/db/index.ts';
+import { auditLog, event, mediaFile, memory } from '../../src/lib/server/db/schema.ts';
 import { emptyEventForm } from '../../src/lib/server/events/schemas.ts';
 
 /**
@@ -24,6 +29,8 @@ const PROTECTED = [
 	'/',
 	'/members',
 	'/account',
+	'/account/export',
+	'/account/export/download',
 	'/calendar',
 	'/events',
 	'/events/new',
@@ -911,6 +918,63 @@ test('the dashboard opens after login and shows upcoming and past dates without 
 	await upcoming.getByRole('link', { name: 'Synthetic tomorrow' }).click();
 	await expect(page.getByRole('heading', { name: 'Synthetic tomorrow' })).toBeVisible();
 	await page.context().close();
+});
+
+test('exports shared data after password confirmation and restores it with the production CLI', async ({
+	browser
+}, info) => {
+	const context = await browser.newContext({ javaScriptEnabled: false });
+	const page = await context.newPage();
+	await login(page, member.username, member.password);
+	await page.goto('/account');
+	await page.getByRole('link', { name: 'Export shared data' }).click();
+	await page.locator('input[name=currentPassword]').fill('wrong export password');
+	await page.getByRole('button', { name: 'Download ZIP' }).click();
+	await expect(page.getByRole('alert')).toBeVisible();
+
+	await page.locator('input[name=currentPassword]').fill(member.password);
+	const downloading = page.waitForEvent('download');
+	await page.getByRole('button', { name: 'Download ZIP' }).click();
+	const download = await downloading;
+	expect(download.suggestedFilename()).toBe('herbarium-export.zip');
+	const archive = info.outputPath('herbarium-export.zip');
+	await download.saveAs(archive);
+	await context.close();
+
+	const destination = info.outputPath('destination');
+	mkdirSync(destination);
+	const master = randomBytes(32);
+	const key = deriveKeys(master).database;
+	const path = join(destination, DATABASE_FILE);
+	const fresh = openDatabase({ path, key });
+	const ownerId = await addUser(fresh.db, 'destination-owner', { role: 'owner' });
+	fresh.close();
+	await run(process.execPath, ['build/operations/restore.js', archive], {
+		env: { ...process.env, ORIGIN, DATA_DIR: destination, MASTER_KEY: master.toString('base64') }
+	});
+	const restored = openDatabase({ path, key });
+	try {
+		expect(restored.db.select().from(auditLog).all()).toMatchObject([
+			{ event: 'archive_restored', actorId: ownerId }
+		]);
+		expect(
+			restored.db
+				.select()
+				.from(event)
+				.all()
+				.some((row) => row.lat !== null)
+		).toBe(true);
+		expect(restored.db.select().from(memory).all().length).toBeGreaterThan(0);
+		expect(
+			restored.db
+				.select()
+				.from(mediaFile)
+				.all()
+				.some((row) => row.variant === 'thumbnail')
+		).toBe(true);
+	} finally {
+		restored.close();
+	}
 });
 
 test('a revoked invite cannot be used', async ({ browser }) => {

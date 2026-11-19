@@ -16,9 +16,34 @@ export function openMediaFile(dataDir: string, id: string) {
 	return open(mediaPath(dataDir, id), constants.O_RDONLY | constants.O_NOFOLLOW);
 }
 
+// Keep an archive snapshot readable if a member deletes a memory during the download.
+const heldFiles = new Map<string, { deleted: boolean }>();
+
+export function holdMediaFiles(dataDir: string, ids: string[]): () => void {
+	const paths = ids.map((id) => mediaPath(dataDir, id));
+	for (const path of paths) heldFiles.set(path, { deleted: false });
+	return () => {
+		for (const path of paths) {
+			const held = heldFiles.get(path);
+			heldFiles.delete(path);
+			if (held?.deleted) {
+				void unlink(path).catch(() => {
+					console.error('Herbarium could not remove an unused encrypted media file.');
+				});
+			}
+		}
+	};
+}
+
 export async function removeMediaFile(dataDir: string, id: string): Promise<void> {
+	const path = mediaPath(dataDir, id);
+	const held = heldFiles.get(path);
+	if (held) {
+		held.deleted = true;
+		return;
+	}
 	try {
-		await unlink(mediaPath(dataDir, id));
+		await unlink(path);
 	} catch (error) {
 		if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
 	}

@@ -325,6 +325,14 @@ export function messages(locale: Locale) {
 			inviteExpires: (when: string) => m.members_inviteExpires({ when }, { locale }),
 			revoke: m.members_revoke({}, { locale })
 		},
+		archive: {
+			title: m.archive_title({}, { locale }),
+			description: m.archive_description({}, { locale }),
+			download: m.archive_download({}, { locale }),
+			rate: m.archive_rate({}, { locale }),
+			busy: m.archive_busy({}, { locale }),
+			unavailable: m.archive_unavailable({}, { locale })
+		},
 		account: {
 			title: m.account_title({}, { locale }),
 			passwordTitle: m.account_passwordTitle({}, { locale }),

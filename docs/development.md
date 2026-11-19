@@ -92,3 +92,7 @@ To refresh place search, download the current `BY.zip`, `cities5000.zip` and `al
 Open **Home** after signing in. **Coming up** counts down to event starts in the next 30 days, including today. Set the time zone under **Account** to change the local day and timed-event labels. Create a yearly occasion of type **Anniversary** with its original date to populate the anniversary highlight and time-together count. **On this day** uses exact original dates from previous years. **Recent memories** shows the latest uploads, including newly added photos with old capture dates.
 
 Tests cover member time zones, elapsed starts, approximate dates, anniversary selection, leap days, historical matching and upload order. Playwright checks the home page with JavaScript disabled and follows the event and memory links.
+
+## Portable archives
+
+The archive integration test streams shared content from one encrypted instance, rejects a damaged ZIP and imports a valid ZIP into another instance with a different key. It verifies references, audit entries and encrypted media. The restore CLI is built alongside the application. See the [deployment guide](deployment.md#restore-a-portable-zip) for commands.

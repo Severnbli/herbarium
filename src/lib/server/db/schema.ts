@@ -132,7 +132,10 @@ export const AUDIT_EVENTS = [
 	'recovery_codes_regenerated',
 	'event_deleted',
 	'memory_deleted',
-	'album_deleted'
+	'album_deleted',
+	'export_started',
+	'archive_restored',
+	'master_key_rotated'
 ] as const;
 export type AuditEvent = (typeof AUDIT_EVENTS)[number];
 

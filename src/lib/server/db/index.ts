@@ -27,6 +27,7 @@ export interface OpenOptions {
 	key: Buffer;
 	/** Folder with the drizzle-kit migrations. Defaults to `./drizzle`. */
 	migrationsFolder?: string;
+	fileMustExist?: boolean;
 }
 
 /**
@@ -35,13 +36,13 @@ export interface OpenOptions {
  * The cipher is SQLCipher v4, so the file stays readable with the stock `sqlcipher` tool given the
  * derived key (see docs/key-management.md).
  */
-export function openDatabase({ path, key, migrationsFolder }: OpenOptions): {
+export function openDatabase({ path, key, migrationsFolder, fileMustExist = false }: OpenOptions): {
 	db: Db;
 	close: () => void;
 } {
 	if (key.length !== 32) throw new Error('Expected a 32-byte database key');
 
-	const sqlite = new Database(path);
+	const sqlite = new Database(path, { fileMustExist });
 	try {
 		sqlite.pragma(`cipher = 'sqlcipher'`);
 		// Plain SQLite silently ignores cipher pragmas; refuse to run without encryption.
