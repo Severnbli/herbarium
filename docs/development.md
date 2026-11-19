@@ -72,3 +72,9 @@ Open **Calendar** to switch between month, week and day views or jump to any dat
 Open an event with day precision and choose the reminder times. Members use **Calendar and email preferences** under **Account** to set their time zone and opt in with their own email address. All-day reminders are scheduled relative to 09:00 in that zone. Timed events use the time zone saved on the event. An offset of one day is 24 elapsed hours, including across DST changes.
 
 Tests cover all-day and timed schedules across DST, durable claims and retries across database reopen, opt-out and event changes, and successful SMTP delivery and failure handling against a local test relay. See the [deployment guide](deployment.md#reminder-email) to configure mail for an instance.
+
+## Timeline
+
+Open **Timeline** to browse the shared story by year. Use the kind and category filters to narrow the entries, and **Older events** or **Newer events** to move through the results. Choose an event title to open its details or a thumbnail to open the attached memory.
+
+Tests cover cursor boundaries with events on the same date, deleted anchors, combined filters and route authentication. Playwright checks navigation without JavaScript, mobile layout, reduced motion and authenticated thumbnails.

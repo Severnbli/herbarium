@@ -38,6 +38,10 @@
 				>{m.nav.events}</a
 			>
 			<a
+				href={resolve('/timeline')}
+				aria-current={page.url.pathname === '/timeline' ? 'page' : undefined}>{m.timeline.title}</a
+			>
+			<a
 				href={resolve('/memories')}
 				aria-current={page.url.pathname.startsWith('/memories') ? 'page' : undefined}
 				>{m.nav.memories}</a

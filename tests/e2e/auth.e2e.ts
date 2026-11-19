@@ -5,6 +5,7 @@ import { promisify } from 'node:util';
 import { expect, test, type Browser, type Page } from '@playwright/test';
 import { Secret, TOTP } from 'otpauth';
 import sharp from 'sharp';
+import { emptyEventForm } from '../../src/lib/server/events/schemas.ts';
 
 /**
  * The security core end to end, against a production build with a fresh encrypted data dir.
@@ -27,6 +28,7 @@ const PROTECTED = [
 	'/events/new',
 	'/events/' + 'a'.repeat(22),
 	'/events/' + 'a'.repeat(22) + '/edit',
+	'/timeline',
 	'/memories',
 	'/memories/new',
 	`/memories/${id}`,
@@ -452,11 +454,13 @@ test('timed events retain their local year and future plans cannot be completed 
 	await expect(page).toHaveURL('/events');
 });
 
-test('event screens render in three languages and both themes on a phone', async ({ browser }) => {
-	for (const [locale, heading, save] of [
-		['en', 'New event', 'Save event'],
-		['be', 'Новая падзея', 'Захаваць падзею'],
-		['ru', 'Новое событие', 'Сохранить событие']
+test('event and timeline screens render in three languages and both themes on a phone', async ({
+	browser
+}) => {
+	for (const [locale, heading, save, timeline] of [
+		['en', 'New event', 'Save event', 'Timeline'],
+		['be', 'Новая падзея', 'Захаваць падзею', 'Храналогія'],
+		['ru', 'Новое событие', 'Сохранить событие', 'Хронология']
 	]) {
 		const context = await browser.newContext({ locale, viewport: { width: 375, height: 812 } });
 		const page = await context.newPage();
@@ -486,8 +490,70 @@ test('event screens render in three languages and both themes on a phone', async
 				true
 			);
 		}
+		await page.getByRole('link', { name: timeline, exact: true }).click();
+		await expect(page.getByRole('heading', { name: timeline, exact: true })).toBeVisible();
+		for (const colorScheme of ['light', 'dark'] as const) {
+			await page.emulateMedia({ colorScheme });
+			expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+				true
+			);
+		}
 		await context.close();
 	}
+});
+
+test('timeline groups dates and pages through filtered events without JavaScript', async ({
+	browser
+}) => {
+	const page = await newPage(browser, { javaScriptEnabled: false });
+	await page.setViewportSize({ width: 360, height: 800 });
+	await page.emulateMedia({ reducedMotion: 'reduce' });
+	await login(page, member.username, member.password);
+	await expect(page).toHaveURL('/');
+	for (let year = 1975; year <= 1999; year++) {
+		const response = await page.request.post('/events/new', {
+			headers: { origin: ORIGIN, accept: 'text/html' },
+			form: {
+				...emptyEventForm,
+				title: `Synthetic milestone ${year}`,
+				category: 'milestone',
+				precision: 'month',
+				start: `${year}-03`
+			},
+			maxRedirects: 0
+		});
+		expect(response.status()).toBe(303);
+	}
+
+	await page.getByRole('link', { name: 'Timeline', exact: true }).click();
+	const anniversary = page.getByRole('region', { name: '2000' });
+	await expect(
+		anniversary.getByRole('link', { name: 'Synthetic calendar anniversary' })
+	).toBeVisible();
+	await expect(page.getByRole('link', { name: 'Synthetic calendar anniversary' })).toHaveCount(1);
+	await page.getByLabel('Event kind').selectOption('moment');
+	await page.getByLabel('Category').selectOption('milestone');
+	await page.getByRole('button', { name: 'Filter' }).click();
+	await expect(page.getByRole('heading', { level: 2 }).first()).toHaveText('1999');
+	await expect(page.getByRole('heading', { level: 2 }).last()).toHaveText('1976');
+	await expect(page.getByRole('region', { name: '1999' }).getByText('March 1999')).toBeVisible();
+	await expect(page.locator('.marker').first()).toHaveCSS('animation-name', 'none');
+	const stem = page.locator('.timeline');
+	expect(
+		await stem.evaluate((element) => getComputedStyle(element, '::before').animationName)
+	).toBe('none');
+
+	await page.getByRole('link', { name: 'Older events' }).click();
+	await expect(page.getByRole('heading', { level: 2 })).toHaveText('1975');
+	await expect(page.getByLabel('Event kind')).toHaveValue('moment');
+	await expect(page.getByLabel('Category')).toHaveValue('milestone');
+	await page.getByRole('link', { name: 'Newer events' }).click();
+	await page.getByRole('link', { name: 'Synthetic milestone 1999' }).click();
+	await expect(page).toHaveURL(/\/events\/[\w-]{22}$/);
+	for (const query of ['category=unknown', 'kind=plan&kind=moment', 'older=bad', 'other=1']) {
+		expect((await page.request.get('/timeline?' + query)).status()).toBe(400);
+	}
+	await page.context().close();
 });
 
 test('uploads private memories, browses them by keyboard and manages independent albums', async ({
@@ -548,6 +614,14 @@ test('uploads private memories, browses them by keyboard and manages independent
 	await offline.getByRole('link', { name: /Winter swatch/ }).click();
 	await expect(offline.getByRole('img', { name: 'A rose-coloured swatch' })).toBeVisible();
 	const photoUrl = offline.url();
+	await offline.goto('/timeline');
+	const timelinePhoto = offline.getByRole('img', { name: 'A rose-coloured swatch' });
+	await expect(timelinePhoto).toHaveAttribute('loading', 'lazy');
+	const thumbnail = await offline.request.get((await timelinePhoto.getAttribute('src'))!);
+	expect(thumbnail.status()).toBe(200);
+	expect(thumbnail.headers()['content-type']).toBe('image/jpeg');
+	await offline.getByRole('link', { name: 'A rose-coloured swatch' }).click();
+	await expect(offline).toHaveURL(photoUrl);
 	const downloadUrl = await offline
 		.getByRole('link', { name: 'Download original' })
 		.getAttribute('href');

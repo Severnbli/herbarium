@@ -2,7 +2,7 @@
 
 ## Current implementation
 
-Herbarium is a SvelteKit application using Svelte 5 runes, strict TypeScript and `adapter-node`. One instance represents one shared circle. Foundation, security, the design system, three locales, moments, plans, recurring occasions, memories, calendar views and reminders are implemented. Later phases remain planned in the [roadmap](ROADMAP.md).
+Herbarium is a SvelteKit application using Svelte 5 runes, strict TypeScript and `adapter-node`. One instance represents one shared circle. Foundation, security, the design system, three locales, moments, plans, recurring occasions, memories, calendar views, reminders and the timeline are implemented. Later phases remain planned in the [roadmap](ROADMAP.md).
 
 | Location                   | Responsibility                                        |
 | -------------------------- | ----------------------------------------------------- |
@@ -88,3 +88,9 @@ Members can set shared reminder offsets on events with day precision. Each membe
 When SMTP is configured, one scheduler in the Node process polls the encrypted database once a minute. It queues due times up to 14 days ahead and recovers eligible reminders that became due while the server was stopped. It rechecks the current event, offset, active membership and preference before claiming a delivery. Queued reminders remain eligible for up to 24 hours after the due time. Each event, local occurrence date, member and offset identifies one delivery. The scheduler commits the claim before contacting SMTP. Temporary explicit rejections and known pre-send failures retry with backoff. An interrupted or ambiguous submission keeps its claim so that the next process cannot submit the same reminder again.
 
 The SMTP message uses the member's saved language or the request locale recorded with their preferences. Its plain-text body contains the event title, formatted date and an authenticated event URL. The relay connection requires certificate-verified TLS. SMTP settings and credentials stay out of browser data, delivery rows and logs.
+
+## Timeline
+
+The authenticated `/timeline` load returns up to 24 events, newest local start date first, grouped by year. Each occasion appears once at its original date. Date labels use the stored precision and time zone. Filters use the shared event kinds and categories. Normalized dates position approximate entries in the sequence while their labels retain the original month or year precision.
+
+Newer and older links request one batch at a time using a validated local start date and event ID as the boundary. The query reuses the event date and ID index. For each entry, the attachment index selects the most recent attached memory by capture date, with upload date as the fallback. Page data is limited to event summaries and the selected preview identifiers and labels. The browser lazy-loads each thumbnail from the existing authenticated media route. Navigation and filtering use links and a GET form. CSS animates the stem and branches when the browser allows motion.
