@@ -59,7 +59,7 @@ npm run dev          # dev server (needs MASTER_KEY in .env, see .env.example)
 npm run build        # production application and offline restore command into build/
 npm run start        # run the production build (node build)
 node build/operations/restore.js <zip> # restore a portable archive into a fresh, stopped instance
-npm run check        # svelte-check + TypeScript, warnings fail
+npm run check        # svelte-check and service worker TypeScript, warnings fail
 npm run lint         # prettier --check + eslint
 npm run format       # prettier --write
 npm run test         # Vitest unit and integration tests (src/**/*.test.ts)

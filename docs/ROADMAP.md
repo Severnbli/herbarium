@@ -154,7 +154,7 @@ Done when: events can be pinned and browsed on a map that works fully offline fr
 
 ## Phase 11 – Polish and v1.0
 
-- [ ] PWA: installable with app icon and splash in the herbarium style; no offline mode – the service worker caches only versioned static assets, never pages, API responses or media
+- [x] PWA: installable with app icon and splash in the herbarium style; no offline mode – the service worker caches only versioned static assets, never pages, API responses or media
 - [ ] Performance pass: query indexes, image sizes, bundle size
 - [ ] Full accessibility audit in both themes and all locales
 - [ ] Security review against the **Security** section of `AGENTS.md`; dependency review

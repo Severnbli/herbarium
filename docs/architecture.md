@@ -47,6 +47,10 @@ DejaVu Serif and Sans are bundled under `static/fonts/` with their redistributio
 
 DatePicker submits the selected precision separately from its date value (day: YYYY-MM-DD, month: YYYY-MM, year: YYYY). Changing precision clears the previous value. Feature actions must validate and normalize these fields on the server before storing them; this visual component does not define event storage.
 
+## Installed web app
+
+The public web manifest supplies a standalone launch URL, botanical icons and a linen background for the browser-generated splash screen. The production service worker lazily caches exact URLs from the immutable client build, fetches them without credentials and discards earlier Herbarium caches on activation. Page navigation, form submissions, data requests and media always go to the server. Installed Herbarium needs a connection to its instance.
+
 ## Event dates and notes
 
 `src/lib/domain/event-date.ts` uses the ISC-licensed Temporal polyfill to validate calendar dates, convert local clock times to instants, render precision and determine whether an interval has elapsed. Nonexistent DST times are rejected. Repeated local times require explicit earlier/later choices, independently for start and end. Date-only end dates are inclusive; plan completion uses the next UTC day, month or year boundary so a partially elapsed date-only period cannot be completed early.

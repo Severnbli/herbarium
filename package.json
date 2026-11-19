@@ -18,7 +18,7 @@
 		"preview": "vite preview",
 		"start": "node build",
 		"prepare": "svelte-kit sync || echo ''",
-		"check": "npm run i18n:compile && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
+		"check": "npm run i18n:compile && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings && tsc --project src/service-worker --noEmit",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
