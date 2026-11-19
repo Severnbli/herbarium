@@ -21,8 +21,15 @@ export function requireOwner(event: Pick<RequestEvent, 'locals' | 'url'>): Sessi
 
 /** A safe local redirect target from a `next` parameter: same-origin paths only. */
 export function safeNext(next: string | null | undefined): string {
-	if (!next || !next.startsWith('/') || next.startsWith('//') || next.startsWith('/\\')) {
+	// Browsers remove tabs and newlines and may interpret backslashes as path separators.
+	if (
+		!next ||
+		next.length > 512 ||
+		!next.startsWith('/') ||
+		next.startsWith('//') ||
+		/[\\\t\r\n]/.test(next)
+	) {
 		return '/';
 	}
-	return next.length > 512 ? '/' : next;
+	return next;
 }

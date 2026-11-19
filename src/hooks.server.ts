@@ -101,17 +101,12 @@ const headers: Handle = async ({ event, resolve }) => {
 export const handle = sequence(headers, authenticate, locale, guard, limitFormBody);
 
 /**
- * Only unexpected errors reach the log, with a reference id shown on the error page. The response
- * never carries the message, stack, SQL or paths.
+ * Give unexpected failures a reference ID. Driver and tool errors can contain bound values,
+ * file paths or form input, including in multiline stack messages.
  */
 export const handleError: HandleServerError = (input) => {
 	if (input.kind !== 'unknown') return;
-	const { error } = input;
 	const id = randomUUID();
-	// Query errors can carry bound values in their message, so log the underlying driver error.
-	const cause = error instanceof Error && error.cause instanceof Error ? error.cause : error;
-	const summary = cause instanceof Error ? `${cause.name}: ${cause.message}` : 'non-Error thrown';
-	const stack = error instanceof Error ? (error.stack?.split('\n').slice(1).join('\n') ?? '') : '';
-	console.error(`[${id}] ${summary}\n${stack}`);
+	console.error(`[${id}] Herbarium could not complete a request.`);
 	return { message: 'Internal Error', id };
 };

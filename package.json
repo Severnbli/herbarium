@@ -1,6 +1,6 @@
 {
 	"name": "herbarium",
-	"version": "0.0.1",
+	"version": "1.0.0",
 	"description": "Self-hosted shared calendar and chronicle for a small circle of people",
 	"license": "GPL-3.0-only",
 	"private": true,
@@ -18,7 +18,7 @@
 		"preview": "vite preview",
 		"start": "node build",
 		"prepare": "svelte-kit sync || echo ''",
-		"check": "npm run i18n:compile && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
+		"check": "npm run i18n:compile && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings && tsc --project src/service-worker --noEmit",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
@@ -71,12 +71,15 @@
 		"svelte": "^5.57.2",
 		"svelte-check": "^4.6.0",
 		"typescript": "^6.0.3",
-		"typescript-eslint": "^8.60.1",
+		"typescript-eslint": "^8.73.0",
 		"vite": "^8.3.0",
 		"vitest": "^4.1.8"
 	},
 	"overrides": {
-		"picomatch": "$picomatch"
+		"picomatch": "$picomatch",
+		"@esbuild-kit/core-utils": {
+			"esbuild": "0.25.12"
+		}
 	},
 	"allowScripts": {
 		"esbuild": false,

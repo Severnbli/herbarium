@@ -33,6 +33,12 @@ CI runs the browser suite with Playwright's Chromium headless shell and the shar
 
 For schema changes, run `npm run db:generate`, review the generated SQL and commit migrations alongside the schema. The app applies migrations on startup.
 
+## v1.0 release review
+
+The accessibility review covered public and authenticated screens with synthetic content in English, Belarusian and Russian, in both themes. It used Chromium, axe WCAG 2.2 AA checks, 320 CSS pixel reflow, keyboard checks for forms, navigation and the photo lightbox, and reduced-motion checks. Form control borders now meet 3:1 contrast against linen and paper in both themes. The map has a server-rendered event list and coordinate inputs. Members can add descriptions for their uploaded media. The player currently has no caption-track authoring or upload controls, so this review does not claim WCAG conformance for member-supplied videos.
+
+The security review followed [the project requirements](../AGENTS.md#security) across sign-in and session handling, encryption, private media and map routes, input validation, HTTP headers, archive operations and deployment. The sign-in return-path check now rejects ambiguous path separators and raw line breaks. Unexpected request failures log only a reference ID and a fixed message, leaving driver and tool error details out of logs. The installed app caches successful public immutable build assets fetched without credentials. Both the full and production-only lockfile audits reported zero advisories after the development-tool updates.
+
 ## Translations
 
 Edit `messages/en.json`, `messages/be.json` and `messages/ru.json` together, and expose new keys through `src/lib/i18n/catalog.ts`. Parameters use `{name}`; plural variants declare a `plural` selector and supply the locale's CLDR categories with a catchall. Translation catalogs contain data, not executable TypeScript.

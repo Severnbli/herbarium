@@ -200,6 +200,45 @@ test('keeps the small request limit on sign-in forms', async ({ request }) => {
 	expect(response.status()).toBe(413);
 });
 
+test('can be installed and caches only immutable client assets', async ({ page, context }) => {
+	await login(page, owner.username, owner.password);
+	const manifestPath = await page.locator('link[rel="manifest"]').getAttribute('href');
+	const manifestResponse = await page.request.get(manifestPath!);
+	expect(manifestResponse.ok()).toBe(true);
+	const manifest = await manifestResponse.json();
+	expect(manifest).toMatchObject({ start_url: '/', scope: '/', display: 'standalone' });
+	for (const icon of manifest.icons) {
+		const response = await page.request.get(icon.src);
+		const { width, height } = await sharp(await response.body()).metadata();
+		expect(`${width}x${height}`).toBe(icon.sizes);
+	}
+
+	await page.evaluate(async () => (await navigator.serviceWorker.ready).scope);
+	await page.reload();
+	await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
+
+	const devtools = await context.newCDPSession(page);
+	const { installabilityErrors } = await devtools.send('Page.getInstallabilityErrors');
+	expect(installabilityErrors).toEqual([]);
+
+	await page.goto('/members');
+	await expect(page.getByText(owner.name, { exact: true })).toBeVisible();
+	const cached = await page.evaluate(async () => {
+		for (const path of ['/members/__data.json', '/map/assets/markers.png', '/app.webmanifest']) {
+			const response = await fetch(path);
+			await response.arrayBuffer();
+		}
+		const names = await caches.keys();
+		const entries = await Promise.all(names.map(async (name) => (await caches.open(name)).keys()));
+		return entries.flat().map((request) => new URL(request.url).pathname);
+	});
+	expect(cached.length).toBeGreaterThan(0);
+	expect(cached.every((path) => path.startsWith('/_app/immutable/'))).toBe(true);
+
+	await context.setOffline(true);
+	await expect(page.goto('/members')).rejects.toThrow('net::ERR_INTERNET_DISCONNECTED');
+});
+
 test('login works without JavaScript and fails generically', async ({ browser }) => {
 	const page = await newPage(browser, { javaScriptEnabled: false });
 	await login(page, owner.username, 'wrong password');
@@ -1281,10 +1320,16 @@ test('appearance follows the system, persists overrides and works on a narrow sc
 	const context = await browser.newContext({
 		colorScheme: 'dark',
 		locale: 'en-US',
-		viewport: { width: 375, height: 812 }
+		viewport: { width: 320, height: 812 }
 	});
 	const page = await context.newPage();
+	const fontResponse = page.waitForResponse((response) =>
+		new URL(response.url()).pathname.endsWith('.woff2')
+	);
 	await page.goto('/login');
+	const font = await fontResponse;
+	expect(font.ok()).toBe(true);
+	expect(new URL(font.url()).pathname).toMatch(/^\/_app\/immutable\//);
 	const background = () =>
 		page.locator('body').evaluate(() => getComputedStyle(document.documentElement).backgroundColor);
 	expect(await background()).toBe('rgb(20, 31, 36)');
@@ -1304,8 +1349,6 @@ test('appearance follows the system, persists overrides and works on a narrow sc
 	await page.keyboard.press('Enter');
 	await expect(page.locator('main')).toBeFocused();
 	expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-	const font = await page.request.get('/fonts/herbarium-serif.ttf');
-	expect(font.ok()).toBe(true);
 	await context.close();
 });
 

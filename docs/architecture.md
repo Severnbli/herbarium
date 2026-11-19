@@ -2,7 +2,7 @@
 
 ## Current implementation
 
-Herbarium is a SvelteKit application using Svelte 5 runes, strict TypeScript and `adapter-node`. One instance represents one shared circle. Foundation, security, the design system, three locales, moments, plans, recurring occasions, memories, calendar views, reminders, the timeline, maps, the dashboard and data ownership operations are implemented. Later phases remain planned in the [roadmap](ROADMAP.md).
+Herbarium is a SvelteKit application using Svelte 5 runes, strict TypeScript and `adapter-node`. One instance represents one shared circle. The v1.0 roadmap covers the security foundation, three locales, moments, plans, recurring occasions, memories, calendar views, reminders, the timeline, maps, the dashboard, data ownership operations and browser installation. [Roadmap](ROADMAP.md)
 
 | Location                   | Responsibility                                        |
 | -------------------------- | ----------------------------------------------------- |
@@ -43,9 +43,13 @@ The deployment remains one Node application and one data volume. Runtime assets 
 
 `src/lib/design.css` defines semantic color tokens, typography, controls and the accessibility baseline. Light linen and dark Kupalle themes follow the operating system. The appearance selector stores an optional device preference in localStorage, separate from the account language. A small same-origin script applies the allowlisted theme before first paint, without inline script or a CSP exception. With JavaScript disabled, system appearance and server forms still work.
 
-DejaVu Serif and Sans are bundled under `static/fonts/` with their redistribution license and cover Belarusian і and ў. No font service is contacted. Shared components provide buttons, labelled inputs (`Field`), textareas, selects, precision-aware native date fields, modal dialogs, persistent dismissible status messages and herbarium cards. Decorative inline SVG ornaments are hidden from assistive technology. The app shell includes a skip link, current-page navigation and responsive form layouts.
+DejaVu Serif and Sans are bundled as WOFF2 build assets and cover Belarusian і and ў. The lossless conversion preserves the original glyphs and reduces the two fonts from 1,140,380 to 405,484 bytes before HTTP compression. The redistribution license is served from `/fonts/LICENSE.txt`. Shared components provide buttons, labelled inputs (`Field`), textareas, selects, precision-aware native date fields, modal dialogs, persistent dismissible status messages and herbarium cards. Decorative inline SVG ornaments are hidden from assistive technology. The app shell includes a skip link, current-page navigation and responsive form layouts.
 
 DatePicker submits the selected precision separately from its date value (day: YYYY-MM-DD, month: YYYY-MM, year: YYYY). Changing precision clears the previous value. Feature actions must validate and normalize these fields on the server before storing them; this visual component does not define event storage.
+
+## Installed web app
+
+The public web manifest supplies a standalone launch URL, botanical icons and a linen background for the browser-generated splash screen. The production service worker lazily caches exact URLs from the immutable client build, fetches them without credentials and discards earlier Herbarium caches on activation. Page navigation, form submissions, data requests and media always go to the server. Installed Herbarium needs a connection to its instance.
 
 ## Event dates and notes
 
@@ -106,6 +110,8 @@ The place picker queries a bundled read-only SQLite gazetteer using bound FTS ex
 The authenticated root page shows up to six event starts within the next 30 calendar days and includes the current day. Each occasion contributes its first upcoming recurrence in the window, using the same recurrence expansion as the calendar. Timed events must still be upcoming by instant. The dashboard displays those instants and counts down in the member's account time zone. All-day events retain their calendar dates. Month and year precision keep their original labels and can appear while the start period is current or begins in the window.
 
 The anniversary panel finds the next anniversary even beyond the upcoming window. Time together counts calendar days since the earliest anniversary that has started. On this day shows up to five day-precision moments and occasions by their original local month and day in previous years. The recent memories panel shows the last four uploads and fetches thumbnails through the authenticated media route. The server load checks for a full session and returns display data for these sections. The root page remains the default after sign-in, with existing return links to protected pages preserved.
+
+The historical lookup seeks by month and day, then walks the event date and ID in reverse order. The recent-memory lookup walks the upload-date index and uses the existing unique index to find each original's media type. Galleries and event lists use thumbnails capped at 400 pixels on their longest side. Full memory views use a bounded preview. The MapLibre renderer and its worker load only on pages that mount an interactive map.
 
 ## Portable archives
 

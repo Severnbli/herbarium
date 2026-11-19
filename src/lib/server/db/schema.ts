@@ -197,6 +197,11 @@ export const event = sqliteTable(
 	(table) => [
 		index('event_sort_idx').on(table.sortDate, table.id),
 		index('event_kind_sort_idx').on(table.kind, table.sortDate),
+		index('event_month_day_sort_idx').on(
+			sql`substr(${table.sortDate}, 6)`,
+			table.sortDate,
+			table.id
+		),
 		check(
 			'event_coordinates',
 			sql`(${table.lat} IS NULL AND ${table.lon} IS NULL) OR (${table.lat} IS NOT NULL AND ${table.lon} IS NOT NULL AND ${table.lat} BETWEEN -90 AND 90 AND ${table.lon} BETWEEN -180 AND 180)`
@@ -286,7 +291,8 @@ export const memory = sqliteTable(
 	},
 	(table) => [
 		index('memory_sort_idx').on(table.sortDate, table.id),
-		index('memory_event_idx').on(table.eventId, table.sortDate, table.id)
+		index('memory_event_idx').on(table.eventId, table.sortDate, table.id),
+		index('memory_created_idx').on(table.createdAt, table.id)
 	]
 );
 

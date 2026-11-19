@@ -8,7 +8,7 @@ This file is the source of truth for project context and instructions. Keep shar
 
 **Herbarium** is a self-hosted shared calendar for a small circle of people – a couple, a family, close friends. It preserves their shared history, organizes their present and plans their future. It should feel like a personal botanical chronicle or an enchanted herbarium – a place where memories are collected, pressed, preserved and allowed to grow.
 
-Status: phases 0 (foundation), 1 (security core), 2 (design system and i18n), 3 (moments and plans), 4 (occasions and recurrence), 5 (memories), 6 (calendar and reminders), 7 (timeline), 8 (map of memories), 9 (dashboard) and 10 (data ownership and operations) are in place. When you add tooling, update the **Commands** section so it always matches reality.
+Status: the v1.0 roadmap is complete through phase 11 (polish and release). When you add tooling, update the **Commands** section so it always matches reality.
 
 The development plan lives in `docs/ROADMAP.md`. Work phase by phase, and tick off items there as they are completed.
 
@@ -59,7 +59,7 @@ npm run dev          # dev server (needs MASTER_KEY in .env, see .env.example)
 npm run build        # production application and offline restore command into build/
 npm run start        # run the production build (node build)
 node build/operations/restore.js <zip> # restore a portable archive into a fresh, stopped instance
-npm run check        # svelte-check + TypeScript, warnings fail
+npm run check        # svelte-check and service worker TypeScript, warnings fail
 npm run lint         # prettier --check + eslint
 npm run format       # prettier --write
 npm run test         # Vitest unit and integration tests (src/**/*.test.ts)
