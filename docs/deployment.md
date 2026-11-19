@@ -62,7 +62,7 @@ All settings are environment variables, validated at startup. The app refuses to
 
 `PORT`, `HOST` and the other settings of [`adapter-node`](https://svelte.dev/docs/kit/adapter-node) work as documented there.
 
-The image sets `BODY_SIZE_LIMIT=1025M` so uploads can reach the application limits. A bare `node build` deployment should set `BODY_SIZE_LIMIT` at or above `MAX_REQUEST_BYTES`. Set the reverse proxy's request allowance to match `MAX_REQUEST_BYTES` and disable disk-backed request buffering for uploads to `/memories/new`. Other application forms retain a 512 KiB limit.
+The image sets `BODY_SIZE_LIMIT=1025M` so uploads can reach the application limits. A bare `node build` deployment should set `BODY_SIZE_LIMIT` at or above `MAX_REQUEST_BYTES`. Set the reverse proxy's request allowance to match `MAX_REQUEST_BYTES` and disable disk-backed request buffering for uploads to `/memories/new` and `/memories/import/*/upload`. Other application forms retain a 512 KiB limit.
 
 Media processing in the image requires Linux on amd64 or arm64 with Landlock ABI 3 or newer and seccomp enabled. A bare deployment also needs Python 3, ExifTool, FFmpeg 8 with `libx264`, ffprobe and libseccomp. Uploads use anonymous memory files during processing, one upload at a time. Size the container's available memory for up to three media buffers near the configured file limit plus decoder overhead. Use encrypted swap or disable host swap for sensitive deployments. Keep one application process on each data volume so startup cleanup can safely reclaim encrypted files left by a stopped upload.
 

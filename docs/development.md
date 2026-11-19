@@ -96,3 +96,11 @@ Tests cover member time zones, elapsed starts, approximate dates, anniversary se
 ## Portable archives
 
 The archive integration test streams shared content from one encrypted instance, rejects a damaged ZIP and imports a valid ZIP into another instance with a different key. It verifies references, audit entries and encrypted media. The restore CLI is built alongside the application. See the [deployment guide](deployment.md#restore-a-portable-zip) for commands.
+
+## Bulk media import
+
+Choose **Import photos and videos** from **Memories**. Select multiple files from a gallery or use the folder picker. Upload progress is shown for the queue and the active file. You can pause and resume the queue, or return to the import and select the same files to skip completed transfers. An interrupted file uploads from the beginning. Each upload is subject to the usual limits. One open import can record up to 500 files.
+
+The review groups photos and videos by capture date. Give a group a title and choose to create a moment, an album or both. With an unknown capture date, you can create an album. Review a photo location before optionally including it in a new moment. Finishing the import closes the queue and leaves any ungrouped files in **Memories**.
+
+Playwright interrupts a bulk upload, resumes it after reload, verifies private queue access, checks duplicate detection against raw photo bytes and confirms the group with explicit coordinate consent. Unit tests check atomic grouping and session-bound location offers.

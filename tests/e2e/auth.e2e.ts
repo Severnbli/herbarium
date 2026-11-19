@@ -43,6 +43,9 @@ const PROTECTED = [
 	'/map/assets/markers.png',
 	'/memories',
 	'/memories/new',
+	'/memories/import',
+	`/memories/import/${id}`,
+	`/memories/import/${id}/upload`,
 	`/memories/${id}`,
 	`/memories/albums/${id}`,
 	`/media/${id}/original`
@@ -142,6 +145,9 @@ test('rejects anonymous access to every route', async ({ browser }) => {
 		'/events/' + 'a'.repeat(22) + '?/delete',
 		'/events/' + 'a'.repeat(22) + '/edit',
 		'/memories/new',
+		'/memories/import',
+		`/memories/import/${id}`,
+		`/memories/import/${id}/upload`,
 		'/memories?/createAlbum',
 		`/memories/${id}?/description`,
 		`/memories/${id}?/album`,
@@ -731,6 +737,124 @@ test('uploads private memories, browses them by keyboard and manages independent
 	await offline.getByRole('button', { name: 'Delete memory', exact: true }).click();
 	await expect(offline).toHaveURL('/memories');
 	expect((await offline.request.get(downloadUrl!)).status()).toBe(404);
+});
+
+test('resumes bulk imports and confirms dated groups with a photo location', async ({
+	browser
+}, info) => {
+	mkdirSync(info.outputDir, { recursive: true });
+	const first = info.outputPath('first-photo.jpg');
+	const second = info.outputPath('second-photo.jpg');
+	const undated = info.outputPath('undated.jpg');
+	await sharp({ create: { width: 31, height: 23, channels: 3, background: '#408068' } })
+		.jpeg()
+		.toFile(first);
+	copyFileSync(first, second);
+	for (const [file, lat] of [
+		[first, '18.12'],
+		[second, '19.12']
+	] as const) {
+		await run('exiftool', [
+			'-overwrite_original',
+			`-GPSLatitude=${lat}`,
+			'-GPSLatitudeRef=N',
+			'-GPSLongitude=28.56',
+			'-GPSLongitudeRef=E',
+			'-DateTimeOriginal=2022:09:17 12:00:00',
+			file
+		]);
+	}
+	await sharp({ create: { width: 32, height: 24, channels: 3, background: '#807040' } })
+		.jpeg()
+		.toFile(undated);
+
+	const page = await newPage(browser);
+	await login(page, member.username, member.password);
+	await page.goto('/memories');
+	await page.getByRole('link', { name: 'Import photos and videos' }).click();
+	await page.getByRole('button', { name: 'Start import' }).click();
+	await expect(page).toHaveURL(/\/memories\/import\/[\w-]{22}$/);
+	const importUrl = page.url();
+	const uploadUrl = `${importUrl}/upload`;
+	const outsider = await newPage(browser);
+	await login(outsider, owner.username, owner.password);
+	expect((await outsider.request.get(importUrl)).status()).toBe(404);
+	expect(
+		(
+			await outsider.request.get(uploadUrl, { headers: { 'X-Herbarium-Upload': '0'.repeat(64) } })
+		).status()
+	).toBe(404);
+	await outsider.context().close();
+	expect(
+		(
+			await page.request.post(uploadUrl, {
+				headers: { Origin: 'https://foreign.example', 'X-Herbarium-Upload': '0'.repeat(64) },
+				multipart: { altText: '', caption: '' }
+			})
+		).status()
+	).toBe(403);
+
+	let posts = 0;
+	const stopped = Promise.withResolvers<void>();
+	const unblock = Promise.withResolvers<void>();
+	await page.route(uploadUrl, async (route) => {
+		if (route.request().method() === 'POST' && ++posts === 2) {
+			stopped.resolve();
+			await unblock.promise;
+			await route.abort().catch(() => undefined);
+			return;
+		}
+		await route.continue();
+	});
+	await expect(page.getByLabel('Choose files')).toBeEnabled();
+	await page.getByLabel('Choose files').setInputFiles([first, second, undated]);
+	await page.getByRole('button', { name: 'Upload', exact: true }).click();
+	await stopped.promise;
+	await page.getByRole('button', { name: 'Pause', exact: true }).click();
+	unblock.resolve();
+	await expect(page.getByText('Upload paused.')).toBeVisible();
+	await expect(page.getByRole('link', { name: 'first-photo.jpg' })).toBeVisible();
+	await expect(page.getByRole('link', { name: 'second-photo.jpg' })).toHaveCount(0);
+
+	await page.reload();
+	await expect(page.getByLabel('Choose files')).toBeEnabled();
+	await page.getByLabel('Choose files').setInputFiles([first, second, undated]);
+	await page.getByRole('button', { name: 'Upload', exact: true }).click();
+	await expect(page.getByText('Finished processing the selected files.')).toBeVisible();
+	expect(posts).toBe(4);
+	const dated = page.getByRole('group', { name: /Sep 17, 2022|September 17, 2022/ });
+	await expect(dated.getByRole('link')).toHaveCount(2);
+	await expect(
+		page
+			.getByRole('group', { name: 'Unknown capture date' })
+			.getByRole('checkbox', { name: 'Create a moment' })
+	).toHaveCount(0);
+	await dated.getByLabel('Moment or album title').fill('Imported garden');
+	await dated.getByRole('checkbox', { name: 'Create a moment' }).check();
+	await dated.getByRole('checkbox', { name: 'Create an album' }).check();
+	await dated.getByRole('button', { name: 'Use the photo’s location?' }).click();
+	await expect(dated.getByText('second-photo.jpg · 19.12, 28.56')).toBeVisible();
+	await expect(dated.getByRole('checkbox', { name: 'Use coordinates' })).not.toBeChecked();
+	await dated.getByRole('checkbox', { name: 'Use coordinates' }).check();
+	await dated.getByRole('button', { name: 'Save group' }).click();
+	await expect(page.getByRole('link', { name: 'Open moment' })).toBeVisible();
+	const moment = await page.getByRole('link', { name: 'Open moment' }).getAttribute('href');
+	const createdAlbum = await page.getByRole('link', { name: 'Open album' }).getAttribute('href');
+	expect(await (await page.request.get(moment!)).text()).toContain(
+		'Latitude: 19.12, Longitude: 28.56'
+	);
+	expect(await (await page.request.get(createdAlbum!)).text()).toContain('Imported garden');
+
+	await page.getByRole('button', { name: 'Finish import' }).click();
+	await page.getByRole('link', { name: 'Import photos and videos' }).click();
+	await page.getByRole('button', { name: 'Start import' }).click();
+	await expect(page.getByLabel('Choose files')).toBeEnabled();
+	await page.getByLabel('Choose files').setInputFiles(first);
+	await page.getByRole('button', { name: 'Upload', exact: true }).click();
+	await expect(page.getByText('first-photo.jpg · Duplicate skipped')).toBeVisible();
+	await expect(page.getByRole('heading', { name: 'Review groups' })).toHaveCount(0);
+	await page.getByRole('button', { name: 'Finish import' }).click();
+	await page.context().close();
 });
 
 test('loads local tiles and glyphs, searches for places and edits pins without outbound requests', async ({

@@ -2,7 +2,7 @@
 
 ## Current implementation
 
-Herbarium is a SvelteKit application using Svelte 5 runes, strict TypeScript and `adapter-node`. One instance represents one shared circle. Foundation, security, the design system, three locales, moments, plans, recurring occasions, memories, calendar views, reminders, the timeline, maps and the dashboard are implemented. Later phases remain planned in the [roadmap](ROADMAP.md).
+Herbarium is a SvelteKit application using Svelte 5 runes, strict TypeScript and `adapter-node`. One instance represents one shared circle. Foundation, security, the design system, three locales, moments, plans, recurring occasions, memories, calendar views, reminders, the timeline, maps, the dashboard and data ownership operations are implemented. Later phases remain planned in the [roadmap](ROADMAP.md).
 
 | Location                   | Responsibility                                        |
 | -------------------------- | ----------------------------------------------------- |
@@ -116,3 +116,11 @@ An offline restore command validates the manifest, ZIP entry names, sizes, check
 ## Master key rotation
 
 Startup can open the existing database using a previous key to rotate its SQLCipher key. The rotation transaction wraps each unchanged media data key under the new wrapping key and re-seals both TOTP columns. Until the database opens with the intended new key, a fingerprint in the encrypted database identifies the pending operation and prevents startup with the previous key alone. After verification the server finalizes the rotation and records the audit event together. The [operator procedure](key-management.md#rotating-the-master-key) describes secret file setup and backup retention.
+
+## Bulk media import
+
+Each member can keep one active import and upload up to 500 photos or videos to it. Files are sent one at a time through the same bounded multipart and memory-only cleaning pipeline as individual uploads. A random key in the encrypted database authenticates HMAC-SHA256 fingerprints of the original byte streams before cleaning. Bulk uploads skip a match against a saved memory. Individual uploads still allow another copy. Existing originals had their raw metadata removed, so duplicate detection applies to uploads recorded after the feature is installed.
+
+Successful uploads and duplicate results commit receipts in the same transaction as their memory rows. The browser uses bounded Web Crypto reads to identify the same selection after reload. Its fingerprints travel in headers and the server stores only keyed receipt identifiers scoped to the member's active import. Completed files are skipped before transfer. Pause or resume works at the file boundary. The server writes only location-cleaned ciphertext to disk.
+
+Uploaded memories are available in the gallery. Pending organization groups use exact capture dates and an undated bucket. Confirming a displayed group creates a moment, an album or both in one transaction. Members can create albums for undated files. The GPS offer is held on the page and expires after 30 minutes. It is bound to the uploading session and the selected memory. Only explicit consent writes that point to the new moment.

@@ -290,6 +290,50 @@ export const memory = sqliteTable(
 	]
 );
 
+/** The encrypted database keeps this random key stable across master-key rotation. */
+export const mediaIdentity = sqliteTable('media_identity', {
+	id: integer('id').primaryKey(),
+	key: blob('key', { mode: 'buffer' }).notNull()
+});
+
+export const memoryFingerprint = sqliteTable(
+	'memory_fingerprint',
+	{
+		memoryId: text('memory_id')
+			.primaryKey()
+			.notNull()
+			.references(() => memory.id, { onDelete: 'cascade' }),
+		digest: text('digest').notNull()
+	},
+	(table) => [index('memory_fingerprint_digest_idx').on(table.digest)]
+);
+
+export const mediaImport = sqliteTable('media_import', {
+	id: text('id').primaryKey(),
+	userId: text('user_id')
+		.notNull()
+		.unique()
+		.references(() => user.id, { onDelete: 'cascade' }),
+	createdAt: createdAt()
+});
+
+export const importReceipt = sqliteTable(
+	'import_receipt',
+	{
+		importId: text('import_id')
+			.notNull()
+			.references(() => mediaImport.id, { onDelete: 'cascade' }),
+		fingerprint: text('fingerprint').notNull(),
+		memoryId: text('memory_id').references(() => memory.id, { onDelete: 'set null' }),
+		duplicate: integer('duplicate', { mode: 'boolean' }).notNull(),
+		organized: integer('organized', { mode: 'boolean' }).notNull().default(false)
+	},
+	(table) => [
+		primaryKey({ columns: [table.importId, table.fingerprint] }),
+		index('import_receipt_memory_idx').on(table.memoryId)
+	]
+);
+
 export const mediaFile = sqliteTable(
 	'media_file',
 	{

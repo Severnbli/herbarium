@@ -8,7 +8,7 @@ This file is the source of truth for project context and instructions. Keep shar
 
 **Herbarium** is a self-hosted shared calendar for a small circle of people – a couple, a family, close friends. It preserves their shared history, organizes their present and plans their future. It should feel like a personal botanical chronicle or an enchanted herbarium – a place where memories are collected, pressed, preserved and allowed to grow.
 
-Status: phases 0 (foundation), 1 (security core), 2 (design system and i18n), 3 (moments and plans), 4 (occasions and recurrence), 5 (memories), 6 (calendar and reminders), 7 (timeline), 8 (map of memories) and 9 (dashboard) are in place. When you add tooling, update the **Commands** section so it always matches reality.
+Status: phases 0 (foundation), 1 (security core), 2 (design system and i18n), 3 (moments and plans), 4 (occasions and recurrence), 5 (memories), 6 (calendar and reminders), 7 (timeline), 8 (map of memories), 9 (dashboard) and 10 (data ownership and operations) are in place. When you add tooling, update the **Commands** section so it always matches reality.
 
 The development plan lives in `docs/ROADMAP.md`. Work phase by phase, and tick off items there as they are completed.
 

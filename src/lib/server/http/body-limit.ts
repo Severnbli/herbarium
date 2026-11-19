@@ -6,7 +6,10 @@ const FORM_LIMIT = 512 * 1024;
 /** The adapter's upload allowance also applies to auth routes. Preserve the smaller form limit. */
 export const limitFormBody: Handle = async ({ event, resolve }) => {
 	const request = event.request;
-	if (!request.body || (request.method === 'POST' && event.route.id === '/memories/new')) {
+	const mediaUpload =
+		request.method === 'POST' &&
+		(event.route.id === '/memories/new' || event.route.id === '/memories/import/[id]/upload');
+	if (!request.body || mediaUpload) {
 		return resolve(event);
 	}
 	if (Number(request.headers.get('content-length')) > FORM_LIMIT) {

@@ -146,3 +146,9 @@ An operator restores a ZIP with the app stopped after setting up the first owner
 **Status:** Accepted.
 
 At startup a migration transaction re-wraps media keys and re-seals TOTP fields. A keyed fingerprint ties that transaction to the intended new master key. The database retains the fingerprint across the separate SQLCipher rekey transaction. Startup clears the marker only after reopening with the intended new key. This keeps the existing media ciphertext and lets operators recover with both key files after an interruption. The deployed process uses a rollback journal during rekey and requires exclusive access to the volume.
+
+## File-level media import receipts
+
+**Status:** Accepted.
+
+Bulk import reuses the individual upload pipeline and commits each clean original before a member reviews organization. This makes completed files durable and keeps partial raw files in anonymous memory. Members can pause and resume the queue or reselect the same files after reopening it. An interrupted file starts again. The database stores an instance-keyed HMAC of raw uploads for duplicate detection and an import-scoped receipt to skip completed transfers. The random HMAC key lives inside SQLCipher, so encrypted volume restores and master key rotation preserve duplicate detection. Portable exports contain cleaned originals and omit upload fingerprints and import state. GPS offers stay in page memory and follow the same consent rule as individual uploads.
