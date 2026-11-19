@@ -28,6 +28,9 @@ describe('safeNext', () => {
 		['https://evil.example', '/'],
 		['//evil.example', '/'],
 		['/\\evil.example', '/'],
+		['/\t/members', '/'],
+		['/events\n', '/'],
+		['/calendar?view=week#content', '/calendar?view=week#content'],
 		['members', '/']
 	])('%s → %s', (next, expected) => {
 		expect(safeNext(next)).toBe(expected);

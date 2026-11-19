@@ -48,7 +48,9 @@ async function loadAsset(url: string): Promise<Response> {
 	if (
 		response.status === 200 &&
 		directives?.includes('public') &&
-		directives.includes('immutable')
+		directives.includes('immutable') &&
+		!directives.includes('private') &&
+		!directives.includes('no-store')
 	) {
 		await cache?.put(url, response.clone()).catch(() => undefined);
 	}

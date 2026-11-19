@@ -1320,10 +1320,16 @@ test('appearance follows the system, persists overrides and works on a narrow sc
 	const context = await browser.newContext({
 		colorScheme: 'dark',
 		locale: 'en-US',
-		viewport: { width: 375, height: 812 }
+		viewport: { width: 320, height: 812 }
 	});
 	const page = await context.newPage();
+	const fontResponse = page.waitForResponse((response) =>
+		new URL(response.url()).pathname.endsWith('.woff2')
+	);
 	await page.goto('/login');
+	const font = await fontResponse;
+	expect(font.ok()).toBe(true);
+	expect(new URL(font.url()).pathname).toMatch(/^\/_app\/immutable\//);
 	const background = () =>
 		page.locator('body').evaluate(() => getComputedStyle(document.documentElement).backgroundColor);
 	expect(await background()).toBe('rgb(20, 31, 36)');
@@ -1343,8 +1349,6 @@ test('appearance follows the system, persists overrides and works on a narrow sc
 	await page.keyboard.press('Enter');
 	await expect(page.locator('main')).toBeFocused();
 	expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-	const font = await page.request.get('/fonts/herbarium-serif.ttf');
-	expect(font.ok()).toBe(true);
 	await context.close();
 });
 

@@ -19,6 +19,7 @@
 	--rye: #59612e;
 	--flax: #805e16;
 	--line: #c2b8a4;
+	--control-line: #8a806d;
 	--focus: var(--cornflower);
 	--shadow: 0 12px 40px #302c2610;
 	--radius: 0.35rem;
@@ -41,6 +42,7 @@
 		--rye: #c4ca92;
 		--flax: #e4c37e;
 		--line: #657571;
+		--control-line: #738681;
 		color-scheme: dark;
 	}
 }
@@ -55,6 +57,7 @@
 	--rye: #c4ca92;
 	--flax: #e4c37e;
 	--line: #657571;
+	--control-line: #738681;
 	color-scheme: dark;
 }
 * {
@@ -100,7 +103,7 @@ select,
 textarea {
 	color: var(--ink);
 	background: var(--paper);
-	border: 1px solid var(--line);
+	border: 1px solid var(--control-line);
 	border-radius: var(--radius);
 	padding: 0.65rem 0.8rem;
 	min-height: 2.75rem;
