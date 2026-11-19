@@ -29,6 +29,8 @@ npm run test
 
 Run `npm run test:e2e` for browser-flow changes; see `playwright.config.ts` for production-build and test-server setup. Unit tests are colocated with source files. Use isolated temporary data and synthetic fixtures for security tests.
 
+CI runs the browser suite with Playwright's Chromium headless shell and the shared libraries provided by its Ubuntu 26.04 runner.
+
 For schema changes, run `npm run db:generate`, review the generated SQL and commit migrations alongside the schema. The app applies migrations on startup.
 
 ## Translations
