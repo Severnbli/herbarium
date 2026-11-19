@@ -111,11 +111,11 @@ Done when: photos and videos upload, display and stream, and the media directory
 
 ## Phase 7 – Timeline
 
-- [ ] Chronological visualization of the shared story as a growing stem: events as leaves/flowers, years as nodes
-- [ ] Handles approximate dates (month/year precision) gracefully
-- [ ] Media previews on the timeline; filters by kind/tag
-- [ ] Lazy loading / virtualization for long histories
-- [ ] Growth animations that fully respect `prefers-reduced-motion`
+- [x] Chronological visualization of the shared story as a growing stem: events as leaves/flowers, years as nodes
+- [x] Handles approximate dates (month/year precision) gracefully
+- [x] Media previews on the timeline; filters by kind/tag
+- [x] Lazy loading / virtualization for long histories
+- [x] Growth animations that fully respect `prefers-reduced-motion`
 
 ## Phase 8 – Map of memories
 

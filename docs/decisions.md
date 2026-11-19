@@ -106,3 +106,11 @@ Status: accepted.
 Use Nodemailer (MIT-0) for authenticated SMTP, certificate-verified TLS and plain-text MIME composition. Only the operator's configured relay receives connections, and its credentials come from a mounted secret file. Members opt in with an email address and time zone. A shared event can have several reminder offsets, but each delivery belongs to a single member and local event occurrence.
 
 Keep both pending deliveries and completed or ambiguous claims in SQLCipher. SMTP acceptance and a local database update cannot be atomic. Saving the claim before submission prevents a duplicate after a crash. This can omit a reminder when the process dies after claiming it or the relay disconnects after receiving the message. Retry explicit temporary rejections and known pre-submission failures. Keep claim records until the event or member is deleted so changing the same occurrence's settings cannot send the same reminder twice.
+
+## Timeline anchors and pagination
+
+Status: accepted.
+
+Use the shared event's original local start date for its timeline position, including for occasions. This gives each event one entry in the story while the calendar expands recurring dates. Order ties by event ID and preserve the original precision in the visible date label. Use the existing categories for filtering.
+
+Fetch 24 events at a time and use the indexed date and ID pair as the boundary in either direction. This bounds the rendered entries per request, works without JavaScript and lets the link continue working if its anchor is deleted. A year can span multiple batches. Each event shows at most one thumbnail, so opening a timeline page keeps its media requests bounded.

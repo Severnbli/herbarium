@@ -78,6 +78,15 @@ export function messages(locale: Locale) {
 			createOn: (date: string) => m.calendar_createOn({ date }, { locale }),
 			empty: m.calendar_empty({}, { locale })
 		},
+		timeline: {
+			title: m.timeline_title({}, { locale }),
+			allCategories: m.timeline_allCategories({}, { locale }),
+			empty: m.timeline_empty({}, { locale }),
+			navigation: m.timeline_navigation({}, { locale }),
+			newer: m.timeline_newer({}, { locale }),
+			older: m.timeline_older({}, { locale }),
+			latest: m.timeline_latest({}, { locale })
+		},
 		event: {
 			recurrence: m.event_recurrence({}, { locale }),
 			occasionSettings: m.event_occasionSettings({}, { locale }),
