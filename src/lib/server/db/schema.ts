@@ -132,7 +132,10 @@ export const AUDIT_EVENTS = [
 	'recovery_codes_regenerated',
 	'event_deleted',
 	'memory_deleted',
-	'album_deleted'
+	'album_deleted',
+	'export_started',
+	'archive_restored',
+	'master_key_rotated'
 ] as const;
 export type AuditEvent = (typeof AUDIT_EVENTS)[number];
 
@@ -153,6 +156,12 @@ export const auditLog = sqliteTable(
 	},
 	(table) => [index('audit_log_created_idx').on(table.createdAt)]
 );
+
+/** A singleton marker between re-sealing fields and re-keying SQLCipher. */
+export const keyRotation = sqliteTable('key_rotation', {
+	id: integer('id').primaryKey(),
+	target: blob('target', { mode: 'buffer' }).notNull()
+});
 
 /** Moments, plans and recurring occasions share their identity. */
 export const event = sqliteTable(
@@ -278,6 +287,50 @@ export const memory = sqliteTable(
 	(table) => [
 		index('memory_sort_idx').on(table.sortDate, table.id),
 		index('memory_event_idx').on(table.eventId, table.sortDate, table.id)
+	]
+);
+
+/** The encrypted database keeps this random key stable across master-key rotation. */
+export const mediaIdentity = sqliteTable('media_identity', {
+	id: integer('id').primaryKey(),
+	key: blob('key', { mode: 'buffer' }).notNull()
+});
+
+export const memoryFingerprint = sqliteTable(
+	'memory_fingerprint',
+	{
+		memoryId: text('memory_id')
+			.primaryKey()
+			.notNull()
+			.references(() => memory.id, { onDelete: 'cascade' }),
+		digest: text('digest').notNull()
+	},
+	(table) => [index('memory_fingerprint_digest_idx').on(table.digest)]
+);
+
+export const mediaImport = sqliteTable('media_import', {
+	id: text('id').primaryKey(),
+	userId: text('user_id')
+		.notNull()
+		.unique()
+		.references(() => user.id, { onDelete: 'cascade' }),
+	createdAt: createdAt()
+});
+
+export const importReceipt = sqliteTable(
+	'import_receipt',
+	{
+		importId: text('import_id')
+			.notNull()
+			.references(() => mediaImport.id, { onDelete: 'cascade' }),
+		fingerprint: text('fingerprint').notNull(),
+		memoryId: text('memory_id').references(() => memory.id, { onDelete: 'set null' }),
+		duplicate: integer('duplicate', { mode: 'boolean' }).notNull(),
+		organized: integer('organized', { mode: 'boolean' }).notNull().default(false)
+	},
+	(table) => [
+		primaryKey({ columns: [table.importId, table.fingerprint] }),
+		index('import_receipt_memory_idx').on(table.memoryId)
 	]
 );
 

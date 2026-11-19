@@ -1,11 +1,16 @@
 import { execFile } from 'node:child_process';
 import { copyFileSync, mkdirSync, readFileSync } from 'node:fs';
+import { randomBytes } from 'node:crypto';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
 import { Temporal } from '@js-temporal/polyfill';
 import { expect, test, type Browser, type Page } from '@playwright/test';
 import { Secret, TOTP } from 'otpauth';
 import sharp from 'sharp';
+import { addUser } from '../../src/lib/server/auth/fixtures.ts';
+import { deriveKeys } from '../../src/lib/server/crypto/keys.ts';
+import { DATABASE_FILE, openDatabase } from '../../src/lib/server/db/index.ts';
+import { auditLog, event, mediaFile, memory } from '../../src/lib/server/db/schema.ts';
 import { emptyEventForm } from '../../src/lib/server/events/schemas.ts';
 
 /**
@@ -24,6 +29,8 @@ const PROTECTED = [
 	'/',
 	'/members',
 	'/account',
+	'/account/export',
+	'/account/export/download',
 	'/calendar',
 	'/events',
 	'/events/new',
@@ -36,6 +43,9 @@ const PROTECTED = [
 	'/map/assets/markers.png',
 	'/memories',
 	'/memories/new',
+	'/memories/import',
+	`/memories/import/${id}`,
+	`/memories/import/${id}/upload`,
 	`/memories/${id}`,
 	`/memories/albums/${id}`,
 	`/media/${id}/original`
@@ -135,6 +145,9 @@ test('rejects anonymous access to every route', async ({ browser }) => {
 		'/events/' + 'a'.repeat(22) + '?/delete',
 		'/events/' + 'a'.repeat(22) + '/edit',
 		'/memories/new',
+		'/memories/import',
+		`/memories/import/${id}`,
+		`/memories/import/${id}/upload`,
 		'/memories?/createAlbum',
 		`/memories/${id}?/description`,
 		`/memories/${id}?/album`,
@@ -726,6 +739,124 @@ test('uploads private memories, browses them by keyboard and manages independent
 	expect((await offline.request.get(downloadUrl!)).status()).toBe(404);
 });
 
+test('resumes bulk imports and confirms dated groups with a photo location', async ({
+	browser
+}, info) => {
+	mkdirSync(info.outputDir, { recursive: true });
+	const first = info.outputPath('first-photo.jpg');
+	const second = info.outputPath('second-photo.jpg');
+	const undated = info.outputPath('undated.jpg');
+	await sharp({ create: { width: 31, height: 23, channels: 3, background: '#408068' } })
+		.jpeg()
+		.toFile(first);
+	copyFileSync(first, second);
+	for (const [file, lat] of [
+		[first, '18.12'],
+		[second, '19.12']
+	] as const) {
+		await run('exiftool', [
+			'-overwrite_original',
+			`-GPSLatitude=${lat}`,
+			'-GPSLatitudeRef=N',
+			'-GPSLongitude=28.56',
+			'-GPSLongitudeRef=E',
+			'-DateTimeOriginal=2022:09:17 12:00:00',
+			file
+		]);
+	}
+	await sharp({ create: { width: 32, height: 24, channels: 3, background: '#807040' } })
+		.jpeg()
+		.toFile(undated);
+
+	const page = await newPage(browser);
+	await login(page, member.username, member.password);
+	await page.goto('/memories');
+	await page.getByRole('link', { name: 'Import photos and videos' }).click();
+	await page.getByRole('button', { name: 'Start import' }).click();
+	await expect(page).toHaveURL(/\/memories\/import\/[\w-]{22}$/);
+	const importUrl = page.url();
+	const uploadUrl = `${importUrl}/upload`;
+	const outsider = await newPage(browser);
+	await login(outsider, owner.username, owner.password);
+	expect((await outsider.request.get(importUrl)).status()).toBe(404);
+	expect(
+		(
+			await outsider.request.get(uploadUrl, { headers: { 'X-Herbarium-Upload': '0'.repeat(64) } })
+		).status()
+	).toBe(404);
+	await outsider.context().close();
+	expect(
+		(
+			await page.request.post(uploadUrl, {
+				headers: { Origin: 'https://foreign.example', 'X-Herbarium-Upload': '0'.repeat(64) },
+				multipart: { altText: '', caption: '' }
+			})
+		).status()
+	).toBe(403);
+
+	let posts = 0;
+	const stopped = Promise.withResolvers<void>();
+	const unblock = Promise.withResolvers<void>();
+	await page.route(uploadUrl, async (route) => {
+		if (route.request().method() === 'POST' && ++posts === 2) {
+			stopped.resolve();
+			await unblock.promise;
+			await route.abort().catch(() => undefined);
+			return;
+		}
+		await route.continue();
+	});
+	await expect(page.getByLabel('Choose files')).toBeEnabled();
+	await page.getByLabel('Choose files').setInputFiles([first, second, undated]);
+	await page.getByRole('button', { name: 'Upload', exact: true }).click();
+	await stopped.promise;
+	await page.getByRole('button', { name: 'Pause', exact: true }).click();
+	unblock.resolve();
+	await expect(page.getByText('Upload paused.')).toBeVisible();
+	await expect(page.getByRole('link', { name: 'first-photo.jpg' })).toBeVisible();
+	await expect(page.getByRole('link', { name: 'second-photo.jpg' })).toHaveCount(0);
+
+	await page.reload();
+	await expect(page.getByLabel('Choose files')).toBeEnabled();
+	await page.getByLabel('Choose files').setInputFiles([first, second, undated]);
+	await page.getByRole('button', { name: 'Upload', exact: true }).click();
+	await expect(page.getByText('Finished processing the selected files.')).toBeVisible();
+	expect(posts).toBe(4);
+	const dated = page.getByRole('group', { name: /Sep 17, 2022|September 17, 2022/ });
+	await expect(dated.getByRole('link')).toHaveCount(2);
+	await expect(
+		page
+			.getByRole('group', { name: 'Unknown capture date' })
+			.getByRole('checkbox', { name: 'Create a moment' })
+	).toHaveCount(0);
+	await dated.getByLabel('Moment or album title').fill('Imported garden');
+	await dated.getByRole('checkbox', { name: 'Create a moment' }).check();
+	await dated.getByRole('checkbox', { name: 'Create an album' }).check();
+	await dated.getByRole('button', { name: 'Use the photo’s location?' }).click();
+	await expect(dated.getByText('second-photo.jpg · 19.12, 28.56')).toBeVisible();
+	await expect(dated.getByRole('checkbox', { name: 'Use coordinates' })).not.toBeChecked();
+	await dated.getByRole('checkbox', { name: 'Use coordinates' }).check();
+	await dated.getByRole('button', { name: 'Save group' }).click();
+	await expect(page.getByRole('link', { name: 'Open moment' })).toBeVisible();
+	const moment = await page.getByRole('link', { name: 'Open moment' }).getAttribute('href');
+	const createdAlbum = await page.getByRole('link', { name: 'Open album' }).getAttribute('href');
+	expect(await (await page.request.get(moment!)).text()).toContain(
+		'Latitude: 19.12, Longitude: 28.56'
+	);
+	expect(await (await page.request.get(createdAlbum!)).text()).toContain('Imported garden');
+
+	await page.getByRole('button', { name: 'Finish import' }).click();
+	await page.getByRole('link', { name: 'Import photos and videos' }).click();
+	await page.getByRole('button', { name: 'Start import' }).click();
+	await expect(page.getByLabel('Choose files')).toBeEnabled();
+	await page.getByLabel('Choose files').setInputFiles(first);
+	await page.getByRole('button', { name: 'Upload', exact: true }).click();
+	await expect(page.getByText('first-photo.jpg · Duplicate skipped')).toBeVisible();
+	await expect(page.getByRole('heading', { name: 'Review groups' })).toHaveCount(0);
+	await page.getByRole('button', { name: 'Finish import' }).click();
+	await page.context().close();
+});
+
 test('loads local tiles and glyphs, searches for places and edits pins without outbound requests', async ({
 	page,
 	browser
@@ -911,6 +1042,63 @@ test('the dashboard opens after login and shows upcoming and past dates without 
 	await upcoming.getByRole('link', { name: 'Synthetic tomorrow' }).click();
 	await expect(page.getByRole('heading', { name: 'Synthetic tomorrow' })).toBeVisible();
 	await page.context().close();
+});
+
+test('exports shared data after password confirmation and restores it with the production CLI', async ({
+	browser
+}, info) => {
+	const context = await browser.newContext({ javaScriptEnabled: false });
+	const page = await context.newPage();
+	await login(page, member.username, member.password);
+	await page.goto('/account');
+	await page.getByRole('link', { name: 'Export shared data' }).click();
+	await page.locator('input[name=currentPassword]').fill('wrong export password');
+	await page.getByRole('button', { name: 'Download ZIP' }).click();
+	await expect(page.getByRole('alert')).toBeVisible();
+
+	await page.locator('input[name=currentPassword]').fill(member.password);
+	const downloading = page.waitForEvent('download');
+	await page.getByRole('button', { name: 'Download ZIP' }).click();
+	const download = await downloading;
+	expect(download.suggestedFilename()).toBe('herbarium-export.zip');
+	const archive = info.outputPath('herbarium-export.zip');
+	await download.saveAs(archive);
+	await context.close();
+
+	const destination = info.outputPath('destination');
+	mkdirSync(destination);
+	const master = randomBytes(32);
+	const key = deriveKeys(master).database;
+	const path = join(destination, DATABASE_FILE);
+	const fresh = openDatabase({ path, key });
+	const ownerId = await addUser(fresh.db, 'destination-owner', { role: 'owner' });
+	fresh.close();
+	await run(process.execPath, ['build/operations/restore.js', archive], {
+		env: { ...process.env, ORIGIN, DATA_DIR: destination, MASTER_KEY: master.toString('base64') }
+	});
+	const restored = openDatabase({ path, key });
+	try {
+		expect(restored.db.select().from(auditLog).all()).toMatchObject([
+			{ event: 'archive_restored', actorId: ownerId }
+		]);
+		expect(
+			restored.db
+				.select()
+				.from(event)
+				.all()
+				.some((row) => row.lat !== null)
+		).toBe(true);
+		expect(restored.db.select().from(memory).all().length).toBeGreaterThan(0);
+		expect(
+			restored.db
+				.select()
+				.from(mediaFile)
+				.all()
+				.some((row) => row.variant === 'thumbnail')
+		).toBe(true);
+	} finally {
+		restored.close();
+	}
 });
 
 test('a revoked invite cannot be used', async ({ browser }) => {

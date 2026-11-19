@@ -10,8 +10,16 @@ import script from './process-media.py?raw';
 import sharpScript from './resize-image.cjs?raw';
 import { storeMediaFile } from './store.ts';
 
+export const uploadStatus = {
+	invalid: 400,
+	size: 413,
+	unsupported: 415,
+	busy: 429,
+	unavailable: 503
+} as const;
+
 export class UploadError extends Error {
-	constructor(public readonly code: 'invalid' | 'size' | 'unsupported' | 'busy' | 'unavailable') {
+	constructor(public readonly code: keyof typeof uploadStatus) {
 		super(`Media upload ${code}`);
 	}
 }

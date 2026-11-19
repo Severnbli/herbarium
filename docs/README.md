@@ -9,7 +9,7 @@ Start with [AGENTS.md](../AGENTS.md) for project rules, commands, security requi
 | [Architecture](architecture.md)     | Implemented structure, request flow and planned boundaries                  |
 | [Development](development.md)       | Local setup, verification and contributor workflow                          |
 | [Deployment](deployment.md)         | Docker setup, HTTPS, configuration and operational hardening                |
-| [Key management](key-management.md) | Encryption design, key recovery constraints and planned rotation            |
+| [Key management](key-management.md) | Encryption design, key recovery constraints and key rotation                |
 
 ## Keeping context useful
 

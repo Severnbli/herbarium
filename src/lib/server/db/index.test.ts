@@ -57,3 +57,26 @@ describe('encrypted database', () => {
 		again.close();
 	});
 });
+
+it('holds an exclusive maintenance lock between transactions', () => {
+	const t = createTestDb();
+	cleanup = t.cleanup;
+	const path = t.path + '.maintenance';
+	const maintenance = openDatabase({ path, key: t.key, exclusive: true });
+	const reader = new Database(path, { timeout: 0 });
+	try {
+		reader.pragma("cipher = 'sqlcipher'");
+		reader.pragma('legacy = 4');
+		reader.pragma(`key = "x'${t.key.toString('hex')}'"`);
+		expect(() => reader.prepare('SELECT count(*) FROM sqlite_master').get()).toThrow('locked');
+	} finally {
+		reader.close();
+		maintenance.close();
+	}
+	const reopened = openDatabase({ path, key: t.key });
+	try {
+		expect(reopened.db.select().from(user).all()).toEqual([]);
+	} finally {
+		reopened.close();
+	}
+});

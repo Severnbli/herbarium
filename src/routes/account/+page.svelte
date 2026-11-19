@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import Field from '#lib/components/Field.svelte';
 	import NewPasswordFields from '#lib/components/NewPasswordFields.svelte';
 	import { formatRelative } from '#lib/i18n/format.ts';
@@ -45,6 +46,7 @@
 {/snippet}
 
 <h1>{m.account.title}</h1>
+<p><a href={resolve('/account/export')}>{m.archive.title}</a></p>
 
 <section aria-labelledby="reminder-preferences">
 	<h2 id="reminder-preferences">{m.reminder.preferences}</h2>

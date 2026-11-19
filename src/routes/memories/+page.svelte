@@ -29,6 +29,9 @@
 		>{m.memory.upload}</a
 	>
 	<!-- eslint-enable svelte/no-navigation-without-resolve -->
+	{#if !data.event}
+		<a class="button secondary" href={resolve('/memories/import')}>{m.mediaImport.title}</a>
+	{/if}
 </div>
 <MemoryGrid rows={data.rows} locale={data.locale} {m} />
 <MemoryPagination page={data.page} hasNext={data.hasNext} url={pageUrl} {m} />
@@ -59,6 +62,7 @@
 		gap: 1rem;
 	}
 	.heading h1 {
+		flex: 1 1 auto;
 		margin: 0;
 	}
 	li {

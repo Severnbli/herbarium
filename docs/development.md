@@ -29,6 +29,8 @@ npm run test
 
 Run `npm run test:e2e` for browser-flow changes; see `playwright.config.ts` for production-build and test-server setup. Unit tests are colocated with source files. Use isolated temporary data and synthetic fixtures for security tests.
 
+CI runs the browser suite with Playwright's Chromium headless shell and the shared libraries provided by its Ubuntu 26.04 runner.
+
 For schema changes, run `npm run db:generate`, review the generated SQL and commit migrations alongside the schema. The app applies migrations on startup.
 
 ## Translations
@@ -92,3 +94,15 @@ To refresh place search, download the current `BY.zip`, `cities5000.zip` and `al
 Open **Home** after signing in. **Coming up** counts down to event starts in the next 30 days, including today. Set the time zone under **Account** to change the local day and timed-event labels. Create a yearly occasion of type **Anniversary** with its original date to populate the anniversary highlight and time-together count. **On this day** uses exact original dates from previous years. **Recent memories** shows the latest uploads, including newly added photos with old capture dates.
 
 Tests cover member time zones, elapsed starts, approximate dates, anniversary selection, leap days, historical matching and upload order. Playwright checks the home page with JavaScript disabled and follows the event and memory links.
+
+## Portable archives
+
+The archive integration test streams shared content from one encrypted instance, rejects a damaged ZIP and imports a valid ZIP into another instance with a different key. It verifies references, audit entries and encrypted media. The restore CLI is built alongside the application. See the [deployment guide](deployment.md#restore-a-portable-zip) for commands.
+
+## Bulk media import
+
+Choose **Import photos and videos** from **Memories**. Select multiple files from a gallery or use the folder picker. Upload progress is shown for the queue and the active file. You can pause and resume the queue, or return to the import and select the same files to skip completed transfers. An interrupted file uploads from the beginning. Each upload is subject to the usual limits. One open import can record up to 500 files.
+
+The review groups photos and videos by capture date. Give a group a title and choose to create a moment, an album or both. With an unknown capture date, you can create an album. Review a photo location before optionally including it in a new moment. Finishing the import closes the queue and leaves any ungrouped files in **Memories**.
+
+Playwright interrupts a bulk upload, resumes it after reload, verifies private queue access, checks duplicate detection against raw photo bytes and confirms the group with explicit coordinate consent. Unit tests check atomic grouping and session-bound location offers.

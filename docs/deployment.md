@@ -45,7 +45,7 @@ The master key encrypts the database and every media file. It is read from the f
 
 > **If the master key is lost, all data is unrecoverable.** There is no reset and no back door. Keep a copy of the key somewhere safe and separate from the data volume, for example in a password manager. A backup of the volume is useless without the key.
 
-The key is exactly 32 random bytes, encoded as base64 or hex. How keys are derived, how to read the database without the app and how rotation works (implemented in phase 10) is described in [key-management.md](key-management.md).
+The key is exactly 32 random bytes, encoded as base64 or hex. How keys are derived, how to read the database without the app and how to rotate keys is described in [key-management.md](key-management.md).
 
 ## Configuration
 
@@ -56,12 +56,13 @@ All settings are environment variables, validated at startup. The app refuses to
 | `ORIGIN`                         | in production   | `https://` only; plain `http://` is accepted only for `localhost` |
 | `DATA_DIR`                       | in production   | `/data` in the image                                              |
 | `MASTER_KEY_FILE` / `MASTER_KEY` | always (one of) | 32 bytes, base64 or hex                                           |
+| `MASTER_KEY_PREVIOUS_FILE`       | during rotation | Path to the previous key secret                                   |
 | `MAX_FILE_BYTES`                 | no              | per-file upload limit, default 128 MiB, maximum 1 GiB             |
 | `MAX_REQUEST_BYTES`              | no              | per-request upload limit, default 129 MiB, maximum 1025 MiB       |
 
 `PORT`, `HOST` and the other settings of [`adapter-node`](https://svelte.dev/docs/kit/adapter-node) work as documented there.
 
-The image sets `BODY_SIZE_LIMIT=1025M` so uploads can reach the application limits. A bare `node build` deployment should set `BODY_SIZE_LIMIT` at or above `MAX_REQUEST_BYTES`. Set the reverse proxy's request allowance to match `MAX_REQUEST_BYTES` and disable disk-backed request buffering for uploads to `/memories/new`. Other application forms retain a 512 KiB limit.
+The image sets `BODY_SIZE_LIMIT=1025M` so uploads can reach the application limits. A bare `node build` deployment should set `BODY_SIZE_LIMIT` at or above `MAX_REQUEST_BYTES`. Set the reverse proxy's request allowance to match `MAX_REQUEST_BYTES` and disable disk-backed request buffering for uploads to `/memories/new` and `/memories/import/*/upload`. Other application forms retain a 512 KiB limit.
 
 Media processing in the image requires Linux on amd64 or arm64 with Landlock ABI 3 or newer and seccomp enabled. A bare deployment also needs Python 3, ExifTool, FFmpeg 8 with `libx264`, ffprobe and libseccomp. Uploads use anonymous memory files during processing, one upload at a time. Size the container's available memory for up to three media buffers near the configured file limit plus decoder overhead. Use encrypted swap or disable host swap for sensitive deployments. Keep one application process on each data volume so startup cleanup can safely reclaim encrypted files left by a stopped upload.
 
@@ -138,3 +139,43 @@ For a bare Node installation, put the file in `DATA_DIR` with read access for th
 - Health check at `/healthz`, which reveals nothing about the instance
 - Database, WAL and setup code are created with mode `0600`, the data directory with `0700`
 - Strict Content Security Policy with nonces, `frame-ancestors 'none'`, HSTS over HTTPS, `Referrer-Policy: same-origin`, a restrictive `Permissions-Policy`, `Cross-Origin-Opener-Policy: same-origin`, and `Cache-Control: no-store` on every page
+
+## Restore a portable ZIP
+
+Any member can download a portable ZIP from **Account → Export shared data** after confirming their password. It contains an unencrypted JSON manifest, event coordinates and original media with location metadata removed. Store the ZIP privately.
+
+Set up an empty destination instance with one owner and stop it before restoring. Keep the archive on a protected filesystem. For Compose, substitute a host file that the container's `node` user can read:
+
+```bash
+docker compose stop herbarium
+docker compose run --rm --no-deps \
+  -v /secure/path/herbarium-export.zip:/restore.zip:ro \
+  herbarium node build/operations/restore.js /restore.zip
+docker compose up -d
+```
+
+For a bare install, run `node build/operations/restore.js /secure/path/herbarium-export.zip` from the built application's root with its normal configuration. Set `MAX_FILE_BYTES` high enough for the largest original in the ZIP. The archive format allows a manifest up to 64 MiB and 100,000 rows per collection. The destination keeps its new owner and encryption key. Historical attribution is preserved, derivatives are regenerated and the new owner can send invitations.
+
+## Encrypted volume backup
+
+A cold backup preserves the entire instance, including accounts, 2FA, reminders and audit history. Back up the master key separately. Use the same application version for the first start after restore. Stop the server before copying any data files so the database, its sidecars and the encrypted media represent the same point in time.
+
+From the Compose project directory, choose a private backup path outside the checkout with enough space.
+
+```bash
+docker compose stop herbarium
+(umask 077; docker compose run --rm --no-deps -T --entrypoint tar herbarium -cpf - -C /data . > /secure/backups/herbarium-volume.tar)
+docker compose up -d
+```
+
+For a bare install, stop the Node service and run `tar -cpf /secure/backups/herbarium-volume.tar -C "$DATA_DIR" .` with a private umask. Copy the archive and the matching master key to separate protected locations.
+
+Restore into an empty volume. Configure the original master key and the chosen origin first. This example uses a separate Compose project, which gives the destination its own named volume. Keep the old service stopped if both projects bind the same port.
+
+```bash
+docker compose -p herbarium-restore run --rm --no-deps -T --entrypoint sh herbarium \
+  -c 'test -z "$(ls -A /data)" && tar -xpf - -C /data' < /secure/backups/herbarium-volume.tar
+docker compose -p herbarium-restore up -d
+```
+
+For a bare install, extract the archive into an empty, private `DATA_DIR` owned by the application user while the service is stopped. Sign in with an existing account and verify that events and original media open. CI exercises this cold copy and restore procedure, including login, coordinate recovery, media authentication and rejection of a wrong key.

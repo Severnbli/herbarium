@@ -8,7 +8,7 @@ import { event } from '#lib/server/db/schema.ts';
 import { hasBasemap } from '#lib/server/maps/assets.ts';
 import { offerCoordinates } from '#lib/server/media/coordinates.ts';
 import { queryFields } from '#lib/server/media/gallery.ts';
-import { UploadError } from '#lib/server/media/process.ts';
+import { UploadError, uploadStatus } from '#lib/server/media/process.ts';
 import { mediaId } from '#lib/server/media/store.ts';
 import { uploadMemory } from '#lib/server/media/upload.ts';
 import type { Actions, PageServerLoad } from './$types';
@@ -37,7 +37,6 @@ export const load: PageServerLoad = (request) => {
 	};
 };
 
-const status = { invalid: 400, size: 413, unsupported: 415, busy: 429, unavailable: 503 } as const;
 export const actions: Actions = {
 	default: async (request) => {
 		const actor = requireUser(request);
@@ -51,7 +50,8 @@ export const actions: Actions = {
 				row?.id ?? null
 			);
 		} catch (cause) {
-			if (cause instanceof UploadError) return fail(status[cause.code], { problem: cause.code });
+			if (cause instanceof UploadError)
+				return fail(uploadStatus[cause.code], { problem: cause.code });
 			throw cause;
 		}
 		if (row && row.lat === null && uploaded.coordinates) {

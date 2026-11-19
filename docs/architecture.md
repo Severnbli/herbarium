@@ -2,7 +2,7 @@
 
 ## Current implementation
 
-Herbarium is a SvelteKit application using Svelte 5 runes, strict TypeScript and `adapter-node`. One instance represents one shared circle. Foundation, security, the design system, three locales, moments, plans, recurring occasions, memories, calendar views, reminders, the timeline, maps and the dashboard are implemented. Later phases remain planned in the [roadmap](ROADMAP.md).
+Herbarium is a SvelteKit application using Svelte 5 runes, strict TypeScript and `adapter-node`. One instance represents one shared circle. Foundation, security, the design system, three locales, moments, plans, recurring occasions, memories, calendar views, reminders, the timeline, maps, the dashboard and data ownership operations are implemented. Later phases remain planned in the [roadmap](ROADMAP.md).
 
 | Location                   | Responsibility                                        |
 | -------------------------- | ----------------------------------------------------- |
@@ -106,3 +106,21 @@ The place picker queries a bundled read-only SQLite gazetteer using bound FTS ex
 The authenticated root page shows up to six event starts within the next 30 calendar days and includes the current day. Each occasion contributes its first upcoming recurrence in the window, using the same recurrence expansion as the calendar. Timed events must still be upcoming by instant. The dashboard displays those instants and counts down in the member's account time zone. All-day events retain their calendar dates. Month and year precision keep their original labels and can appear while the start period is current or begins in the window.
 
 The anniversary panel finds the next anniversary even beyond the upcoming window. Time together counts calendar days since the earliest anniversary that has started. On this day shows up to five day-precision moments and occasions by their original local month and day in previous years. The recent memories panel shows the last four uploads and fetches thumbnails through the authenticated media route. The server load checks for a full session and returns display data for these sections. The root page remains the default after sign-in, with existing return links to protected pages preserved.
+
+## Portable archives
+
+Any signed-in member can confirm their password under **Account → Export shared data**. A POST streams a ZIP containing a versioned `herbarium.json` manifest and all cleaned originals. The archive contains event coordinates and shared attribution, album memberships and event reminder offsets. The database snapshot is taken before streaming begins, and any original deleted during the download remains readable until the stream closes. The encrypted volume retains operational records and private account settings. An audit row records each export started.
+
+An offline restore command validates the manifest, ZIP entry names, sizes, checksums and relationships. Media goes through the existing memory-only cleaning and encryption pipeline under the destination key. The CLI rebuilds derivatives and commits rows together after every file succeeds. Historical authors keep their display names and record IDs as inactive profiles. The destination owner creates new invitations for members who need access.
+
+## Master key rotation
+
+Startup can open the existing database using a previous key to rotate its SQLCipher key. The rotation transaction wraps each unchanged media data key under the new wrapping key and re-seals both TOTP columns. Until the database opens with the intended new key, a fingerprint in the encrypted database identifies the pending operation and prevents startup with the previous key alone. After verification the server finalizes the rotation and records the audit event together. The [operator procedure](key-management.md#rotating-the-master-key) describes secret file setup and backup retention.
+
+## Bulk media import
+
+Each member can keep one active import and upload up to 500 photos or videos to it. Files are sent one at a time through the same bounded multipart and memory-only cleaning pipeline as individual uploads. A random key in the encrypted database authenticates HMAC-SHA256 fingerprints of the original byte streams before cleaning. Bulk uploads skip a match against a saved memory. Individual uploads still allow another copy. Existing originals had their raw metadata removed, so duplicate detection applies to uploads recorded after the feature is installed.
+
+Successful uploads and duplicate results commit receipts in the same transaction as their memory rows. The browser uses bounded Web Crypto reads to identify the same selection after reload. Its fingerprints travel in headers and the server stores only keyed receipt identifiers scoped to the member's active import. Completed files are skipped before transfer. Pause or resume works at the file boundary. The server writes only location-cleaned ciphertext to disk.
+
+Uploaded memories are available in the gallery. Pending organization groups use exact capture dates and an undated bucket. Confirming a displayed group creates a moment, an album or both in one transaction. Members can create albums for undated files. The GPS offer is held on the page and expires after 30 minutes. It is bound to the uploading session and the selected memory. Only explicit consent writes that point to the new moment.

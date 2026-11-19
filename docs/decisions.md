@@ -132,3 +132,23 @@ Status: accepted.
 Use the earliest started occasion of type Anniversary as the time-together anchor. Its original date already records a milestone the circle chose to celebrate. This reuses shared event editing and avoids a separate instance preference. Circles with several anniversaries use the earliest one, and editing or deleting it can change the count. The anniversary highlight uses the next occurrence across all anniversaries.
 
 Upcoming shows the next start per occasion so frequent recurrences leave room for other events. The dashboard uses the member's calendar day and shows timed starts in that member's time zone. On this day recalls original dates, so a recurring occasion contributes its original entry and a leap-day entry is recalled on February 29. Recent memories follow upload order. The gallery retains chronological capture order.
+
+## Portable content archives
+
+**Status:** Accepted.
+
+A versioned ZIP of JSON and cleaned originals is the portable copy of the shared chronicle. It includes event coordinates, author display names, original filenames, album memberships and reminder offsets. Account credentials, login usernames, SMTP preferences, sessions, invites, audit history and internal key material stay out of a member's export. An encrypted volume backup serves as the complete operational backup.
+
+An operator restores a ZIP with the app stopped after setting up the first owner on an empty destination. Rebuilding derivatives and encrypting under the destination key keeps the archive independent of the original server and its master key. Imported attribution profiles have disabled sign-in. The owner can invite members to the new instance.
+
+## Resumable startup key rotation
+
+**Status:** Accepted.
+
+At startup a migration transaction re-wraps media keys and re-seals TOTP fields. A keyed fingerprint ties that transaction to the intended new master key. The database retains the fingerprint across the separate SQLCipher rekey transaction. Startup clears the marker only after reopening with the intended new key. This keeps the existing media ciphertext and lets operators recover with both key files after an interruption. The deployed process uses a rollback journal during rekey and requires exclusive access to the volume.
+
+## File-level media import receipts
+
+**Status:** Accepted.
+
+Bulk import reuses the individual upload pipeline and commits each clean original before a member reviews organization. This makes completed files durable and keeps partial raw files in anonymous memory. Members can pause and resume the queue or reselect the same files after reopening it. An interrupted file starts again. The database stores an instance-keyed HMAC of raw uploads for duplicate detection and an import-scoped receipt to skip completed transfers. The random HMAC key lives inside SQLCipher, so encrypted volume restores and master key rotation preserve duplicate detection. Portable exports contain cleaned originals and omit upload fingerprints and import state. GPS offers stay in page memory and follow the same consent rule as individual uploads.

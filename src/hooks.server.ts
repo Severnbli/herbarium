@@ -12,6 +12,7 @@ import { db, initApp, isSetupDone } from '#lib/server/app.ts';
 import { clearSessionCookie, sessionCookieName } from '#lib/server/auth/cookies.ts';
 import { validateSession } from '#lib/server/auth/session.ts';
 import { ConfigError, getConfig, initConfig } from '#lib/server/config.ts';
+import { RotationError } from '#lib/server/crypto/rotation.ts';
 import { DatabaseKeyError } from '#lib/server/db/index.ts';
 import { limitFormBody } from '#lib/server/http/body-limit.ts';
 import { isPublicPath, MFA_PATHS, securityHeaders } from '#lib/server/http/security.ts';
@@ -23,7 +24,11 @@ export const init: ServerInit = () => {
 		initConfig(process.env, { production: !dev });
 		initApp();
 	} catch (error) {
-		if (error instanceof ConfigError || error instanceof DatabaseKeyError) {
+		if (
+			error instanceof ConfigError ||
+			error instanceof DatabaseKeyError ||
+			error instanceof RotationError
+		) {
 			// These messages name variables and rules only, never secret values.
 			console.error(error.message);
 			process.exit(1);

@@ -1,6 +1,7 @@
 import { getConfig } from './config.ts';
-import { deriveKeys, type Keys } from './crypto/keys.ts';
-import { initDatabase, type Db } from './db/index.ts';
+import type { Keys } from './crypto/keys.ts';
+import { openInstanceDatabase } from './crypto/rotation.ts';
+import type { Db } from './db/index.ts';
 import { countUsers } from './auth/members.ts';
 import { ensureSetupCode, removeSetupCode } from './auth/setup.ts';
 import { pruneSessions } from './auth/session.ts';
@@ -19,8 +20,12 @@ export function initApp(): void {
 	// Everything the app writes (database, WAL, journal, setup code) is private to its user.
 	process.umask(0o077);
 	const config = getConfig();
-	const keys = deriveKeys(config.masterKey);
-	const db = initDatabase(config.dataDir, keys.database);
+	const { db, keys, rotated } = openInstanceDatabase(
+		config.dataDir,
+		config.masterKey,
+		config.masterKeyPrevious
+	);
+	if (rotated) console.info('Herbarium completed master key rotation.');
 	cleanOrphanMedia(db, config.dataDir);
 	const setupDone = countUsers(db) > 0;
 	if (setupDone) {
