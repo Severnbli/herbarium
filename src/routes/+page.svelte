@@ -49,6 +49,10 @@
 		{:else}
 			<p>{m.home.upcomingEmpty}</p>
 		{/if}
+		<div class="planning-links">
+			<a href={resolve('/events/new?kind=plan')}>{m.event.newPlan}</a>
+			<a href={resolve('/events?date=undated')}>{m.event.undatedPlans}</a>
+		</div>
 	</section>
 
 	<section class="panel anniversary" aria-labelledby="anniversary-title">
@@ -112,7 +116,7 @@
 	</div>
 	<MemoryGrid rows={data.memories} locale={data.locale} {m} />
 	{#if !data.memories.length}
-		<a href={resolve('/memories/new')}>{m.memory.upload}</a>
+		<a href={resolve('/memories/new')}>{m.memory.addMedia}</a>
 	{/if}
 </section>
 
@@ -159,6 +163,14 @@
 	}
 	.panel p:last-child {
 		margin-bottom: 0;
+	}
+	.planning-links {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem 1rem;
+		margin-top: 1rem;
+		padding-top: 0.8rem;
+		border-top: 1px solid var(--line);
 	}
 	.upcoming {
 		grid-area: upcoming;

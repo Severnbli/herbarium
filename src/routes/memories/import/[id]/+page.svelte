@@ -12,7 +12,7 @@
 		checkReceipt,
 		localFingerprint,
 		mediaAccept,
-		sendImportFile,
+		sendMediaFile,
 		type LocationSuggestion
 	} from '#lib/media/import-client.ts';
 	import type { PageProps } from './$types';
@@ -75,7 +75,7 @@
 				job.fingerprint ??= await localFingerprint(job.file, signal);
 				let response = await checkReceipt(uploadUrl, job.fingerprint, signal);
 				if ('status' in response && response.status === 'ready') {
-					response = await sendImportFile(uploadUrl, job.file, job.fingerprint, signal, (value) => {
+					response = await sendMediaFile(uploadUrl, job.file, job.fingerprint, signal, (value) => {
 						fraction = value;
 					});
 				}

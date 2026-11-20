@@ -15,13 +15,15 @@
 
 <svelte:head><title>{data.album.title}</title></svelte:head>
 <a href={resolve('/memories')}>{m.memory.back}</a>
-<h1>{data.album.title}</h1>
-<MemoryGrid rows={data.rows} locale={data.locale} {m} />
-<MemoryPagination page={data.page} hasNext={data.hasNext} url={pageUrl} {m} />
-{#if form?.problem === 'wrong_password'}<p role="alert">{m.error.wrongPassword}</p>
-{:else if form?.problem === 'rate_limited'}<p role="alert">{m.error.rateLimited(form.minutes)}</p>
-{:else if form?.problem}<p role="alert">{m.error.form}</p>{/if}
-<details>
+<header class="heading">
+	<h1>{data.album.title}</h1>
+	<!-- The query is appended to a resolved route. -->
+	<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
+	<a class="button" href={resolve('/memories/new') + `?album=${data.album.id}`}
+		>{m.memory.addMedia}</a
+	>
+</header>
+<details open={form?.problem === 'invalid'}>
 	<summary>{m.memory.rename}</summary>
 	<form method="POST" action="?/rename">
 		<Field
@@ -34,6 +36,12 @@
 		<Button type="submit">{m.memory.save}</Button>
 	</form>
 </details>
+<MemoryGrid rows={data.rows} locale={data.locale} {m} />
+<MemoryPagination page={data.page} hasNext={data.hasNext} url={pageUrl} {m} />
+{#if form?.problem === 'wrong_password'}<p role="alert">{m.error.wrongPassword}</p>
+{:else if form?.problem === 'rate_limited'}<p role="alert">{m.error.rateLimited(form.minutes)}</p>
+{:else if form?.problem}<p role="alert">{m.error.form}</p>{/if}
+
 <details>
 	<summary>{m.memory.albumDelete}</summary>
 	<p>{m.memory.albumDeleteHint}</p>
@@ -51,6 +59,13 @@
 </details>
 
 <style>
+	.heading {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 1rem;
+		justify-content: space-between;
+		align-items: baseline;
+	}
 	h1 {
 		overflow-wrap: anywhere;
 	}

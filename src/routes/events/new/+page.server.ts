@@ -19,6 +19,12 @@ export const load: PageServerLoad = async (event) => {
 			basemap: await hasBasemap(getConfig().dataDir)
 		};
 	const [key, value] = query[0]!;
+	if (query.length === 1 && key === 'kind' && value === 'plan')
+		return {
+			values: { ...emptyEventForm, kind: 'plan', dateMode: 'undated' } satisfies EventForm,
+			calendarDate: null,
+			basemap: await hasBasemap(getConfig().dataDir)
+		};
 	const date = calendarDate.safeParse(value);
 	if (query.length !== 1 || key !== 'date' || !date.success) error(400, 'invalid');
 	const { timeZone } = getReminderPreferences(db(), member.id);

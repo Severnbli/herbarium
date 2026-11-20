@@ -74,11 +74,16 @@ export function openDatabase({
 		} else {
 			sqlite.pragma('journal_mode = WAL');
 		}
-		sqlite.pragma('foreign_keys = ON');
 		sqlite.pragma('secure_delete = ON');
 
 		const db = drizzle({ client: sqlite, schema });
-		migrate(db, { migrationsFolder: migrationsFolder ?? resolve('drizzle') });
+		// SQLite table rebuilds must suspend FK actions outside Drizzle's migration transaction.
+		sqlite.pragma('foreign_keys = OFF');
+		try {
+			migrate(db, { migrationsFolder: migrationsFolder ?? resolve('drizzle') });
+		} finally {
+			sqlite.pragma('foreign_keys = ON');
+		}
 		return {
 			db,
 			close: () => sqlite.close(),

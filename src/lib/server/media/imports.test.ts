@@ -37,7 +37,7 @@ it('confirms the displayed group once and rolls back if location consent belongs
 
 		const key = randomBytes(32);
 		const sessionId = 'session-for-testing';
-		const gpsToken = offerCoordinates(key, sessionId, memoryId, { lat: 53.9, lon: 27.5 });
+		const gpsToken = offerCoordinates(key, sessionId, memoryId, null, { lat: 53.9, lon: 27.5 });
 		const input = {
 			date,
 			revision: importGroups(t.db, id)[0]!.revision,

@@ -1,5 +1,5 @@
 import { error } from '@sveltejs/kit';
-import { formatEventDate } from '#lib/domain/event-date.ts';
+import { formatEventDateLabel } from '#lib/i18n/format.ts';
 import { db } from '#lib/server/app.ts';
 import { requireUser } from '#lib/server/auth/guard.ts';
 import { listEvents } from '#lib/server/events/events.ts';
@@ -25,7 +25,7 @@ export const load: PageServerLoad = (event) => {
 			place: row.place,
 			category: row.category,
 			createdByName: row.createdByName,
-			dateLabel: formatEventDate(event.locals.locale, row)
+			dateLabel: formatEventDateLabel(event.locals.locale, row)
 		}))
 	};
 };

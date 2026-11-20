@@ -89,7 +89,7 @@ export const POST: RequestHandler = async (request) => {
 				id: result.id,
 				suggestion: result.coordinates && {
 					...result.coordinates,
-					token: offerCoordinates(keys().field, sessionId, result.id, result.coordinates)
+					token: offerCoordinates(keys().field, sessionId, result.id, null, result.coordinates)
 				}
 			},
 			{ status: 201 }

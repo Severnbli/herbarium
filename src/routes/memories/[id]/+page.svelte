@@ -26,9 +26,6 @@
 		row.createdByName
 	)}
 </p>
-{#if row.eventId}<p>
-		<a href={resolve('/events/[id]', { id: row.eventId })}>{row.eventTitle}</a>
-	</p>{/if}
 <!-- The query selects attachment disposition on the resolved original endpoint. -->
 <!-- eslint-disable svelte/no-navigation-without-resolve -->
 <a
@@ -43,7 +40,7 @@
 {:else if form?.problem === 'rate_limited'}<p role="alert">{m.error.rateLimited(form.minutes)}</p>
 {:else if form?.problem}<p role="alert">{m.error.form}</p>{/if}
 
-<details>
+<details class="edit-panel">
 	<summary>{m.memory.description}</summary>
 	<form method="POST" action="?/description">
 		<Field
@@ -63,6 +60,43 @@
 		<Button type="submit">{m.memory.save}</Button>
 	</form>
 </details>
+<section class="edit-panel" aria-labelledby="linked-event">
+	<h2 id="linked-event">{m.memory.event}</h2>
+	{#if row.eventId}
+		<a href={resolve('/events/[id]', { id: row.eventId })}>{row.eventTitle}</a>
+	{/if}
+	<details open={!!data.search || !!form?.eventProblem}>
+		<summary>{m.memory.changeEventLink}</summary>
+		<form method="GET" action={resolve('/memories/[id]', { id: row.id })}>
+			<Field
+				name="q"
+				type="search"
+				label={m.memory.eventSearch}
+				value={data.search}
+				maxlength={200}
+			/>
+			<Button type="submit" variant="secondary">{m.event.filter}</Button>
+		</form>
+		{#if data.search && !data.events.length}<p>{m.memory.noMatchingEvents}</p>{/if}
+		<form
+			method="POST"
+			action={`?/event${data.search ? '&' + new URLSearchParams({ q: data.search }) : ''}`}
+		>
+			{#if form?.eventProblem}<p role="alert">{m.error.form}</p>{/if}
+			<Select
+				name="eventId"
+				label={m.memory.event}
+				value={row.eventId ?? ''}
+				options={[
+					{ value: '', label: m.memory.noEvent },
+					...(row.eventId && row.eventTitle ? [{ value: row.eventId, label: row.eventTitle }] : []),
+					...data.events.map(({ id, title }) => ({ value: id, label: title }))
+				]}
+			/>
+			<Button type="submit" variant="secondary">{m.memory.saveEvent}</Button>
+		</form>
+	</details>
+</section>
 <section aria-labelledby="memory-albums">
 	<h2 id="memory-albums">{m.memory.albums}</h2>
 	{#if included.length}
@@ -130,6 +164,15 @@
 	}
 	summary {
 		cursor: pointer;
+	}
+	.edit-panel {
+		padding: clamp(0.75rem, 4vw, 1.25rem);
+		background: var(--linen);
+		border: 1px solid var(--line);
+		border-radius: var(--radius);
+	}
+	.edit-panel h2 {
+		margin-top: 0;
 	}
 	.membership {
 		display: flex;

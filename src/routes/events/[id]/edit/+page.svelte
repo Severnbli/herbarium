@@ -9,14 +9,16 @@
 
 <svelte:head><title>{m.event.editTitle}</title></svelte:head>
 <h1>{m.event.editTitle}</h1>
-<EventForm
-	{m}
-	locale={data.locale}
-	basemap={data.basemap}
-	eventId={data.id}
-	values={form?.values ?? data.values}
-	fields={form?.fields}
-	problem={form?.problem}
-	submitLabel={m.event.save}
-	cancelHref={resolve('/events/[id]', { id: data.id })}
-/>
+{#key data.id}
+	<EventForm
+		{m}
+		locale={data.locale}
+		basemap={data.basemap}
+		eventId={data.id}
+		values={form?.values ?? data.values}
+		fields={form?.fields}
+		problem={form?.problem}
+		submitLabel={m.event.save}
+		cancelHref={resolve('/events/[id]', { id: data.id })}
+	/>
+{/key}

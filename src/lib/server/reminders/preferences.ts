@@ -105,7 +105,8 @@ export function saveReminderOffsets(
 ): boolean {
 	return db.transaction(
 		(tx) => {
-			if (findEvent(tx, eventId).precision !== 'day') return false;
+			const event = findEvent(tx, eventId);
+			if (event.dateMode === 'undated' || event.precision !== 'day') return false;
 			const removed = tx
 				.delete(eventReminder)
 				.where(and(eq(eventReminder.eventId, eventId), notInArray(eventReminder.minutes, offsets)))

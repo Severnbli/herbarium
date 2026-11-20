@@ -26,8 +26,14 @@ const occasionFields = {
 	recurrenceRule: event.recurrenceRule,
 	occasionType: event.occasionType
 };
-type EventRow = Pick<typeof event.$inferSelect, keyof typeof fields>;
-type OccasionRow = Pick<typeof event.$inferSelect, keyof typeof occasionFields>;
+type EventRow = Pick<typeof event.$inferSelect, keyof typeof fields> & { sortDate: string };
+type OccasionRow = Pick<typeof event.$inferSelect, keyof typeof occasionFields> & EventRow;
+
+function hasSortDate<T extends { sortDate: string | null }>(
+	row: T
+): row is T & { sortDate: string } {
+	return row.sortDate !== null;
+}
 
 type Entry = {
 	row: EventRow;
@@ -115,7 +121,8 @@ export function loadDashboard(db: Db, locale: Locale, timeZone: string, now: Dat
 				)
 			)
 		)
-		.all();
+		.all()
+		.filter(hasSortDate);
 	const occasions = db
 		.select(occasionFields)
 		.from(event)
@@ -125,7 +132,8 @@ export function loadDashboard(db: Db, locale: Locale, timeZone: string, now: Dat
 				or(lte(event.sortDate, lastLocal), eq(event.occasionType, 'anniversary'))
 			)
 		)
-		.all();
+		.all()
+		.filter(hasSortDate);
 	const upcoming = [
 		...singleEvents
 			.map((row): Entry => ({ row, value: row, date: row.sortDate, countLabel: null }))

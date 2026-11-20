@@ -5,7 +5,7 @@
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
 	import favicon from '#lib/assets/favicon.svg';
-	import { LOCALES, messages } from '#lib/i18n/index.ts';
+	import { messages } from '#lib/i18n/index.ts';
 	import type { LayoutProps } from './$types';
 
 	let { data, children }: LayoutProps = $props();
@@ -18,12 +18,22 @@
 </svelte:head>
 
 <a class="skip" href="#content">{m.design.skip}</a>
-<div class="masthead">
-	<a class="brand" href={resolve('/')}>{m.appName}</a>
-	<ThemePicker {m} />
-</div>
-{#if data.user}
-	<header>
+<header class="shell">
+	<div class="masthead">
+		<a class="brand" href={resolve('/')}>{m.appName}</a>
+		{#if data.user}
+			<a
+				class="account-link"
+				href={resolve('/account')}
+				aria-current={page.url.pathname.startsWith('/account') ? 'page' : undefined}
+			>
+				{m.nav.account}
+			</a>
+		{:else}
+			<ThemePicker {m} />
+		{/if}
+	</div>
+	{#if data.user}
 		<nav aria-label={m.nav.label}>
 			<a href={resolve('/')} aria-current={page.url.pathname === '/' ? 'page' : undefined}
 				>{m.nav.home}</a
@@ -53,74 +63,76 @@
 				href={resolve('/members')}
 				aria-current={page.url.pathname === '/members' ? 'page' : undefined}>{m.nav.members}</a
 			>
-			<a
-				href={resolve('/account')}
-				aria-current={page.url.pathname === '/account' ? 'page' : undefined}>{m.nav.account}</a
-			>
 		</nav>
-		<form method="POST" action="/account?/language">
-			<label for="language">{m.language.label}</label>
-			<select id="language" name="locale" value={data.locale}>
-				{#each LOCALES as locale (locale)}
-					<option value={locale} lang={locale}>{m.language[locale]}</option>
-				{/each}
-			</select>
-			<button>{m.language.save}</button>
-		</form>
-		<form method="POST" action="/logout">
-			<button>{m.nav.signOut}</button>
-		</form>
-	</header>
-{/if}
+	{/if}
+</header>
 
 <main
 	id="content"
 	tabindex="-1"
 	class:wide={['/', '/calendar', '/map'].includes(page.url.pathname)}
 >
-	<Ornament kind={data.user ? 'divider' : 'flower'} />
+	{#if !data.user}
+		<Ornament kind="flower" />
+	{:else if page.url.pathname === '/'}
+		<Ornament kind="divider" />
+	{/if}
 	{@render children()}
 </main>
 
 <style>
+	.shell {
+		border-bottom: 1px solid var(--line);
+	}
 	.masthead,
-	header {
+	nav {
 		max-width: 76rem;
-		margin: auto;
-		padding: 1rem clamp(1rem, 4vw, 3rem);
+		margin-inline: auto;
+		padding-inline: clamp(1rem, 4vw, 3rem);
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
-		justify-content: space-between;
-		gap: 1rem;
 	}
 	.masthead {
-		border-bottom: 1px solid var(--line);
+		padding-block: 0.65rem;
+		justify-content: space-between;
+		gap: 0.4rem 0.85rem;
 	}
 	.brand {
 		font:
-			1.6rem Herbarium Serif,
+			1.55rem Herbarium Serif,
 			serif;
 		text-decoration: none;
 		color: var(--ink);
 	}
 	nav {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.75rem;
+		column-gap: 0.2rem;
+		padding-bottom: 0.4rem;
 	}
-	nav a[aria-current='page'] {
-		font-weight: bold;
-		text-decoration-thickness: 2px;
-	}
-	header form {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.5rem;
+	nav a,
+	.account-link {
+		display: inline-flex;
 		align-items: center;
+		min-height: 2.75rem;
+		padding-inline: 0.65rem;
+		border-radius: var(--radius);
+		color: var(--ink);
+		font-size: 0.92rem;
+		text-decoration: none;
 	}
-	header form > button {
-		margin: 0;
+	nav a:hover,
+	.account-link:hover {
+		background: var(--paper);
+		text-decoration: underline;
+	}
+	a[aria-current='page'] {
+		background: var(--paper);
+		color: var(--madder);
+		font-weight: 650;
+		box-shadow: inset 0 -2px var(--madder);
+	}
+	.account-link {
+		border: 1px solid var(--control-line);
 	}
 	main {
 		max-width: 48rem;

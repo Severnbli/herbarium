@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { onMount, untrack } from 'svelte';
+	import { resolve } from '$app/paths';
 	import Field from './Field.svelte';
 	import LocationPicker from './LocationPicker.svelte';
 	import Textarea from './Textarea.svelte';
@@ -27,6 +29,12 @@
 		submitLabel: string;
 		cancelHref: string;
 	} = $props();
+	let mounted = $state(false);
+	let kind = $state<string>(untrack(() => values.kind));
+	let mode = $state<string>(untrack(() => values.dateMode));
+	onMount(() => {
+		mounted = true;
+	});
 	const invalid = $derived(new Set(fields));
 	const errorFor = (name: string) => (invalid.has(name) ? m.event.invalidField : undefined);
 	const folds = $derived(
@@ -40,100 +48,123 @@
 {#if problem}<p role="alert">
 		{problem === 'not_finished' ? m.event.notFinished : m.event.invalid}
 	</p>{/if}
-<form method="POST">
-	<Select
-		name="kind"
-		label={m.event.kind}
-		value={values.kind}
-		aria-invalid={invalid.has('kind')}
-		options={[
-			{ value: 'moment', label: m.event.moment },
-			{ value: 'plan', label: m.event.plan },
-			{ value: 'occasion', label: m.event.occasion }
-		]}
-	/>
-	<Field
-		name="title"
-		label={m.event.title}
-		value={values.title}
-		error={errorFor('title')}
-		required
-		maxlength={200}
-	/>
-	<Select
-		name="category"
-		label={m.event.category}
-		value={values.category}
-		options={['none', 'trip', 'date', 'milestone'].map((value) => ({
-			value,
-			label: m.event[value as 'none' | 'trip' | 'date' | 'milestone']
-		}))}
-	/>
+<form method="POST" action={eventId ? resolve('/events/[id]/edit', { id: eventId }) : undefined}>
 	<fieldset>
-		<legend>{m.event.dateMode}</legend>
+		<legend>{m.event.details}</legend>
+		<Select
+			name="kind"
+			label={m.event.kind}
+			bind:value={kind}
+			onchange={(event) => {
+				if (event.currentTarget.value !== 'plan' && mode === 'undated') mode = 'date';
+			}}
+			aria-invalid={invalid.has('kind')}
+			options={[
+				{ value: 'moment', label: m.event.moment },
+				{ value: 'plan', label: m.event.plan },
+				{ value: 'occasion', label: m.event.occasion }
+			]}
+		/>
+		<Field
+			name="title"
+			label={m.event.title}
+			value={values.title}
+			error={errorFor('title')}
+			required
+			maxlength={200}
+		/>
+		<Select
+			name="category"
+			label={m.event.category}
+			value={values.category}
+			options={['none', 'trip', 'date', 'milestone'].map((value) => ({
+				value,
+				label: m.event[value as 'none' | 'trip' | 'date' | 'milestone']
+			}))}
+		/>
+	</fieldset>
+	<fieldset id="event-date">
+		<legend>{m.event.dateSection}</legend>
 		<Select
 			name="dateMode"
 			label={m.event.dateMode}
-			value={values.dateMode}
+			bind:value={mode}
+			aria-invalid={invalid.has('dateMode')}
+			aria-describedby={invalid.has('dateMode') || !mounted || kind === 'plan'
+				? 'event-date-hint'
+				: undefined}
 			options={[
 				{ value: 'date', label: m.event.dateOnly },
-				{ value: 'timed', label: m.event.timed }
+				{ value: 'timed', label: m.event.timed },
+				...(!mounted || kind === 'plan' || mode === 'undated'
+					? [{ value: 'undated', label: m.event.undated }]
+					: [])
 			]}
 		/>
-		<Select
-			name="precision"
-			label={m.design.precision}
-			value={values.precision}
-			aria-invalid={invalid.has('precision')}
-			options={['day', 'month', 'year'].map((value) => ({
-				value,
-				label: m.design[value as 'day' | 'month' | 'year']
-			}))}
-		/>
-		<Field
-			name="start"
-			label={m.event.start}
-			value={values.start}
-			error={errorFor('start')}
-			hint={m.event.dateHint}
-			required
-			maxlength={32}
-		/>
-		<Field
-			name="end"
-			label={m.event.end}
-			value={values.end}
-			error={errorFor('end')}
-			hint={m.event.endHint}
-			maxlength={32}
-		/>
-		<Field
-			name="timeZone"
-			label={m.event.timeZone}
-			value={values.timeZone}
-			error={errorFor('timeZone')}
-			hint={m.event.zoneHint}
-			maxlength={100}
-		/>
-		<details open={invalid.has('start')}>
-			<summary>{m.event.disambiguation}</summary>
-			<p>{m.event.foldHint}</p>
+		{#if invalid.has('dateMode')}
+			<p id="event-date-hint" class="error">{m.event.dateRequired}</p>
+		{:else if !mounted || kind === 'plan'}
+			<p id="event-date-hint" class="hint">{m.event.undatedHint}</p>
+		{/if}
+		<div class="date-fields" hidden={mounted && mode === 'undated'}>
 			<Select
-				name="disambiguation"
-				label={m.event.disambiguation}
-				value={values.disambiguation}
-				options={folds}
+				name="precision"
+				label={m.design.precision}
+				value={values.precision}
+				aria-invalid={invalid.has('precision')}
+				options={['day', 'month', 'year'].map((value) => ({
+					value,
+					label: m.design[value as 'day' | 'month' | 'year']
+				}))}
 			/>
-			<Select
-				name="endDisambiguation"
-				label={m.event.endDisambiguation}
-				value={values.endDisambiguation}
-				options={folds}
+			<Field
+				name="start"
+				label={m.event.start}
+				value={values.start}
+				error={errorFor('start')}
+				hint={m.event.dateHint}
+				required={mounted && mode !== 'undated'}
+				maxlength={32}
 			/>
-		</details>
+			<Field
+				name="end"
+				label={m.event.end}
+				value={values.end}
+				error={errorFor('end')}
+				hint={m.event.endHint}
+				maxlength={32}
+			/>
+			<div hidden={mounted && mode !== 'timed'}>
+				<Field
+					name="timeZone"
+					label={m.event.timeZone}
+					value={values.timeZone}
+					error={errorFor('timeZone')}
+					hint={m.event.zoneHint}
+					maxlength={100}
+				/>
+				<details open={invalid.has('start')}>
+					<summary>{m.event.disambiguation}</summary>
+					<p>{m.event.foldHint}</p>
+					<Select
+						name="disambiguation"
+						label={m.event.disambiguation}
+						value={values.disambiguation}
+						options={folds}
+					/>
+					<Select
+						name="endDisambiguation"
+						label={m.event.endDisambiguation}
+						value={values.endDisambiguation}
+						options={folds}
+					/>
+				</details>
+			</div>
+		</div>
 	</fieldset>
 	<details
-		open={values.kind === 'occasion' || invalid.has('occasionType') || invalid.has('interval')}
+		hidden={mounted && kind !== 'occasion'}
+		open={kind === 'occasion' || invalid.has('occasionType') || invalid.has('interval')}
 	>
 		<summary>{m.event.occasionSettings}</summary>
 		<p>{m.event.recurrenceHint}</p>
@@ -175,18 +206,21 @@
 			}))}
 		/>
 	</details>
-	{#key values}
-		<LocationPicker
-			{m}
-			{locale}
-			{basemap}
-			{eventId}
-			initial={values}
-			latError={errorFor('lat')}
-			lonError={errorFor('lon')}
-			placeError={errorFor('place')}
-		/>
-	{/key}
+	<fieldset id="event-place">
+		<legend>{m.map.location}</legend>
+		{#key values}
+			<LocationPicker
+				{m}
+				{locale}
+				{basemap}
+				{eventId}
+				initial={values}
+				latError={errorFor('lat')}
+				lonError={errorFor('lon')}
+				placeError={errorFor('place')}
+			/>
+		{/key}
+	</fieldset>
 	<Textarea
 		name="notes"
 		label={m.event.notes}
@@ -205,7 +239,20 @@
 
 <style>
 	fieldset {
-		margin-block: 1.5rem;
+		min-width: 0;
+		margin-block: 1.25rem;
+		padding: 0.5rem clamp(0.85rem, 4vw, 1.5rem);
+		background: var(--linen);
+		border: 1px solid var(--line);
+		border-radius: var(--radius);
+		scroll-margin-top: 1rem;
+	}
+	legend {
+		padding-inline: 0.45rem;
+		font-weight: 650;
+	}
+	.hint {
+		color: var(--muted);
 	}
 	details {
 		margin-block: 1rem;
