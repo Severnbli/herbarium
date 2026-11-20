@@ -523,7 +523,24 @@ test('mixed upload retries preserve successful files and link to the intended de
 	await queue.getByRole('button', { name: 'Upload', exact: true }).click();
 	await expect(queue.getByText('1 of 1 uploaded')).toBeVisible();
 	await page.getByRole('link', { name: 'Return to Memories' }).click();
-	await expect(page.getByRole('link', { name: /standalone-swatch.jpg/ })).toBeVisible();
+	const unlinked = page.getByRole('region', { name: 'Memories without an event' });
+	const linked = page.getByRole('region', { name: 'Synthetic upload plan' });
+	await expect(unlinked.getByRole('link', { name: /^Photo ·/ })).toHaveCount(2);
+	await expect(unlinked.getByRole('link', { name: /^Video ·/ })).toHaveCount(1);
+	await expect(linked.getByRole('link', { name: 'Synthetic upload plan' })).toHaveAttribute(
+		'href',
+		new URL(eventUrl).pathname
+	);
+	await expect(linked.getByRole('link', { name: /^Photo ·/ })).toHaveCount(2);
+	const clip = linked.getByRole('link', { name: /^Video ·/ });
+	await clip.click();
+	await expect(page.getByRole('dialog', { name: 'Video' }).locator('video')).toBeVisible();
+	await page.keyboard.press('Escape');
+	await expect(clip).toBeFocused();
+	await expect(page.getByText(/standalone-swatch\.jpg|synthetic-batch-video\.mp4/)).toHaveCount(0);
+	await page.goto(`/memories?event=${new URL(eventUrl).pathname.split('/').pop()}`);
+	await expect(page.getByRole('link', { name: /^Video ·/ })).toBeVisible();
+	await expect(page.getByText('synthetic-batch-video.mp4', { exact: true })).toHaveCount(0);
 
 	await page.goto('/events/new?kind=plan');
 	await page.getByLabel('Title', { exact: true }).fill('Synthetic destination plan');
@@ -560,6 +577,9 @@ test('mixed upload retries preserve successful files and link to the intended de
 	await page.getByRole('button', { name: 'Save linked event' }).click();
 	await expect(page.getByRole('link', { name: 'Synthetic destination plan' })).toHaveCount(0);
 	await expect(page.getByRole('heading', { name: 'synthetic-batch-gps.jpg' })).toBeVisible();
+	await page.goto('/memories');
+	await expect(unlinked.locator(`a[href="${gpsMemory}"]`)).toBeVisible();
+	await expect(linked.locator(`a[href="${gpsMemory}"]`)).toHaveCount(0);
 	await page.context().close();
 });
 
@@ -958,6 +978,8 @@ test('uploads private memories, browses them by keyboard and manages independent
 		}
 	});
 	expect(rejected.status()).toBe(413);
+	await offline.goto(eventUrl);
+	await offline.getByRole('link', { name: 'Add photos and videos' }).click();
 	await offline.getByLabel('Photo or video').setInputFiles(video);
 	await offline.getByLabel('Caption').fill('Spring clip');
 	await offline.getByRole('button', { name: 'Upload', exact: true }).click();
@@ -973,11 +995,11 @@ test('uploads private memories, browses them by keyboard and manages independent
 	const other = await newPage(browser);
 	await login(other, owner.username, owner.password);
 	await other.goto('/memories');
-	await expect(other.locator('li a').filter({ hasText: /Spring clip|Winter swatch/ })).toHaveText([
-		/Spring clip/,
-		/Winter swatch/
-	]);
-	const clip = other.getByRole('link', { name: /Spring clip/ });
+	const collection = other.getByRole('region', { name: 'Synthetic collection' });
+	await expect(
+		collection.locator('li a').filter({ hasText: /Spring clip|Winter swatch/ })
+	).toHaveText([/Spring clip/, /Winter swatch/]);
+	const clip = collection.getByRole('link', { name: /Spring clip/ });
 	await clip.focus();
 	await other.keyboard.press('Enter');
 	await expect(other.getByRole('dialog', { name: 'Spring clip' })).toBeVisible();
@@ -1004,7 +1026,11 @@ test('uploads private memories, browses them by keyboard and manages independent
 	await offline.getByLabel('Current password').fill(member.password);
 	await offline.getByRole('button', { name: 'Delete album', exact: true }).click();
 	await expect(offline).toHaveURL('/memories');
-	await expect(offline.getByRole('link', { name: /Winter swatch/ })).toBeVisible();
+	await expect(
+		offline
+			.getByRole('region', { name: 'Memories without an event' })
+			.getByRole('link', { name: /Winter swatch/ })
+	).toBeVisible();
 	await offline.goto(photoUrl);
 	await offline
 		.locator('summary')
