@@ -1,12 +1,22 @@
-import type { StyleSpecification, SymbolLayerSpecification } from 'maplibre-gl';
+import { DARK, LIGHT, language_script_pairs, layers, type Flavor } from '@protomaps/basemaps';
+import type { StyleSpecification } from 'maplibre-gl';
 import type { Locale } from '#lib/i18n/index.ts';
+
+// Protomaps uses a Latin fallback for languages missing from its script table.
+if (!language_script_pairs.some(({ lang }) => lang === 'be')) {
+	language_script_pairs.push({ lang: 'be', full_name: 'Belarusian', script: 'Cyrillic' });
+}
 
 export const palette = {
 	light: {
 		land: '#eee8da',
 		water: '#a9c4dc',
 		forest: '#bdc9a6',
-		road: '#827666',
+		park: '#cdd8b2',
+		building: '#af9a85',
+		road: '#fff9ed',
+		roadCasing: '#b0a08a',
+		highway: '#efcf91',
 		border: '#92826e',
 		label: '#302c26',
 		halo: '#fffcf4',
@@ -18,7 +28,11 @@ export const palette = {
 		land: '#1c2b2d',
 		water: '#243956',
 		forest: '#2e463a',
-		road: '#8e8d81',
+		park: '#3b5140',
+		building: '#64706d',
+		road: '#56646a',
+		roadCasing: '#29363d',
+		highway: '#886d47',
 		border: '#7a8176',
 		label: '#f0ead9',
 		halo: '#141f24',
@@ -30,119 +44,80 @@ export const palette = {
 
 export const mapFont = ['Noto Sans Regular'];
 
+function mapFlavor(dark: boolean): Flavor {
+	const base = dark ? DARK : LIGHT;
+	const colors = palette[dark ? 'dark' : 'light'];
+	return {
+		...base,
+		background: colors.water,
+		earth: colors.land,
+		water: colors.water,
+		park_a: colors.park,
+		park_b: colors.forest,
+		wood_a: colors.park,
+		wood_b: colors.forest,
+		landcover: base.landcover && {
+			...base.landcover,
+			forest: colors.forest,
+			grassland: colors.park
+		},
+		buildings: colors.building,
+		boundaries: colors.border,
+		minor_service: colors.road,
+		minor_a: colors.road,
+		minor_b: colors.road,
+		major: colors.road,
+		highway: colors.highway,
+		minor_service_casing: colors.roadCasing,
+		minor_casing: colors.roadCasing,
+		major_casing_early: colors.roadCasing,
+		major_casing_late: colors.roadCasing,
+		highway_casing_early: colors.roadCasing,
+		highway_casing_late: colors.roadCasing,
+		bridges_minor: colors.road,
+		bridges_major: colors.road,
+		bridges_highway: colors.highway,
+		roads_label_minor: colors.label,
+		roads_label_minor_halo: colors.halo,
+		roads_label_major: colors.label,
+		roads_label_major_halo: colors.halo,
+		subplace_label: colors.label,
+		subplace_label_halo: colors.halo,
+		city_label: colors.label,
+		city_label_halo: colors.halo,
+		state_label: colors.label,
+		state_label_halo: colors.halo,
+		country_label: colors.label,
+		address_label: colors.label,
+		address_label_halo: colors.halo
+	};
+}
+
 export function mapStyle(
 	assets: string,
 	locale: Locale,
 	basemap: boolean,
 	dark: boolean
 ): StyleSpecification {
-	const colors = palette[dark ? 'dark' : 'light'];
+	const markers = { id: 'events', url: `${assets}/markers` };
 	const style: StyleSpecification = {
 		version: 8,
 		glyphs: `${assets}/glyphs/{fontstack}/{range}.pbf`,
-		sprite: `${assets}/markers`,
+		sprite: [markers],
 		sources: {},
-		layers: [{ id: 'paper', type: 'background', paint: { 'background-color': colors.land } }]
+		layers: [
+			{
+				id: 'paper',
+				type: 'background',
+				paint: { 'background-color': palette[dark ? 'dark' : 'light'].land }
+			}
+		]
 	};
 	if (!basemap) return style;
 
-	const label: SymbolLayerSpecification['layout'] = {
-		'text-field': ['coalesce', ['get', `name:${locale}`], ['get', 'name:en'], ['get', 'name'], ''],
-		'text-font': mapFont
-	};
-	const labelPaint = {
-		'text-color': colors.label,
-		'text-halo-color': colors.halo,
-		'text-halo-width': 1.4
-	};
+	const theme = dark ? 'dark' : 'light';
+	style.sprite = [{ id: 'default', url: `${assets}/protomaps-${theme}` }, markers];
 	style.sources.basemap = { type: 'vector', url: `pmtiles://${assets}/basemap.pmtiles` };
-	style.layers = [
-		{ id: 'sea', type: 'background', paint: { 'background-color': colors.water } },
-		{
-			id: 'land',
-			type: 'fill',
-			source: 'basemap',
-			'source-layer': 'earth',
-			paint: { 'fill-color': colors.land }
-		},
-		{
-			id: 'forest-cover',
-			type: 'fill',
-			source: 'basemap',
-			'source-layer': 'landcover',
-			filter: ['==', ['get', 'kind'], 'forest'],
-			paint: { 'fill-color': colors.forest }
-		},
-		{
-			id: 'green-spaces',
-			type: 'fill',
-			source: 'basemap',
-			'source-layer': 'landuse',
-			filter: [
-				'in',
-				['get', 'kind'],
-				['literal', ['forest', 'wood', 'park', 'garden', 'nature_reserve']]
-			],
-			paint: { 'fill-color': colors.forest }
-		},
-		{
-			id: 'water',
-			type: 'fill',
-			source: 'basemap',
-			'source-layer': 'water',
-			filter: ['==', ['geometry-type'], 'Polygon'],
-			paint: { 'fill-color': colors.water }
-		},
-		{
-			id: 'waterways',
-			type: 'line',
-			source: 'basemap',
-			'source-layer': 'water',
-			filter: ['==', ['geometry-type'], 'LineString'],
-			paint: { 'line-color': colors.water, 'line-width': 1.3 }
-		},
-		{
-			id: 'boundaries',
-			type: 'line',
-			source: 'basemap',
-			'source-layer': 'boundaries',
-			filter: ['==', ['get', 'kind'], 'country'],
-			paint: { 'line-color': colors.border, 'line-width': 1, 'line-dasharray': [3, 2] }
-		},
-		{
-			id: 'roads',
-			type: 'line',
-			source: 'basemap',
-			'source-layer': 'roads',
-			minzoom: 5,
-			filter: ['!=', ['get', 'kind'], 'rail'],
-			paint: {
-				'line-color': colors.road,
-				'line-opacity': 0.65,
-				'line-width': ['interpolate', ['linear'], ['zoom'], 5, 0.35, 11, 0.8, 16, 2.1]
-			}
-		},
-		{
-			id: 'street-labels',
-			type: 'symbol',
-			source: 'basemap',
-			'source-layer': 'roads',
-			minzoom: 13,
-			layout: { ...label, 'symbol-placement': 'line', 'text-size': 11, 'symbol-spacing': 320 },
-			paint: labelPaint
-		},
-		{
-			id: 'places',
-			type: 'symbol',
-			source: 'basemap',
-			'source-layer': 'places',
-			layout: {
-				...label,
-				'symbol-sort-key': ['coalesce', ['get', 'sort_rank'], 10000],
-				'text-size': ['match', ['get', 'kind'], 'country', 15, 'locality', 13, 11]
-			},
-			paint: labelPaint
-		}
-	];
+	style.layers = layers('basemap', mapFlavor(dark), { lang: locale });
 	return style;
 }

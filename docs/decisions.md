@@ -119,7 +119,7 @@ Fetch 24 events at a time and use the indexed date and ID pair as the boundary i
 
 Status: accepted.
 
-Use Protomaps v4 MVT archives in PMTiles v3 so operators can pick the coverage and maximum zoom for their volume. MapLibre GL JS and the PMTiles client are BSD-3-Clause. A custom light and dark style, local Noto Sans glyphs and Herbarium marker sprites cover the map UI. The asset endpoint streams fixed files under session checks and sends an ETag for the open archive. Replacing the archive by rename lets a request finish against the file it opened.
+Use Protomaps v4 MVT archives in PMTiles v3 so operators can pick the coverage and maximum zoom for their volume. MapLibre GL JS and the PMTiles client are BSD-3-Clause. The full upstream Protomaps layer set now replaces the original hand-picked layers so existing archives can display their buildings, addresses, paths and points of interest. Herbarium applies its own Linen and Kupalle colors to the upstream style and serves its glyphs and sprites alongside the event markers. The asset endpoint streams fixed files under session checks and sends an ETag for the open archive. Replacing the archive by rename lets a request finish against the file it opened.
 
 MapLibre 6 supports a locally bundled module worker. `worker-src 'self'` works on the initial document and after SvelteKit client navigation. The map makes same-origin requests for every resource under the existing CSP.
 

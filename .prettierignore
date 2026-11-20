@@ -25,3 +25,7 @@ bun.lockb
 
 # Vendored MIT dependencies
 /vendor/picomatch/
+
+# Vendored Protomaps sprite metadata and license
+/map-assets/protomaps-*.json
+/map-assets/Tangram-icons-LICENSE.md

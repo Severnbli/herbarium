@@ -11,11 +11,12 @@ export const tileArchive = 'basemap.pmtiles';
 const assetPath = z.strictObject({
 	asset: z.string().max(64)
 });
-const sprites = new Map([
-	['markers.json', 'application/json'],
-	['markers.png', 'image/png'],
-	['markers@2x.json', 'application/json'],
-	['markers@2x.png', 'image/png']
+const spriteFile = /^(?:markers|protomaps-light|protomaps-dark)(?:@2x)?\.(json|png)$/;
+const glyphDirectories = new Map([
+	['Noto Sans Regular', 'glyphs'],
+	['Noto Sans Medium', 'glyphs/Noto Sans Medium'],
+	['Noto Sans Italic', 'glyphs/Noto Sans Italic'],
+	['Noto Sans Devanagari Regular v1', 'glyphs/Noto Sans Devanagari Regular v1']
 ]);
 
 const openAsset = (path: string) =>
@@ -48,18 +49,26 @@ export async function mapAssetResponse(
 	const parsed = assetPath.safeParse(params);
 	if (!parsed.success || new URL(request.url).search) error(404, 'Map asset unavailable');
 	const { asset } = parsed.data;
-	const spriteType = sprites.get(asset);
-	const glyph = /^glyphs\/Noto Sans Regular\/(\d{1,5})-(\d{1,5})\.pbf$/.exec(asset);
+	const spriteExtension = spriteFile.exec(asset)?.[1];
+	const glyph = /^glyphs\/([^/]+)\/(\d{1,5})-(\d{1,5})\.pbf$/.exec(asset);
+	const glyphDirectory = glyph && glyphDirectories.get(glyph[1]!);
 	const validGlyph =
 		glyph &&
-		Number(glyph[1]) % 256 === 0 &&
-		Number(glyph[2]) === Number(glyph[1]) + 255 &&
-		Number(glyph[2]) <= 65535;
+		glyphDirectory &&
+		Number(glyph[2]) % 256 === 0 &&
+		Number(glyph[3]) === Number(glyph[2]) + 255 &&
+		Number(glyph[3]) <= 65535;
 
 	const archive = asset === tileArchive;
 	const contentType = archive
 		? 'application/octet-stream'
-		: (spriteType ?? (validGlyph ? 'application/x-protobuf' : null));
+		: spriteExtension === 'json'
+			? 'application/json'
+			: spriteExtension === 'png'
+				? 'image/png'
+				: validGlyph
+					? 'application/x-protobuf'
+					: null;
 	if (!contentType) error(404, 'Map asset unavailable');
 
 	const headers = new Headers({
@@ -70,7 +79,10 @@ export async function mapAssetResponse(
 	});
 	const path = archive
 		? join(dataDir, tileArchive)
-		: join(mapAssetDir, validGlyph ? `glyphs/${Number(glyph[1])}-${Number(glyph[2])}.pbf` : asset);
+		: join(
+				mapAssetDir,
+				validGlyph ? `${glyphDirectory}/${Number(glyph[2])}-${Number(glyph[3])}.pbf` : asset
+			);
 	let file: Awaited<ReturnType<typeof open>> | undefined;
 	try {
 		file = await openAsset(path);
