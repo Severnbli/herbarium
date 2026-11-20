@@ -131,7 +131,7 @@ Status: accepted.
 
 Use the earliest started occasion of type Anniversary as the time-together anchor. Its original date already records a milestone the circle chose to celebrate. This reuses shared event editing and avoids a separate instance preference. Circles with several anniversaries use the earliest one, and editing or deleting it can change the count. The anniversary highlight uses the next occurrence across all anniversaries.
 
-Upcoming shows the next start per occasion so frequent recurrences leave room for other events. The dashboard uses the member's calendar day and shows timed starts in that member's time zone. On this day recalls original dates, so a recurring occasion contributes its original entry and a leap-day entry is recalled on February 29. Recent memories follow upload order. The gallery retains chronological capture order.
+Upcoming shows the next start per occasion so frequent recurrences leave room for other events. The dashboard uses the member's calendar day and shows timed starts in that member's time zone. On this day recalls original dates, so a recurring occasion contributes its original entry and a leap-day entry is recalled on February 29. Recent memories follow upload order. The Memories gallery follows capture order within each event group.
 
 ## Portable content archives
 
@@ -168,3 +168,9 @@ The Events list can filter for undated plans. Calendar, timeline, countdowns and
 Uploads started from an event, album or the Memories gallery reuse the bounded, encrypted one-file pipeline. The browser sends one request per selected file with a random receipt key. The server commits the memory, album membership when applicable, and a member- and destination-bound receipt together. Retrying the same selection reuses that key, including after a response is lost. Receipts are operational data and stay in the encrypted database.
 
 Members can place an existing memory in a different event or keep it in the gallery without changing album memberships. A location offer from an event upload is bound to that event as well as the memory and session. Bulk import can use its separate unbound offer only when it creates an event for the reviewed group.
+
+## Event groups in Memories
+
+**Status:** Accepted.
+
+Use the existing event link to give photos and videos shared context in the Memories gallery. Include unlinked files in their own group. Sort groups by their newest memory and paginate the resulting order so even a large event can be browsed with a bounded number of thumbnails per page. Show member-written captions in the gallery and lightbox. Keep original filenames available on the details page and on downloads.

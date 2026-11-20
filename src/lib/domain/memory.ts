@@ -6,3 +6,8 @@ export interface MemoryCard {
 	sortDate: string;
 	isVideo: boolean;
 }
+
+export interface MemoryGroup {
+	event: { id: string; title: string } | null;
+	rows: MemoryCard[];
+}

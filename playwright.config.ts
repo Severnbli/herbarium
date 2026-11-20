@@ -30,8 +30,8 @@ export default defineConfig({
 			DATA_DIR: process.env.E2E_DATA_DIR,
 			MASTER_KEY: process.env.E2E_MASTER_KEY,
 			BODY_SIZE_LIMIT: '1025M',
-			MAX_FILE_BYTES: '1048576',
-			MAX_REQUEST_BYTES: '1052672'
+			MAX_FILE_BYTES: '1 MiB',
+			MAX_REQUEST_BYTES: '1028 KiB'
 		}
 	}
 });

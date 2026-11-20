@@ -9,6 +9,7 @@ import { album, event } from '#lib/server/db/schema.ts';
 import {
 	albumTitle,
 	listAlbums,
+	listGroupedMemories,
 	listMemories,
 	pageField,
 	queryFields,
@@ -32,11 +33,10 @@ export const load: PageServerLoad = (request) => {
 				.get()
 		: null;
 	if (eventId && !row) error(404, 'Event unavailable');
-	return {
-		...listMemories(sql, { eventId }, parsed.data.page),
-		albums: eventId ? [] : listAlbums(sql),
-		event: row ?? null
-	};
+	if (row) {
+		return { ...listMemories(sql, { eventId }, parsed.data.page), albums: [], event: row };
+	}
+	return { ...listGroupedMemories(sql, parsed.data.page), albums: listAlbums(sql), event: null };
 };
 
 export const actions: Actions = {

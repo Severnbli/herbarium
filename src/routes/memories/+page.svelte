@@ -35,7 +35,7 @@
 		<a href={resolve('/memories/import')}>{m.mediaImport.bulk}</a>
 	</div>
 {/if}
-<MemoryGrid rows={data.rows} locale={data.locale} {m} />
+<MemoryGrid rows={data.rows} groups={data.groups} locale={data.locale} {m} hideFilenames />
 <MemoryPagination page={data.page} hasNext={data.hasNext} url={pageUrl} {m} />
 {#if !data.event}
 	<section class="albums" aria-labelledby="albums">

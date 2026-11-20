@@ -2,26 +2,51 @@
 	import { resolve } from '$app/paths';
 	import Dialog from '#lib/components/Dialog.svelte';
 	import MemoryPreview from '#lib/components/MemoryPreview.svelte';
-	import type { MemoryCard } from '#lib/domain/memory.ts';
+	import type { MemoryCard, MemoryGroup } from '#lib/domain/memory.ts';
 	import type { Messages } from '#lib/i18n/catalog.ts';
 	import type { Locale } from '#lib/i18n/index.ts';
 	import { formatDateOnly } from '#lib/i18n/format.ts';
 
-	let { rows, locale, m }: { rows: MemoryCard[]; locale: Locale; m: Messages } = $props();
+	let {
+		rows = [],
+		groups,
+		locale,
+		m,
+		hideFilenames = false
+	}: {
+		rows?: MemoryCard[];
+		groups?: MemoryGroup[];
+		locale: Locale;
+		m: Messages;
+		hideFilenames?: boolean;
+	} = $props();
+	const gridId = $props.id();
 	let open = $state(false);
-	let index = $state(0);
-	const selected = $derived(rows[index]);
+	let selectedId = $state<string>();
+	const cards = $derived(groups?.flatMap((group) => group.rows) ?? rows);
+	const index = $derived(cards.findIndex((row) => row.id === selectedId));
+	const selected = $derived(cards[index]);
+	const title = $derived(selected ? caption(selected) || mediaType(selected) : m.memory.title);
 
-	function show(event: MouseEvent, position: number) {
+	function caption(row: MemoryCard) {
+		return row.caption || (hideFilenames ? '' : row.originalName);
+	}
+
+	function mediaType(row: MemoryCard) {
+		return row.isVideo ? m.memory.video : m.memory.photo;
+	}
+
+	function show(event: MouseEvent, id: string) {
 		if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
 			return;
 		event.preventDefault();
-		index = position;
+		selectedId = id;
 		open = true;
 	}
 
 	function step(direction: number) {
-		index = Math.max(0, Math.min(rows.length - 1, index + direction));
+		const next = cards[index + direction];
+		if (next) selectedId = next.id;
 	}
 
 	function navigate(event: KeyboardEvent) {
@@ -34,14 +59,19 @@
 	}
 </script>
 
-{#if rows.length}
+{#snippet thumbnails(items: MemoryCard[])}
 	<ul class="memories">
-		{#each rows as row, position (row.id)}
+		{#each items as row (row.id)}
+			{@const label = caption(row)}
+			{@const date = formatDateOnly(locale, row.sortDate)}
 			<li>
 				<a
 					class="memory"
 					href={resolve('/memories/[id]', { id: row.id })}
-					onclick={(event) => show(event, position)}
+					aria-label={label || row.altText || row.isVideo
+						? undefined
+						: `${mediaType(row)} · ${date}`}
+					onclick={(event) => show(event, row.id)}
 				>
 					<img
 						src={resolve('/media/[id]/[variant]', { id: row.id, variant: 'thumbnail' })}
@@ -49,28 +79,42 @@
 						loading="lazy"
 						decoding="async"
 					/>
-					<span>{row.caption || row.originalName}</span>
+					{#if label}<span>{label}</span>{/if}
 					<span class="label">
 						{#if row.isVideo}{m.memory.video} ·
-						{/if}<time datetime={row.sortDate}>{formatDateOnly(locale, row.sortDate)}</time>
+						{/if}<time datetime={row.sortDate}>{date}</time>
 					</span>
 				</a>
 			</li>
 		{/each}
 	</ul>
+{/snippet}
+
+{#if groups?.length}
+	{#each groups as group (group.event?.id ?? null)}
+		{@const heading = `${gridId}-${group.event?.id ?? 'unlinked'}`}
+		<section class="group" aria-labelledby={heading}>
+			<h2 id={heading}>
+				{#if group.event}
+					<a href={resolve('/events/[id]', { id: group.event.id })}>{group.event.title}</a>
+				{:else}
+					{m.memory.unlinked}
+				{/if}
+			</h2>
+			{@render thumbnails(group.rows)}
+		</section>
+	{/each}
+{:else if rows.length}
+	{@render thumbnails(rows)}
 {:else}
 	<p>{m.memory.empty}</p>
 {/if}
 
-<Dialog
-	bind:open
-	title={selected?.caption || selected?.originalName || m.memory.title}
-	closeLabel={m.design.close}
-	onkeydown={navigate}
-	wide
->
+<Dialog bind:open {title} closeLabel={m.design.close} onkeydown={navigate} wide>
 	{#if open && selected}
-		{#key selected.id}<MemoryPreview memory={selected} {m} />{/key}
+		{#key selected.id}
+			<MemoryPreview memory={selected} {m} fallbackLabel={hideFilenames ? title : undefined} />
+		{/key}
 		<div class="controls">
 			<button type="button" class="secondary" disabled={index === 0} onclick={() => step(-1)}
 				>{m.memory.previous}</button
@@ -79,7 +123,7 @@
 			<button
 				type="button"
 				class="secondary"
-				disabled={index === rows.length - 1}
+				disabled={index === cards.length - 1}
 				onclick={() => step(1)}>{m.memory.next}</button
 			>
 		</div>
@@ -87,6 +131,12 @@
 </Dialog>
 
 <style>
+	.group {
+		margin-block: 1.5rem;
+	}
+	.group h2 {
+		overflow-wrap: anywhere;
+	}
 	.memories {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(min(9rem, 100%), 1fr));
