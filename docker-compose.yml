@@ -12,6 +12,8 @@ services:
       # The public https:// origin. The localhost default only works for a local trial.
       ORIGIN: ${ORIGIN:-http://localhost:3000}
       MASTER_KEY_FILE: /run/secrets/master_key
+      MAX_FILE_BYTES: ${MAX_FILE_BYTES:-}
+      MAX_REQUEST_BYTES: ${MAX_REQUEST_BYTES:-}
       # Behind a reverse proxy, let rate limiting see real client addresses (see docs/deployment.md).
       # Leave these unset when nothing sits in front of the app.
       # ADDRESS_HEADER: X-Forwarded-For

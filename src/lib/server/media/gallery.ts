@@ -1,7 +1,7 @@
 import { error, type RequestEvent } from '@sveltejs/kit';
-import { and, asc, desc, eq } from 'drizzle-orm';
+import { and, asc, desc, eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
-import type { MemoryCard } from '#lib/domain/memory.ts';
+import type { MemoryCard, MemoryGroup } from '#lib/domain/memory.ts';
 import type { Db } from '#lib/server/db/index.ts';
 import { album, albumMemory, event, mediaFile, memory, user } from '#lib/server/db/schema.ts';
 import { mediaId } from './store.ts';
@@ -48,15 +48,13 @@ const card = {
 	caption: memory.caption,
 	sortDate: memory.sortDate
 };
+const originalMedia = and(eq(mediaFile.memoryId, memory.id), eq(mediaFile.variant, 'original'));
 
 function selectMemoryCards(db: Db) {
 	return db
 		.select({ ...card, contentType: mediaFile.contentType })
 		.from(memory)
-		.innerJoin(
-			mediaFile,
-			and(eq(mediaFile.memoryId, memory.id), eq(mediaFile.variant, 'original'))
-		);
+		.innerJoin(mediaFile, originalMedia);
 }
 
 function memoryCard({
@@ -95,6 +93,39 @@ export function listMemories(db: Db, filter: { albumId?: string; eventId?: strin
 	};
 }
 
+export function listGroupedMemories(db: Db, page = 1) {
+	const rows = db
+		.select({
+			...card,
+			contentType: mediaFile.contentType,
+			event: { id: event.id, title: event.title }
+		})
+		.from(memory)
+		.innerJoin(mediaFile, originalMedia)
+		.leftJoin(event, eq(event.id, memory.eventId))
+		.orderBy(
+			desc(sql`max(${memory.sortDate}) over (partition by ${memory.eventId})`),
+			desc(memory.eventId),
+			desc(memory.sortDate),
+			desc(memory.id)
+		)
+		.limit(PAGE_SIZE + 1)
+		.offset((page - 1) * PAGE_SIZE)
+		.all();
+
+	const groups = new Map<string | null, MemoryGroup>();
+	for (const { event, ...row } of rows.slice(0, PAGE_SIZE)) {
+		const id = event?.id ?? null;
+		let group = groups.get(id);
+		if (!group) {
+			group = { event, rows: [] };
+			groups.set(id, group);
+		}
+		group.rows.push(memoryCard(row));
+	}
+	return { groups: [...groups.values()], page, hasNext: rows.length > PAGE_SIZE };
+}
+
 export function findMemory(db: Db, id: string) {
 	const row = db
 		.select({
@@ -106,7 +137,7 @@ export function findMemory(db: Db, id: string) {
 			eventTitle: event.title
 		})
 		.from(memory)
-		.innerJoin(mediaFile, and(eq(mediaFile.memoryId, memory.id), eq(mediaFile.variant, 'original')))
+		.innerJoin(mediaFile, originalMedia)
 		.innerJoin(user, eq(user.id, memory.createdBy))
 		.leftJoin(event, eq(event.id, memory.eventId))
 		.where(eq(memory.id, id))

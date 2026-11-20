@@ -93,9 +93,16 @@ All settings are environment variables, validated at startup. The app refuses to
 | `MAX_FILE_BYTES`                 | no              | per-file upload limit, default 128 MiB, maximum 1 GiB             |
 | `MAX_REQUEST_BYTES`              | no              | per-request upload limit, default 129 MiB, maximum 1025 MiB       |
 
-`PORT`, `HOST` and the other settings of [`adapter-node`](https://svelte.dev/docs/kit/adapter-node) work as documented there.
+Both upload limits accept a byte count or a whole number with a case-insensitive `KiB`, `MiB` or `GiB` suffix. A space before the suffix is optional. Set the variables in the service environment or in the example Compose deployment's `.env` file. This configuration allows a 1 GiB file and leaves room for multipart headers and form fields.
 
-The image sets `BODY_SIZE_LIMIT=1025M` so uploads can reach the application limits. A bare `node build` deployment should set `BODY_SIZE_LIMIT` at or above `MAX_REQUEST_BYTES`. Set the reverse proxy's request allowance to match `MAX_REQUEST_BYTES` and disable disk-backed request buffering for uploads to `/memories/new` and `/memories/import/*/upload`. Other application forms retain a 512 KiB limit.
+```dotenv
+MAX_FILE_BYTES=1GiB
+MAX_REQUEST_BYTES="1025 MiB"
+```
+
+The batch queue sends one file per request.
+
+`PORT`, `HOST` and the other settings of [`adapter-node`](https://svelte.dev/docs/kit/adapter-node) work as documented there. The image sets `BODY_SIZE_LIMIT=1025M` so uploads can reach the application limits. A bare `node build` deployment should set `BODY_SIZE_LIMIT` at or above the request limit using the adapter's byte count or `K`, `M` or `G` suffix. Set the reverse proxy's request allowance to match the request limit and disable disk-backed request buffering for uploads to `/memories/new`, `/memories/new/upload` and `/memories/import/*/upload`. Other application forms retain a 512 KiB limit.
 
 Media processing in the image requires Linux on amd64 or arm64 with Landlock ABI 3 or newer and seccomp enabled. A bare deployment also needs Python 3, ExifTool, FFmpeg 8 with `libx264`, ffprobe and libseccomp. Uploads use anonymous memory files during processing, one upload at a time. Size the container's available memory for up to three media buffers near the configured file limit plus decoder overhead. Use encrypted swap or disable host swap for sensitive deployments. Keep one application process on each data volume so startup cleanup can safely reclaim encrypted files left by a stopped upload.
 

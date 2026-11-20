@@ -3,8 +3,9 @@
 	import type { MemoryCard } from '#lib/domain/memory.ts';
 	import type { Messages } from '#lib/i18n/catalog.ts';
 
-	let { memory, m }: { memory: MemoryCard; m: Messages } = $props();
-	const label = $derived(memory.altText || memory.originalName);
+	let { memory, m, fallbackLabel }: { memory: MemoryCard; m: Messages; fallbackLabel?: string } =
+		$props();
+	const label = $derived(memory.altText || (fallbackLabel ?? memory.originalName));
 	const preview = $derived(resolve('/media/[id]/[variant]', { id: memory.id, variant: 'preview' }));
 </script>
 

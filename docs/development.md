@@ -77,6 +77,8 @@ For an occasion, use day precision and open **For occasions** to set the repeat 
 
 ## Memories
 
+The **Memories** gallery shows photos and videos under clickable event headings, with a **Memories without an event** section for unlinked files. The gallery and lightbox show captions when available. Choose **Open details** to find the original filename.
+
 Choose **Add photos and videos** from an event, an album, or **Memories**. Select photos and videos together and follow each file's progress. Retry individual failures while the upload page is open. **Upload one file** is also available and works without JavaScript. Supported files are JPEG, PNG, HEIC and H.264 or HEVC videos in MP4 or MOV. Members can edit alt text and captions, download cleaned originals and organize memories in multiple albums. Open **Change event link** on a memory's page to attach, move, or detach it. With JavaScript enabled, the gallery opens a lightbox with Previous and Next buttons, left and right arrow keys, and Escape to close. The same links open memory pages without JavaScript.
 
 The media integration tests use synthetic JPEG, PNG, HEIC, MP4 and MOV files. They check compressed image and media samples, location stripping, authenticated downloads, corrupted files and size limits. Playwright covers event attachments, coordinate consent, albums, keyboard navigation and video range responses.

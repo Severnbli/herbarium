@@ -47,11 +47,22 @@ const MASTER_KEY_BYTES = 32;
 const MiB = 1024 * 1024;
 const GiB = 1024 * MiB;
 const MAX_UPLOAD_BYTES = GiB + MiB;
+const binaryByteUnits = new Map([
+	['kib', 1024],
+	['mib', MiB],
+	['gib', GiB]
+]);
 
 const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
 
 const byteLimit = (fallback: number, maximum: number) =>
-	z.coerce.number().int().positive().max(maximum).default(fallback);
+	z.preprocess((raw) => {
+		if (typeof raw !== 'string') return raw;
+		const match = /^(\d+)\s*(kib|mib|gib)$/i.exec(raw.trim());
+		if (!match) return raw;
+		const [, quantity, unit] = match;
+		return Number(quantity) * binaryByteUnits.get(unit!.toLowerCase())!;
+	}, z.coerce.number().int().positive().max(maximum).default(fallback));
 
 const envSchema = z.object({
 	ORIGIN: z.string().trim().optional(),
