@@ -84,7 +84,11 @@ function eventLayers(style: StyleSpecification, entries: MapEntry[], dark: boole
 			type: 'symbol',
 			source: sourceId,
 			filter: ['!', ['has', 'point_count']],
-			layout: { 'icon-image': ['get', 'kind'], 'icon-anchor': 'bottom', 'icon-allow-overlap': true }
+			layout: {
+				'icon-image': ['concat', 'events:', ['get', 'kind']],
+				'icon-anchor': 'bottom',
+				'icon-allow-overlap': true
+			}
 		}
 	);
 	return style;

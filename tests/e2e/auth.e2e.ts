@@ -41,6 +41,7 @@ const PROTECTED = [
 	'/map/assets/basemap.pmtiles',
 	'/map/assets/glyphs/Noto%20Sans%20Regular/0-255.pbf',
 	'/map/assets/markers.png',
+	'/map/assets/protomaps-light.png',
 	'/memories',
 	'/memories/new',
 	'/memories/import',
@@ -1004,10 +1005,13 @@ test('loads local tiles and glyphs, searches for places and edits pins without o
 	const sprite = page.waitForResponse(
 		(response) => /markers(?:@2x)?\.png$/.test(response.url()) && response.ok()
 	);
+	const basemapSprite = page.waitForResponse(
+		(response) => /protomaps-(?:light|dark)(?:@2x)?\.png$/.test(response.url()) && response.ok()
+	);
 	const document = await page.goto('/map' + filters);
 	expect(document?.headers()['content-security-policy']).toMatch(/worker-src 'self'(?:;|$)/);
 	expect(document?.headers()['content-security-policy']).not.toContain('unsafe-eval');
-	const [range] = await Promise.all([tile, glyph, sprite]);
+	const [range] = await Promise.all([tile, glyph, sprite, basemapSprite]);
 	expect(range.headers()['content-range']).toMatch(/^bytes 0-\d+\/\d+$/);
 	const overview = page.locator('.maplibregl-canvas');
 	await expect(overview).toBeVisible();
