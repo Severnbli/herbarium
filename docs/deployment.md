@@ -139,7 +139,7 @@ The scheduler queues reminders up to 14 days ahead. Reminders that were configur
 
 Install one Protomaps v4 vector basemap archive as `basemap.pmtiles` at the root of the data volume. The archive must contain MVT tiles in PMTiles v3 format. Place search and event pins work before installation. The app opens the archive locally; the browser gets byte ranges from Herbarium after sign-in.
 
-On a computer with Internet access, install the [PMTiles CLI](https://docs.protomaps.com/pmtiles/cli) and choose a v4 archive URL from the [Protomaps build list](https://maps.protomaps.com/builds). Replace the example URL and adjust the bounding box and zoom for your coverage. This example covers Belarus and nearby countries at up to zoom 11. Higher maximum zooms increase the download and storage requirements.
+On a computer with Internet access, install the [PMTiles CLI](https://docs.protomaps.com/pmtiles/cli) and choose a v4 archive URL from the [Protomaps build list](https://maps.protomaps.com/builds). Replace the example URL and adjust the bounding box and zoom for your coverage. This example covers Belarus and nearby countries at up to zoom 11. Use `--maxzoom=15` for street-level coverage with individual building footprints and more points of interest. Higher maximum zooms increase the download and storage requirements.
 
 ```sh
 pmtiles extract https://build.protomaps.com/YYYYMMDD.pmtiles basemap.pmtiles \
@@ -155,7 +155,7 @@ docker compose exec -T herbarium sh -c \
   < basemap.pmtiles
 ```
 
-For a bare Node installation, put the file in `DATA_DIR` with read access for the process. Reload the map after replacing the archive. Keep HTTP range headers intact through the reverse proxy and disable shared caching for authenticated responses. The map shows [OpenStreetMap](https://www.openstreetmap.org/copyright) attribution. Glyphs, marker sprites and the GeoNames place database ship with Herbarium.
+For a bare Node installation, put the file in `DATA_DIR` with read access for the process. Reload the map after replacing the archive. Keep HTTP range headers intact through the reverse proxy and disable shared caching for authenticated responses. The map shows [OpenStreetMap](https://www.openstreetmap.org/copyright) attribution. Glyphs, basemap and marker sprites, and the GeoNames place database ship with Herbarium.
 
 ## Sessions and sign-in
 
