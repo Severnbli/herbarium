@@ -1,4 +1,5 @@
-import type { Locale } from './index.ts';
+import { formatEventDate, type EventDate } from '#lib/domain/event-date.ts';
+import { messages, type Locale } from './index.ts';
 
 const UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
 	['year', 365 * 24 * 3600],
@@ -49,4 +50,10 @@ export function formatDateTime(locale: Locale, date: Date | number, timeZone: st
 /** CLDR week starts for the supported locales, numbered like Date.getDay(). */
 export function weekStartsOn(locale: Locale): 0 | 1 {
 	return ({ be: 1, ru: 1, en: 0 } as const)[locale];
+}
+
+export function formatEventDateLabel(locale: Locale, value: EventDate): string {
+	return value.dateMode === 'undated'
+		? messages(locale).event.undated
+		: formatEventDate(locale, value);
 }

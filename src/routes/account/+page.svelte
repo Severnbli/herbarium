@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import Field from '#lib/components/Field.svelte';
+	import ThemePicker from '#lib/components/ThemePicker.svelte';
 	import NewPasswordFields from '#lib/components/NewPasswordFields.svelte';
 	import { formatRelative } from '#lib/i18n/format.ts';
-	import { messages } from '#lib/i18n/index.ts';
+	import { LOCALES, messages } from '#lib/i18n/index.ts';
 	import type { PageProps } from './$types';
 
 	let { data, form }: PageProps = $props();
@@ -45,8 +46,30 @@
 	/>
 {/snippet}
 
-<h1>{m.account.title}</h1>
-<p><a href={resolve('/account/export')}>{m.archive.title}</a></p>
+<div class="account-heading">
+	<div>
+		<h1>{m.account.title}</h1>
+		<p>{data.user?.displayName}</p>
+	</div>
+	<form method="POST" action={resolve('/logout')}>
+		<button class="secondary">{m.nav.signOut}</button>
+	</form>
+</div>
+
+<section class="preferences" aria-labelledby="account-preferences">
+	<h2 id="account-preferences">{m.account.preferences}</h2>
+	{@render problem('language')}
+	<form method="POST" action="?/language">
+		<label for="language">{m.language.label}</label>
+		<select id="language" name="locale" value={data.locale}>
+			{#each LOCALES as locale (locale)}
+				<option value={locale} lang={locale}>{m.language[locale]}</option>
+			{/each}
+		</select>
+		<button class="secondary">{m.language.save}</button>
+	</form>
+	<ThemePicker {m} />
+</section>
 
 <section aria-labelledby="reminder-preferences">
 	<h2 id="reminder-preferences">{m.reminder.preferences}</h2>
@@ -184,10 +207,12 @@
 					{#if session.current}({m.account.thisDevice}){/if}
 					– {m.account.lastActive(formatRelative(data.locale, session.lastSeenAt, data.now))}
 				</span>
-				<form method="POST" action="?/revokeSession">
-					<input type="hidden" name="id" value={session.id} />
-					<button>{m.account.signOutDevice}</button>
-				</form>
+				{#if !session.current}
+					<form method="POST" action="?/revokeSession">
+						<input type="hidden" name="id" value={session.id} />
+						<button class="secondary">{m.account.signOutDevice}</button>
+					</form>
+				{/if}
 			</li>
 		{/each}
 	</ul>
@@ -197,7 +222,43 @@
 	</form>
 </section>
 
+<p class="export"><a href={resolve('/account/export')}>{m.archive.title}</a></p>
+
 <style>
+	.account-heading,
+	.preferences form {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.65rem;
+	}
+	.account-heading {
+		justify-content: space-between;
+	}
+	.account-heading h1,
+	.account-heading p {
+		margin: 0;
+		overflow-wrap: anywhere;
+	}
+	.account-heading p {
+		color: var(--muted);
+	}
+	.preferences {
+		padding: 0.85rem clamp(0.85rem, 4vw, 1.35rem);
+		background: var(--linen);
+		border: 1px solid var(--line);
+		border-radius: var(--radius);
+	}
+	.preferences h2 {
+		margin-top: 0;
+	}
+	.preferences form {
+		margin-block-end: 0.85rem;
+	}
+	.export {
+		margin-top: 2rem;
+	}
+
 	.reminder-option {
 		display: flex;
 		gap: 0.5rem;

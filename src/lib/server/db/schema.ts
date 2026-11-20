@@ -177,7 +177,7 @@ export const event = sqliteTable(
 		category: text('category', { enum: ['none', 'trip', 'date', 'milestone'] })
 			.notNull()
 			.default('none'),
-		dateMode: text('date_mode', { enum: ['date', 'timed'] }).notNull(),
+		dateMode: text('date_mode', { enum: ['date', 'timed', 'undated'] }).notNull(),
 		precision: text('precision', { enum: ['day', 'month', 'year'] }).notNull(),
 		startDate: text('start_date'),
 		endDate: text('end_date'),
@@ -185,7 +185,7 @@ export const event = sqliteTable(
 		endsAt: timestamp('ends_at'),
 		timeZone: text('time_zone'),
 		/** Local calendar date, also for timed events, for stable sorting and year filters. */
-		sortDate: text('sort_date').notNull(),
+		sortDate: text('sort_date'),
 		recurrenceRule: text('recurrence_rule'),
 		occasionType: text('occasion_type', { enum: ['general', 'anniversary', 'birthday'] }),
 		createdBy: text('created_by')
@@ -208,7 +208,7 @@ export const event = sqliteTable(
 		),
 		check(
 			'event_dates',
-			sql`(${table.dateMode} = 'date' AND ${table.startDate} IS NOT NULL AND ${table.startsAt} IS NULL AND ${table.endsAt} IS NULL AND ${table.timeZone} IS NULL) OR (${table.dateMode} = 'timed' AND ${table.precision} = 'day' AND ${table.startsAt} IS NOT NULL AND ${table.timeZone} IS NOT NULL AND ${table.startDate} IS NULL AND ${table.endDate} IS NULL)`
+			sql`(${table.dateMode} = 'undated' AND ${table.kind} = 'plan' AND ${table.precision} = 'day' AND ${table.sortDate} IS NULL AND ${table.startDate} IS NULL AND ${table.endDate} IS NULL AND ${table.startsAt} IS NULL AND ${table.endsAt} IS NULL AND ${table.timeZone} IS NULL) OR (${table.sortDate} IS NOT NULL AND ((${table.dateMode} = 'date' AND ${table.startDate} IS NOT NULL AND ${table.startsAt} IS NULL AND ${table.endsAt} IS NULL AND ${table.timeZone} IS NULL) OR (${table.dateMode} = 'timed' AND ${table.precision} = 'day' AND ${table.startsAt} IS NOT NULL AND ${table.timeZone} IS NOT NULL AND ${table.startDate} IS NULL AND ${table.endDate} IS NULL)))`
 		)
 	]
 );
@@ -337,6 +337,25 @@ export const importReceipt = sqliteTable(
 	(table) => [
 		primaryKey({ columns: [table.importId, table.fingerprint] }),
 		index('import_receipt_memory_idx').on(table.memoryId)
+	]
+);
+
+/** One durable receipt per selected file, written with the memory and its destination. */
+export const uploadReceipt = sqliteTable(
+	'upload_receipt',
+	{
+		userId: text('user_id')
+			.notNull()
+			.references(() => user.id, { onDelete: 'cascade' }),
+		key: text('key').notNull(),
+		destination: text('destination').notNull(),
+		memoryId: text('memory_id')
+			.notNull()
+			.references(() => memory.id, { onDelete: 'cascade' })
+	},
+	(table) => [
+		primaryKey({ columns: [table.userId, table.key] }),
+		index('upload_receipt_memory_idx').on(table.memoryId)
 	]
 );
 

@@ -23,7 +23,7 @@
 
 <svelte:head><title>{m.calendar.title}</title></svelte:head>
 <h1>{m.calendar.title}</h1>
-<nav class="controls" aria-label={m.calendar.views}>
+<nav class="controls views" aria-label={m.calendar.views}>
 	{#each views as view (view)}
 		<a
 			href={resolve(`/calendar?view=${view}&date=${data.date}`)}
@@ -47,11 +47,14 @@
 		{/if}
 	</nav>
 </div>
-<form method="GET" class="jump">
-	<input type="hidden" name="view" value={data.view} />
-	<Field name="date" type="date" label={m.calendar.jump} value={data.date} required />
-	<button class="secondary">{m.calendar.go}</button>
-</form>
+<details class="date-jump">
+	<summary>{m.calendar.jump}</summary>
+	<form method="GET" class="jump">
+		<input type="hidden" name="view" value={data.view} />
+		<Field name="date" type="date" label={m.event.dateSection} value={data.date} required />
+		<button class="secondary">{m.calendar.go}</button>
+	</form>
+</details>
 
 <div class="grid" class:single={data.view === 'day'}>
 	{#each data.weekdays as label (label)}
@@ -129,16 +132,33 @@
 		align-items: center;
 		min-height: 2.75rem;
 	}
-	.controls a[aria-current] {
-		font-weight: bold;
-		text-decoration-thickness: 2px;
+	.views {
+		gap: 0.2rem;
+		margin-top: 0.6rem;
+	}
+	.views a {
+		padding-inline: 0.75rem;
+		border-radius: var(--radius);
+	}
+	.views a[aria-current] {
+		color: var(--paper);
+		background: var(--madder);
+		font-weight: 600;
+		text-decoration: none;
 	}
 	.period {
 		margin-top: 0.75rem;
 	}
+	.date-jump {
+		margin-block: 0.4rem 0.85rem;
+	}
+	.date-jump summary {
+		cursor: pointer;
+		color: var(--madder);
+	}
 	.jump {
 		align-items: end;
-		margin: 0.5rem 0 1rem;
+		margin-top: 0.55rem;
 	}
 	.jump :global(.field),
 	.jump button {
@@ -223,6 +243,7 @@
 	li a {
 		display: block;
 		color: var(--ink);
+		overflow-wrap: anywhere;
 	}
 	.entry-detail {
 		display: block;

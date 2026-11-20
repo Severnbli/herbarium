@@ -149,7 +149,8 @@ button:disabled {
 	opacity: 0.65;
 	cursor: default;
 }
-button.secondary {
+button.secondary,
+.button.secondary {
 	background: transparent;
 	color: var(--madder);
 }

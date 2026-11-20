@@ -28,14 +28,14 @@ const archivedEvent = z
 		lat: z.number().min(-90).max(90).nullable(),
 		lon: z.number().min(-180).max(180).nullable(),
 		category: z.enum(CATEGORIES),
-		dateMode: z.enum(['date', 'timed']),
+		dateMode: z.enum(['date', 'timed', 'undated']),
 		precision: z.enum(['day', 'month', 'year']),
 		startDate: localDate.nullable(),
 		endDate: localDate.nullable(),
 		startsAt: timestamp.nullable(),
 		endsAt: timestamp.nullable(),
 		timeZone: z.string().max(100).refine(validTimeZone).nullable(),
-		sortDate: localDate,
+		sortDate: localDate.nullable(),
 		recurrenceRule: z.string().max(32).nullable(),
 		occasionType: z.enum(OCCASION_TYPES).nullable(),
 		...author,
@@ -52,6 +52,15 @@ const archivedEvent = z
 			} else if (row.recurrenceRule || row.occasionType) {
 				return false;
 			}
+			if (row.dateMode === 'undated')
+				return (
+					row.kind === 'plan' &&
+					row.precision === 'day' &&
+					[row.startDate, row.endDate, row.startsAt, row.endsAt, row.timeZone, row.sortDate].every(
+						(field) => field === null
+					)
+				);
+			if (row.sortDate === null) return false;
 			if (row.dateMode === 'date') {
 				return (
 					row.startDate === row.sortDate &&
@@ -102,36 +111,38 @@ const archivedMemory = z
 const reminderOffset = z.custom<ReminderOffset>((value) =>
 	REMINDER_OFFSETS.some(({ minutes }) => minutes === value)
 );
-export const archiveManifest = z.strictObject({
-	version: z.literal(1),
-	exportedAt: timestamp,
-	authors: z
-		.array(z.strictObject({ id: mediaId, displayName, createdAt: timestamp }))
-		.max(MAX_ARCHIVE_ROWS),
-	events: z.array(archivedEvent).max(MAX_ARCHIVE_ROWS),
-	memories: z.array(archivedMemory).max(MAX_ARCHIVE_ROWS),
-	albums: z
-		.array(
-			z.strictObject({
-				id: mediaId,
-				title: z.string().min(1).max(120),
-				...author
-			})
-		)
-		.max(MAX_ARCHIVE_ROWS),
-	albumMemories: z
-		.array(z.strictObject({ albumId: mediaId, memoryId: mediaId }))
-		.max(MAX_ARCHIVE_ROWS),
-	reminders: z
-		.array(
-			z.strictObject({
-				eventId: mediaId,
-				minutes: reminderOffset,
-				createdAt: timestamp
-			})
-		)
-		.max(MAX_ARCHIVE_ROWS)
-});
+export const archiveManifest = z
+	.strictObject({
+		version: z.union([z.literal(1), z.literal(2)]),
+		exportedAt: timestamp,
+		authors: z
+			.array(z.strictObject({ id: mediaId, displayName, createdAt: timestamp }))
+			.max(MAX_ARCHIVE_ROWS),
+		events: z.array(archivedEvent).max(MAX_ARCHIVE_ROWS),
+		memories: z.array(archivedMemory).max(MAX_ARCHIVE_ROWS),
+		albums: z
+			.array(
+				z.strictObject({
+					id: mediaId,
+					title: z.string().min(1).max(120),
+					...author
+				})
+			)
+			.max(MAX_ARCHIVE_ROWS),
+		albumMemories: z
+			.array(z.strictObject({ albumId: mediaId, memoryId: mediaId }))
+			.max(MAX_ARCHIVE_ROWS),
+		reminders: z
+			.array(
+				z.strictObject({
+					eventId: mediaId,
+					minutes: reminderOffset,
+					createdAt: timestamp
+				})
+			)
+			.max(MAX_ARCHIVE_ROWS)
+	})
+	.refine((row) => row.version === 2 || row.events.every((event) => event.dateMode !== 'undated'));
 
 export type ArchiveManifest = z.output<typeof archiveManifest>;
 

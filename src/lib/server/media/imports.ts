@@ -191,8 +191,9 @@ export function organizeImport(
 			}
 			if (
 				input.acceptGps &&
-				(!files.some((file) => file.id === input.gpsId) ||
-					!acceptCoordinates(tx, gps.key, gps.sessionId, input.gpsId!, input.gpsToken!))
+				(!eventId ||
+					!files.some((file) => file.id === input.gpsId) ||
+					!acceptCoordinates(tx, gps.key, gps.sessionId, input.gpsId!, input.gpsToken!, eventId))
 			) {
 				throw new ImportError('coordinates');
 			}

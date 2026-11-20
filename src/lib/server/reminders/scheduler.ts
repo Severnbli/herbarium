@@ -55,7 +55,7 @@ export type DeliveryResult = 'sent' | 'retry' | 'failed' | 'uncertain';
 type SendReminder = (message: ReminderMail) => Promise<DeliveryResult>;
 
 function startsBetween(value: ReminderEvent, first: string, last: string) {
-	if (value.precision !== 'day') return [];
+	if (value.precision !== 'day' || !value.sortDate) return [];
 	if (value.kind === 'occasion' && value.recurrenceRule) {
 		return expandOccasion(
 			{

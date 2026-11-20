@@ -8,37 +8,58 @@
 	import type { PageProps } from './$types';
 	let { data }: PageProps = $props();
 	const m = $derived(messages(data.locale));
+	const filtered = $derived(!!(data.filters.kind || data.filters.year || data.filters.date));
 	const pageQuery = (page: number) =>
-		`${new URLSearchParams({ kind: data.filters.kind, year: data.filters.year, page: String(page) })}`;
+		`${new URLSearchParams({ kind: data.filters.kind, year: data.filters.year, date: data.filters.date, page: String(page) })}`;
 </script>
 
 <svelte:head><title>{m.event.listTitle}</title></svelte:head>
 <div class="heading">
 	<h1>{m.event.listTitle}</h1>
-	<a class="button" href={resolve('/events/new')}>{m.event.newTitle}</a>
+	<div class="heading-actions">
+		<!-- The query is appended to a resolved route. -->
+		<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
+		<a class="button secondary" href={resolve('/events/new') + '?kind=plan'}>{m.event.newPlan}</a>
+		<a class="button" href={resolve('/events/new')}>{m.event.newTitle}</a>
+	</div>
 </div>
-<form method="GET" action={resolve('/events')} class="filters">
-	<Select
-		name="kind"
-		label={m.event.kind}
-		value={data.filters.kind}
-		options={[
-			{ value: '', label: m.event.all },
-			{ value: 'moment', label: m.event.moment },
-			{ value: 'plan', label: m.event.plan },
-			{ value: 'occasion', label: m.event.occasion }
-		]}
-	/>
-	<Field
-		name="year"
-		label={m.event.year}
-		value={data.filters.year}
-		inputmode="numeric"
-		pattern="[0-9]{4}"
-		maxlength={4}
-	/>
-	<button>{m.event.filter}</button>
-</form>
+<details class="filter-panel" open={filtered}>
+	<summary>{m.event.filters}</summary>
+	<form method="GET" action={resolve('/events')} class="filters">
+		<Select
+			name="kind"
+			label={m.event.kind}
+			value={data.filters.kind}
+			options={[
+				{ value: '', label: m.event.all },
+				{ value: 'moment', label: m.event.moment },
+				{ value: 'plan', label: m.event.plan },
+				{ value: 'occasion', label: m.event.occasion }
+			]}
+		/>
+		<Field
+			name="year"
+			label={m.event.year}
+			value={data.filters.year}
+			inputmode="numeric"
+			pattern="[0-9]{4}"
+			maxlength={4}
+		/>
+		<Select
+			name="date"
+			label={m.event.dateFilter}
+			value={data.filters.date}
+			options={[
+				{ value: '', label: m.event.all },
+				{ value: 'undated', label: m.event.undated }
+			]}
+		/>
+		<div class="filter-actions">
+			<button>{m.event.filter}</button>
+			{#if filtered}<a href={resolve('/events')}>{m.event.clearFilters}</a>{/if}
+		</div>
+	</form>
+</details>
 {#if data.rows.length === 0}
 	<Ornament />
 	<p>{m.event.empty}</p>
@@ -77,6 +98,7 @@
 
 <style>
 	.heading,
+	.heading-actions,
 	.filters,
 	nav {
 		display: flex;
@@ -88,20 +110,35 @@
 	.heading h1 {
 		margin: 0;
 	}
+	.filter-panel {
+		margin-block: 1rem 1.5rem;
+		padding: 0.65rem 0.9rem;
+		background: var(--linen);
+		border: 1px solid var(--line);
+		border-radius: var(--radius);
+	}
+	.filter-panel summary {
+		cursor: pointer;
+		font-weight: 600;
+	}
 	.filters {
-		margin-block: 1.5rem;
 		align-items: end;
 	}
 	.filters :global(.field) {
 		flex: 1;
 		min-width: 8rem;
 	}
-	.filters button {
-		margin-bottom: 0.75rem;
+	.filter-actions {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 0.75rem;
+		margin-block: 0.25rem 0.8rem;
 	}
 	.events {
 		display: grid;
-		gap: 1.5rem;
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+		gap: 1.25rem;
 	}
 	.kind {
 		color: var(--moss);

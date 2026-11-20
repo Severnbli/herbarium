@@ -57,27 +57,37 @@ Use `formatDateOnly` for calendar dates, `formatDateTime` with an explicit IANA 
 
 Open questions belong in the roadmap until resolved. Move their outcome into the decision log when the choice affects future work.
 
+## Account and navigation
+
+Use **Account** in the masthead to change language or appearance, manage security settings, or sign out. Language follows the member across devices. Appearance follows the browser's saved preference.
+
+## Invitations
+
+As an owner, open **Members**, enter an optional label, and choose **Create an invite link**. The new link and expiry appear below the form. Copy the link using the button or select the link text. The invitation list keeps the label and status for later management.
+
 ## Events
 
 Open `/events` after signing in. All members can create and edit moments, plans and occasions, filter by kind and local start year, and delete an event after confirming their own password. Forms work without JavaScript. Date-only input formats are `YYYY-MM-DD`, `YYYY-MM` and `YYYY` for day/month/year precision. Timed input uses `YYYY-MM-DDTHH:mm` and an explicit IANA time zone. Repeated DST clock times require independent earlier/later choices for start and end; nonexistent clock times are rejected. The event's local start year determines its list filter even if the stored UTC instant falls in another year.
 
 Unit tests cover date precision, DST gaps/folds, validation, sanitized notes, encrypted storage, pagination, plan transitions and independent route authentication checks. Browser tests exercise shared editing and password-confirmed deletion without JavaScript, local-year filters, blocked early completion, and mobile event pages in all three locales and both themes.
 
+Select **New plan** to save a title with **No date yet**, or choose this date type while editing a plan. Find it through the Home link or open **Filters** in Events. On the detail page, use **Set date** or **Change date** to update its schedule and **Add place** or **Change place** to update its location.
+
 For an occasion, use day precision and open **For occasions** to set the repeat schedule. Select **Yearly** for anniversaries and birthdays to show the anniversary number or age. Custom schedules repeat by a chosen number of days, weeks, months or years. The occasion detail shows the localized schedule and upcoming dates.
 
 ## Memories
 
-Choose **Add a memory** from an event to attach a photo or video, or from **Memories** to upload it to the gallery. Supported files are JPEG, PNG, HEIC and H.264 or HEVC videos in MP4 or MOV. Members can edit alt text and captions, download cleaned originals and organize memories in multiple albums. With JavaScript enabled, the gallery opens a lightbox with Previous and Next buttons, left and right arrow keys, and Escape to close. The same links open memory pages without JavaScript.
+Choose **Add photos and videos** from an event, an album, or **Memories**. Select photos and videos together and follow each file's progress. Retry individual failures while the upload page is open. **Upload one file** is also available and works without JavaScript. Supported files are JPEG, PNG, HEIC and H.264 or HEVC videos in MP4 or MOV. Members can edit alt text and captions, download cleaned originals and organize memories in multiple albums. Open **Change event link** on a memory's page to attach, move, or detach it. With JavaScript enabled, the gallery opens a lightbox with Previous and Next buttons, left and right arrow keys, and Escape to close. The same links open memory pages without JavaScript.
 
 The media integration tests use synthetic JPEG, PNG, HEIC, MP4 and MOV files. They check compressed image and media samples, location stripping, authenticated downloads, corrupted files and size limits. Playwright covers event attachments, coordinate consent, albums, keyboard navigation and video range responses.
 
 ## Calendar
 
-Open **Calendar** to switch between month, week and day views or jump to any date. On narrow screens, the month and week are displayed as stacked days. Use the plus button on a date to prefill a new event. Past dates default to moments and today or future dates default to plans. The kind can still be changed on the event form.
+Open **Calendar** to switch between month, week and day views. Expand **Jump to date** to enter a specific day. On narrow screens, the month and week are displayed as stacked days. Use the plus button on a date to prefill a new event. Past dates default to moments and today or future dates default to plans. The kind can still be changed on the event form.
 
 ## Reminders
 
-Open an event with day precision and choose the reminder times. Members use **Calendar and email preferences** under **Account** to set their time zone and opt in with their own email address. All-day reminders are scheduled relative to 09:00 in that zone. Timed events use the time zone saved on the event. An offset of one day is 24 elapsed hours, including across DST changes.
+Open an event with day precision, expand **Reminders**, and choose the reminder times. Members use **Calendar and email preferences** under **Account** to set their time zone and opt in with their own email address. All-day reminders are scheduled relative to 09:00 in that zone. Timed events use the time zone saved on the event. An offset of one day is 24 elapsed hours, including across DST changes.
 
 Tests cover all-day and timed schedules across DST, durable claims and retries across database reopen, opt-out and event changes, and successful SMTP delivery and failure handling against a local test relay. See the [deployment guide](deployment.md#reminder-email) to configure mail for an instance.
 

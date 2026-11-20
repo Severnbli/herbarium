@@ -76,7 +76,7 @@ function snapshot(db: Db) {
 			chunks.push(part);
 		}
 
-		append(`{"version":1,"exportedAt":${JSON.stringify(new Date())}`);
+		append(`{"version":2,"exportedAt":${JSON.stringify(new Date())}`);
 		for (const [name, rows] of Object.entries(collections)) {
 			append(`,"${name}":[`);
 			let count = 0;

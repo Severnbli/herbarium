@@ -161,6 +161,42 @@ Done when: events can be pinned and browsed on a map that works fully offline fr
 - [x] README: features, screenshots, deployment with reverse proxy and HTTPS, configuration reference
 - [x] **v1.0 release** (`v1.0.0`)
 
+## Phase 12 – Clearer screens and easier editing
+
+The event detail page already links to an edit form that can change dates and places. Make those actions visible where members look for them, and use the same layout principles across the main workflows.
+
+- [x] Walk through invitations, event creation and editing, calendar quick-create, and Memories using synthetic content on phone and desktop. Check that each screen makes its primary action clear, that inputs appear in the order they are needed, and that success and error messages appear beside the action that produced them.
+- [x] Keep the shared navigation focused on the app sections. Put language, appearance and sign-out in **Account**, with a direct link in the masthead.
+- [x] Keep event filters, the calendar's date jump, memory reassignment and delete confirmation available on demand. Give albums and bulk import distinct links in Memories.
+- [x] Start with **Members**. Present the optional “Who is this for?” label and **Create invite link** together. After submission, show the new link, **Copy link**, and expiry directly below the button. Keep existing invitations and their management controls in a separate section. Keep the link selectable without JavaScript and use the existing owner-only invite flow.
+- [x] Refresh the home, event list and detail, and Memories screens with clearer headings, consistent spacing, and a consistent position for the main action. Use the existing linen and Kupalle palettes, botanical details on cards and empty states, and readable metadata that leaves room for photos and notes.
+- [x] Put **Edit event** near the title and give missing or existing details direct **Add place**, **Change place**, and **Change date** links into the shared editor. Group the form around title and type, date, place, and notes. Reveal recurrence and advanced date options where relevant, preserve fields after errors, and keep the edit flow usable without JavaScript. Make caption, alt text, and album name editing easy to find in Memories.
+- [x] Verify invite creation by keyboard and review the main flows at phone and desktop sizes in Belarusian, Russian and English, in both themes. Check focus, contrast, text wrapping, feedback and reduced motion.
+
+Done when a member can find and edit an event's details from its page, and an owner can create and copy an invite link in the order the page presents the actions.
+
+## Phase 13 – Plans with an optional date
+
+- [x] Let members save a Plan with just a title and add an optional place or notes immediately. Offer **No date yet** on the shared create and edit form, and **Set date** on an undated plan's detail page. Allow an existing Plan's date to be changed or cleared. Moments and Occasions still require a date, and calendar quick-create still prefills the selected day.
+- [x] Store an undated plan explicitly without a start, end, time zone or sort date. Validate it in the database and on the server, and preserve event IDs, authors, attachments and existing dated records through the migration. Update portable export and restore to round-trip undated plans and accept existing archives.
+- [x] Make undated plans easy to find with a **No date yet** filter in Events and a link from Home. Year filters and chronological views use dated events. Plans with coordinates can still appear on the map with a **No date yet** label when no year is selected.
+- [x] Enable countdowns, reminders and completion only once the plan meets the existing date requirements for each action. If a date is cleared or changed, invalidate pending deliveries tied to the old schedule and preserve sent delivery history. Completing the plan keeps its identity and attachments.
+- [x] Cover create, edit, clear, schedule and complete flows without JavaScript. Test migration with attached media and reminders, archive round trips, and date-dependent views and filters.
+
+Done when a member can save a weekend idea, reopen the same plan to add a place and pick a date, and then see it on the calendar.
+
+## Phase 14 – Add photos and videos together
+
+Events already support multiple attachments, and the general bulk importer already has an upload queue. Bring that experience to everyday uploads from event pages and Memories.
+
+- [x] Offer **Add photos and videos** on every event kind, including undated plans, and from Memories and album pages. Accept mixed selections of supported images and videos in one pick. Show the destination before upload. Attach the files to the selected event or album, or leave them as standalone gallery items when started from Memories.
+- [x] Reuse the bulk import queue where practical. Show progress and status for each file, retry failed files independently, and keep successful files when one fails. Give retries a stable receipt so an interrupted response cannot create duplicate attachments. Keep the existing single-file form available without JavaScript.
+- [x] Return members to the chosen destination after upload. Show newly added photos and video posters together with access to playback and per-item caption and alt text. Let members attach an existing gallery item to an event, move it to another event, or detach it while keeping the file and its album memberships.
+- [x] Use the existing authenticated, encrypted upload pipeline and its file type, byte and processing limits for each file. Offer photo locations only by explicit consent for the intended event, and preserve existing coordinates. Keep location metadata out of originals and previews.
+- [x] Verify that one selection containing photos and a video appears in the right event or album and in Memories. Test standalone uploads, a failed file among successful ones, safe retry, reassignment, playback, and that a location offer cannot apply to another event after reassignment.
+
+Done when a member can add several photos and videos in one pass and see every successful upload in the chosen destination.
+
 ---
 
 ## Decisions

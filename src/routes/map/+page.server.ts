@@ -1,5 +1,5 @@
 import { error } from '@sveltejs/kit';
-import { formatEventDate } from '#lib/domain/event-date.ts';
+import { formatEventDateLabel } from '#lib/i18n/format.ts';
 import type { MapEntry } from '#lib/maps/entry.ts';
 import { db } from '#lib/server/app.ts';
 import { requireUser } from '#lib/server/auth/guard.ts';
@@ -22,7 +22,7 @@ export const load: PageServerLoad = async (event) => {
 		id: row.id,
 		kind: row.kind,
 		title: row.title,
-		date: formatEventDate(event.locals.locale, row),
+		date: formatEventDateLabel(event.locals.locale, row),
 		place: row.place,
 		lat: row.lat,
 		lon: row.lon,

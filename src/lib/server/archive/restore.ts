@@ -94,7 +94,7 @@ function validateReferences(manifest: ArchiveManifest) {
 		links.size !== manifest.albumMemories.length ||
 		manifest.albumMemories.some((row) => !albums.has(row.albumId) || !memories.has(row.memoryId)) ||
 		reminders.size !== manifest.reminders.length ||
-		manifest.reminders.some((row) => events.get(row.eventId)?.precision !== 'day')
+		manifest.reminders.some((row) => !events.has(row.eventId))
 	) {
 		throw new RestoreError('The archive contains invalid relationships.');
 	}

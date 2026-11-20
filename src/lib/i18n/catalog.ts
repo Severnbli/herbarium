@@ -6,6 +6,23 @@ export function messages(locale: Locale) {
 	return {
 		appName: m.appName({}, { locale }),
 		memory: {
+			changeEventLink: m.memory_changeEventLink({}, { locale }),
+			uploadProgress: (complete: number, total: number) =>
+				m.memory_uploadProgress({ complete, total }, { locale }),
+			noMatchingEvents: m.memory_noMatchingEvents({}, { locale }),
+			eventSearch: m.memory_eventSearch({}, { locale }),
+			addMedia: m.memory_addMedia({}, { locale }),
+			singleUpload: m.memory_singleUpload({}, { locale }),
+			destination: (name: string) => m.memory_destination({ name }, { locale }),
+			retry: m.memory_retry({}, { locale }),
+			ready: m.memory_ready({}, { locale }),
+			uploaded: m.memory_uploaded({}, { locale }),
+			interrupted: m.memory_interrupted({}, { locale }),
+			return: (name: string) => m.memory_return({ name }, { locale }),
+			event: m.memory_event({}, { locale }),
+			noEvent: m.memory_noEvent({}, { locale }),
+			saveEvent: m.memory_saveEvent({}, { locale }),
+			gpsSaved: m.memory_gpsSaved({}, { locale }),
 			title: m.memory_title({}, { locale }),
 			upload: m.memory_upload({}, { locale }),
 			file: m.memory_file({}, { locale }),
@@ -119,6 +136,20 @@ export function messages(locale: Locale) {
 			latest: m.timeline_latest({}, { locale })
 		},
 		event: {
+			clearFilters: m.event_clearFilters({}, { locale }),
+			filters: m.event_filters({}, { locale }),
+			dateSection: m.event_dateSection({}, { locale }),
+			newPlan: m.event_newPlan({}, { locale }),
+			undated: m.event_undated({}, { locale }),
+			undatedPlans: m.event_undatedPlans({}, { locale }),
+			dateFilter: m.event_dateFilter({}, { locale }),
+			schedule: m.event_schedule({}, { locale }),
+			changeDate: m.event_changeDate({}, { locale }),
+			addPlace: m.event_addPlace({}, { locale }),
+			changePlace: m.event_changePlace({}, { locale }),
+			details: m.event_details({}, { locale }),
+			undatedHint: m.event_undatedHint({}, { locale }),
+			dateRequired: m.event_dateRequired({}, { locale }),
 			recurrence: m.event_recurrence({}, { locale }),
 			occasionSettings: m.event_occasionSettings({}, { locale }),
 			repeat: m.event_repeat({}, { locale }),
@@ -293,6 +324,10 @@ export function messages(locale: Locale) {
 			recent: m.home_recent({}, { locale })
 		},
 		members: {
+			inviteNew: m.members_inviteNew({}, { locale }),
+			copyLink: m.members_copyLink({}, { locale }),
+			copied: m.members_copied({}, { locale }),
+			copyFailed: m.members_copyFailed({}, { locale }),
 			title: m.members_title({}, { locale }),
 			you: m.members_you({}, { locale }),
 			role: {
@@ -326,6 +361,7 @@ export function messages(locale: Locale) {
 			revoke: m.members_revoke({}, { locale })
 		},
 		mediaImport: {
+			bulk: m.mediaImport_bulk({}, { locale }),
 			title: m.mediaImport_title({}, { locale }),
 			intro: m.mediaImport_intro({}, { locale }),
 			start: m.mediaImport_start({}, { locale }),
@@ -368,6 +404,7 @@ export function messages(locale: Locale) {
 			unavailable: m.archive_unavailable({}, { locale })
 		},
 		account: {
+			preferences: m.account_preferences({}, { locale }),
 			title: m.account_title({}, { locale }),
 			passwordTitle: m.account_passwordTitle({}, { locale }),
 			changePassword: m.account_changePassword({}, { locale }),

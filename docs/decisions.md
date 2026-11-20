@@ -152,3 +152,19 @@ At startup a migration transaction re-wraps media keys and re-seals TOTP fields.
 **Status:** Accepted.
 
 Bulk import reuses the individual upload pipeline and commits each clean original before a member reviews organization. This makes completed files durable and keeps partial raw files in anonymous memory. Members can pause and resume the queue or reselect the same files after reopening it. An interrupted file starts again. The database stores an instance-keyed HMAC of raw uploads for duplicate detection and an import-scoped receipt to skip completed transfers. The random HMAC key lives inside SQLCipher, so encrypted volume restores and master key rotation preserve duplicate detection. Portable exports contain cleaned originals and omit upload fingerprints and import state. GPS offers stay in page memory and follow the same consent rule as individual uploads.
+
+## Undated plans and their reminder schedules
+
+**Status:** Accepted.
+
+A plan can be stored with an explicit undated mode and null date, time zone and sort fields. Assigning, changing or clearing its date updates the same event row, including when it already has memories or a place. The database checks that only plans can be undated. The migration rebuilds the event table with referential actions suspended and checks the foreign keys before committing.
+
+The Events list can filter for undated plans. Calendar, timeline, countdowns and reminder scheduling operate on saved dates. Pinned undated plans may appear on the map in views without a year filter. Plans retain their saved reminder offsets while undated, and schedule changes discard pending deliveries while retaining prior claims and receipts. Portable archives use manifest version 2 and the restore command accepts version 1 for existing dated records.
+
+## Upload receipts for a selected destination
+
+**Status:** Accepted.
+
+Uploads started from an event, album or the Memories gallery reuse the bounded, encrypted one-file pipeline. The browser sends one request per selected file with a random receipt key. The server commits the memory, album membership when applicable, and a member- and destination-bound receipt together. Retrying the same selection reuses that key, including after a response is lost. Receipts are operational data and stay in the encrypted database.
+
+Members can place an existing memory in a different event or keep it in the gallery without changing album memberships. A location offer from an event upload is bound to that event as well as the memory and session. Bulk import can use its separate unbound offer only when it creates an event for the reviewed group.

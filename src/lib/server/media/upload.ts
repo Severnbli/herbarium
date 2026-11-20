@@ -2,17 +2,20 @@ import { type Hmac } from 'node:crypto';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import Busboy from '@fastify/busboy';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import type { Config } from '#lib/server/config.ts';
 import { generateId } from '#lib/server/crypto/tokens.ts';
 import type { Db } from '#lib/server/db/index.ts';
 import {
+	album,
+	albumMemory,
 	event,
 	importReceipt,
 	mediaFile,
 	memory,
-	memoryFingerprint
+	memoryFingerprint,
+	uploadReceipt
 } from '#lib/server/db/schema.ts';
 import { mediaFingerprintKey, newMediaFingerprint } from './fingerprint.ts';
 import { checkImportFile, ImportError, isDuplicate, requireImport } from './imports.ts';
@@ -33,6 +36,17 @@ interface ImportTarget {
 	sessionActive: () => boolean;
 }
 
+interface BatchReceipt {
+	key: string;
+	destination: string;
+	requireSession: () => void;
+}
+
+interface DirectTarget {
+	albumId: string | null;
+	receipt?: BatchReceipt;
+}
+
 interface UploadedMemory {
 	id: string;
 	coordinates: { lat: number; lon: number } | null;
@@ -42,12 +56,22 @@ interface UploadedMemory {
 type UploadResult = UploadedMemory | { status: 'saved' | 'duplicate' };
 type UploadInstance = { db: Db; config: Config; wrappingKey: Buffer };
 
+function hasReceipt(db: Db, actorId: string, receipt: BatchReceipt): boolean {
+	const row = db
+		.select({ destination: uploadReceipt.destination })
+		.from(uploadReceipt)
+		.where(and(eq(uploadReceipt.userId, actorId), eq(uploadReceipt.key, receipt.key)))
+		.get();
+	if (row && row.destination !== receipt.destination) throw new UploadError('invalid');
+	return !!row;
+}
+
 export function uploadMemory(
 	request: Request,
 	instance: UploadInstance,
 	actorId: string,
-	eventId: null,
-	target: ImportTarget
+	eventId: string | null,
+	target: ImportTarget | DirectTarget
 ): Promise<UploadResult>;
 export function uploadMemory(
 	request: Request,
@@ -60,9 +84,13 @@ export async function uploadMemory(
 	instance: UploadInstance,
 	actorId: string,
 	eventId: string | null,
-	importTarget?: ImportTarget
+	target?: ImportTarget | DirectTarget
 ): Promise<UploadResult> {
 	const { db, config, wrappingKey } = instance;
+	const importTarget = target && 'fingerprint' in target ? target : undefined;
+	const direct = target && 'albumId' in target ? target : undefined;
+	const receipt = direct?.receipt;
+	const albumId = direct?.albumId;
 	const { maxFileBytes, maxRequestBytes } = config.limits;
 	const contentType = request.headers.get('content-type');
 	if (!request.body || !contentType?.toLowerCase().startsWith('multipart/form-data;')) {
@@ -73,6 +101,7 @@ export async function uploadMemory(
 		if (!/^\d{1,20}$/.test(declared)) throw new UploadError('invalid');
 		if (Number(declared) > maxRequestBytes) throw new UploadError('size');
 	}
+	if (receipt && hasReceipt(db, actorId, receipt)) return { status: 'saved' };
 	if (uploadInProgress) throw new UploadError('busy');
 
 	const parser = makeParser(contentType, maxFileBytes);
@@ -143,6 +172,10 @@ export async function uploadMemory(
 		const now = new Date();
 		const status = db.transaction(
 			(tx) => {
+				if (receipt) {
+					receipt.requireSession();
+					if (hasReceipt(tx, actorId, receipt)) return 'saved';
+				}
 				if (importTarget) {
 					if (!importTarget.sessionActive()) throw new ImportError('session');
 					requireImport(tx, importTarget.id, actorId);
@@ -165,6 +198,8 @@ export async function uploadMemory(
 				) {
 					throw new UploadError('invalid');
 				}
+				if (albumId && !tx.select({ id: album.id }).from(album).where(eq(album.id, albumId)).get())
+					throw new UploadError('invalid');
 				tx.insert(memory)
 					.values({
 						id,
@@ -191,6 +226,16 @@ export async function uploadMemory(
 						})
 						.run();
 				}
+				if (albumId) tx.insert(albumMemory).values({ albumId, memoryId: id }).run();
+				if (receipt)
+					tx.insert(uploadReceipt)
+						.values({
+							userId: actorId,
+							key: receipt.key,
+							destination: receipt.destination,
+							memoryId: id
+						})
+						.run();
 				return 'uploaded';
 			},
 			{ behavior: 'immediate' }
