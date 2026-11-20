@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, isNotNull, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import type { Db } from '../db/index.ts';
 import { event, memory } from '../db/schema.ts';
@@ -36,13 +36,14 @@ export function listTimeline(db: Db, query: z.input<typeof timelineQuery>) {
 	const direction = newer ? 'newer' : 'older';
 	const order = newer ? asc : desc;
 	const scope = and(
+		isNotNull(event.sortDate),
 		kind ? eq(event.kind, kind) : undefined,
 		category ? eq(event.category, category) : undefined
 	);
 	const rows = db
 		.select({
 			id: event.id,
-			sortDate: event.sortDate,
+			sortDate: sql<string>`${event.sortDate}`,
 			kind: event.kind,
 			category: event.category,
 			title: event.title,

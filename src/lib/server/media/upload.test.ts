@@ -237,7 +237,7 @@ describe('private memory uploads', () => {
 				expect(await sharp(image.bytes).metadata()).toMatchObject({ width: 36, height: 48 });
 			}
 			const key = deriveKeys(test.key).field;
-			const proof = offerCoordinates(key, 'test-session', result.id, result.coordinates!);
+			const proof = offerCoordinates(key, 'test-session', result.id, eventId, result.coordinates!);
 			expect(acceptCoordinates(test.db, key, 'other-session', result.id, proof)).toBe(false);
 			expect(acceptCoordinates(test.db, key, 'test-session', result.id, proof)).toBe(true);
 			expect(acceptCoordinates(test.db, key, 'test-session', result.id, proof)).toBe(false);

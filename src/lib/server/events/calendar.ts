@@ -137,6 +137,7 @@ export function calendarEntries(db: Db, first: string, last: string, locale: Loc
 		.all();
 
 	const entries = rows.flatMap((row) => {
+		if (!row.sortDate) return [];
 		const entry = (date: string, value: EventDate, count?: number) => ({
 			id: row.id,
 			title: row.title,

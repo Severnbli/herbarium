@@ -35,9 +35,9 @@ export const eventFormSchema = z
 		lat: coordinate(-90, 90),
 		lon: coordinate(-180, 180),
 		category: z.enum(CATEGORIES),
-		dateMode: z.enum(['date', 'timed']),
+		dateMode: z.enum(['date', 'timed', 'undated']),
 		precision: z.enum(PRECISIONS),
-		start: z.string().trim().min(1).max(32),
+		start: z.string().trim().max(32),
 		end: z.string().trim().max(32),
 		timeZone: z.string().trim().max(100),
 		disambiguation: z.enum(DISAMBIGUATIONS),
@@ -46,12 +46,16 @@ export const eventFormSchema = z
 	.superRefine((value, context) => {
 		const issue = (path: string, message: string) =>
 			context.addIssue({ code: 'custom', path: [path], message });
+		if ((value.lat === '') !== (value.lon === '')) issue('lat', 'Coordinates require a pair');
+		if (value.dateMode === 'undated') {
+			if (value.kind !== 'plan') issue('dateMode', 'Only plans may be undated');
+			return;
+		}
 		if (value.kind === 'occasion') {
 			if (value.precision !== 'day') issue('precision', 'Occasions require day precision');
 			if (value.occasionType !== 'general' && value.repeat !== 'yearly')
 				issue('occasionType', 'Birthdays and anniversaries require yearly recurrence');
 		}
-		if ((value.lat === '') !== (value.lon === '')) issue('lat', 'Coordinates require a pair');
 		if (value.dateMode === 'timed' && value.precision !== 'day')
 			issue('precision', 'Timed dates require day precision');
 
@@ -110,6 +114,7 @@ export const eventFilters = z.strictObject({
 		.regex(/^(?:[0-9]{4})?$/)
 		.refine((v) => v !== '0000')
 		.default(''),
+	date: z.enum(['', 'undated']).default(''),
 	page: z
 		.string()
 		.regex(/^[1-9]\d{0,5}$/)

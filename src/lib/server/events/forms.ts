@@ -26,7 +26,7 @@ export function parseEventForm(data: FormData) {
 				repeat: ['yearly', 'monthly', 'custom'],
 				frequency: FREQUENCIES,
 				occasionType: OCCASION_TYPES,
-				dateMode: ['date', 'timed'],
+				dateMode: ['date', 'timed', 'undated'],
 				precision: ['day', 'month', 'year'],
 				category: ['none', 'trip', 'date', 'milestone'],
 				disambiguation: ['reject', 'earlier', 'later'],

@@ -49,7 +49,7 @@ export async function checkReceipt(
 	return (await response.json()) as UploadReply;
 }
 
-export function sendImportFile(
+export function sendMediaFile(
 	url: string,
 	file: File,
 	fingerprint: string,

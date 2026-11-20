@@ -5,19 +5,22 @@
 	import type { PageProps } from './$types';
 	let { data, form }: PageProps = $props();
 	const m = $derived(messages(data.locale));
+	const heading = $derived(data.values.dateMode === 'undated' ? m.event.newPlan : m.event.newTitle);
 </script>
 
-<svelte:head><title>{m.event.newTitle}</title></svelte:head>
-<h1>{m.event.newTitle}</h1>
-<EventForm
-	{m}
-	locale={data.locale}
-	basemap={data.basemap}
-	values={form?.values ?? data.values}
-	fields={form?.fields}
-	problem={form?.problem}
-	submitLabel={m.event.create}
-	cancelHref={data.calendarDate
-		? `${resolve('/calendar')}?view=day&date=${data.calendarDate}`
-		: resolve('/events')}
-/>
+<svelte:head><title>{heading}</title></svelte:head>
+<h1>{heading}</h1>
+{#key data.values}
+	<EventForm
+		{m}
+		locale={data.locale}
+		basemap={data.basemap}
+		values={form?.values ?? data.values}
+		fields={form?.fields}
+		problem={form?.problem}
+		submitLabel={m.event.create}
+		cancelHref={data.calendarDate
+			? `${resolve('/calendar')}?view=day&date=${data.calendarDate}`
+			: resolve('/events')}
+	/>
+{/key}

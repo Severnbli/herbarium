@@ -24,7 +24,10 @@ import {
 import { openMedia } from '#lib/server/media/format.ts';
 import { openMediaFile, removeMediaFile, storeMediaFile } from '#lib/server/media/store.ts';
 import { unwrapDataKey } from '#lib/server/crypto/keys.ts';
+import { createEvent } from '#lib/server/events/events.ts';
+import { emptyEventForm } from '#lib/server/events/schemas.ts';
 import { createExport } from './export.ts';
+import { archiveManifest } from './manifest.ts';
 import { restoreArchive } from './restore.ts';
 
 const cleanups: (() => unknown)[] = [];
@@ -81,6 +84,18 @@ it('streams a consistent snapshot and restores content to a different encrypted 
 			updatedAt: date
 		})
 		.run();
+	const undatedId = createEvent(
+		from.db,
+		author,
+		{
+			...emptyEventForm,
+			kind: 'plan',
+			dateMode: 'undated',
+			title: 'Synthetic unscheduled plan'
+		},
+		date
+	);
+	from.db.insert(eventReminder).values({ eventId: undatedId, minutes: 0, createdAt: date }).run();
 	from.db.transaction((tx) => {
 		for (let index = 0; index < 250; index++) {
 			tx.insert(event)
@@ -165,7 +180,12 @@ it('streams a consistent snapshot and restores content to a different encrypted 
 		from.db.select().from(event).orderBy(event.id).all()
 	);
 	expect(to.db.select().from(albumMemory).all()).toEqual([{ albumId, memoryId }]);
-	expect(to.db.select().from(eventReminder).all()).toMatchObject([{ eventId, minutes: 1440 }]);
+	expect(to.db.select().from(eventReminder).all()).toEqual(
+		expect.arrayContaining([
+			expect.objectContaining({ eventId, minutes: 1440 }),
+			expect.objectContaining({ eventId: undatedId, minutes: 0 })
+		])
+	);
 	expect(to.db.select().from(memory).all()).toMatchObject([
 		{ id: memoryId, createdBy: author, captureDate: '2020-02-29' }
 	]);
@@ -199,4 +219,52 @@ it('streams a consistent snapshot and restores content to a different encrypted 
 	await expect(restoreArchive(to.db, to.config, to.keyWrap, archive, signal)).rejects.toThrow(
 		'fresh instance'
 	);
+});
+
+it('accepts the version 1 manifest for a dated plan', () => {
+	const author = generateId();
+	const date = '2030-03-04T12:00:00.000Z';
+	const archived = {
+		id: generateId(),
+		kind: 'plan',
+		title: 'A dated plan',
+		notes: '',
+		place: '',
+		lat: null,
+		lon: null,
+		category: 'none',
+		dateMode: 'date',
+		precision: 'day',
+		startDate: '2030-03-04',
+		sortDate: '2030-03-04',
+		endDate: null,
+		startsAt: null,
+		endsAt: null,
+		timeZone: null,
+		recurrenceRule: null,
+		occasionType: null,
+		createdBy: author,
+		createdAt: date,
+		updatedAt: date
+	};
+	const legacy = {
+		version: 1,
+		exportedAt: date,
+		authors: [{ id: author, displayName: 'Account', createdAt: date }],
+		events: [archived],
+		memories: [],
+		albums: [],
+		albumMemories: [],
+		reminders: []
+	};
+	expect(archiveManifest.parse(legacy).events[0]).toMatchObject({
+		id: archived.id,
+		dateMode: 'date'
+	});
+	expect(
+		archiveManifest.safeParse({
+			...legacy,
+			events: [{ ...archived, dateMode: 'undated', startDate: null, sortDate: null }]
+		}).success
+	).toBe(false);
 });

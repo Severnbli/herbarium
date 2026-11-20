@@ -1,4 +1,4 @@
-import { and, count, desc, eq, gte, lte } from 'drizzle-orm';
+import { and, count, desc, eq, gte, isNull, lte } from 'drizzle-orm';
 import {
 	disambiguationFor,
 	hasHappened,
@@ -8,7 +8,7 @@ import {
 } from '#lib/domain/event-date.ts';
 import { generateId } from '../crypto/tokens.ts';
 import type { Db } from '../db/index.ts';
-import { event, user } from '../db/schema.ts';
+import { event, reminderDelivery, user } from '../db/schema.ts';
 import {
 	expandOccasion,
 	readRecurrence,
@@ -30,7 +30,8 @@ export const PAGE_SIZE = 30;
 function storage(input: EventForm) {
 	const value = eventFormSchema.parse(input);
 	const timed = value.dateMode === 'timed';
-	const startDate = timed ? null : normalizeDate(value.start, value.precision);
+	const undated = value.dateMode === 'undated';
+	const startDate = value.dateMode === 'date' ? normalizeDate(value.start, value.precision) : null;
 	return {
 		kind: value.kind,
 		recurrenceRule:
@@ -52,16 +53,17 @@ function storage(input: EventForm) {
 		lat: value.lat === '' ? null : Number(value.lat),
 		lon: value.lon === '' ? null : Number(value.lon),
 		dateMode: value.dateMode,
-		precision: value.precision,
+		precision: undated ? ('day' as const) : value.precision,
 		startDate,
-		endDate: !timed && value.end ? normalizeDate(value.end, value.precision) : null,
+		endDate:
+			value.dateMode === 'date' && value.end ? normalizeDate(value.end, value.precision) : null,
 		startsAt: timed ? localToInstant(value.start, value.timeZone, value.disambiguation) : null,
 		endsAt:
 			timed && value.end
 				? localToInstant(value.end, value.timeZone, value.endDisambiguation)
 				: null,
 		timeZone: timed ? value.timeZone : null,
-		sortDate: startDate ?? value.start.slice(0, 10)
+		sortDate: undated ? null : (startDate ?? value.start.slice(0, 10))
 	};
 }
 
@@ -97,6 +99,18 @@ export function updateEvent(db: Db, id: string, input: EventForm, now = new Date
 			.set({ ...values, updatedAt: now })
 			.where(eq(event.id, id))
 			.run();
+		if (
+			previous.dateMode !== values.dateMode ||
+			previous.precision !== values.precision ||
+			previous.sortDate !== values.sortDate ||
+			previous.startsAt?.getTime() !== values.startsAt?.getTime() ||
+			previous.timeZone !== values.timeZone ||
+			previous.recurrenceRule !== values.recurrenceRule
+		) {
+			tx.delete(reminderDelivery)
+				.where(and(eq(reminderDelivery.eventId, id), eq(reminderDelivery.status, 'pending')))
+				.run();
+		}
 	});
 }
 
@@ -120,10 +134,14 @@ export function deleteEvent(db: Db, id: string): void {
 	});
 }
 
-export function listEvents(db: Db, input: { kind?: string; year?: string; page?: string }) {
+export function listEvents(
+	db: Db,
+	input: { kind?: string; year?: string; date?: string; page?: string }
+) {
 	const filters = eventFilters.parse(input);
 	const where = and(
 		filters.kind ? eq(event.kind, filters.kind) : undefined,
+		filters.date === 'undated' ? isNull(event.sortDate) : undefined,
 		filters.year ? gte(event.sortDate, `${filters.year}-01-01`) : undefined,
 		filters.year ? lte(event.sortDate, `${filters.year}-12-31`) : undefined
 	);
@@ -134,7 +152,7 @@ export function listEvents(db: Db, input: { kind?: string; year?: string; page?:
 		.from(event)
 		.innerJoin(user, eq(event.createdBy, user.id))
 		.where(where)
-		.orderBy(desc(event.sortDate), desc(event.id))
+		.orderBy(desc(filters.date === 'undated' ? event.createdAt : event.sortDate), desc(event.id))
 		.limit(PAGE_SIZE)
 		.offset((page - 1) * PAGE_SIZE)
 		.all();
@@ -198,7 +216,7 @@ export function eventToForm(value: EventRecord): EventForm {
 		precision: value.precision,
 		start: timed
 			? instantToLocal(value.startsAt!, value.timeZone!)
-			: value.startDate!.slice(0, length),
+			: (value.startDate?.slice(0, length) ?? ''),
 		end: timed
 			? value.endsAt
 				? instantToLocal(value.endsAt, value.timeZone!)

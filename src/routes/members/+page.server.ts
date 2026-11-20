@@ -74,14 +74,17 @@ export const actions: Actions = {
 			await event.request.formData()
 		);
 		if (!parsed.success) return fail(400, { problem: 'invalid' as const });
-		const { token, publicId } = createInvite(db(), owner.id, parsed.data.label || null);
+		const { token, publicId, expiresAt } = createInvite(db(), owner.id, parsed.data.label || null);
 		audit(db(), 'invite_created', {
 			actorId: owner.id,
 			ip: clientIp(event),
 			details: { invite: publicId }
 		});
 		// The link is returned once, in this response only.
-		return { inviteLink: new URL(`/invite/${token}`, getConfig().origin).href };
+		return {
+			inviteLink: new URL(`/invite/${token}`, getConfig().origin).href,
+			expiresAt: expiresAt.getTime()
+		};
 	},
 
 	revokeInvite: async (event) => {

@@ -7,7 +7,7 @@ export const DISAMBIGUATIONS = ['reject', 'earlier', 'later'] as const;
 export type Disambiguation = (typeof DISAMBIGUATIONS)[number];
 
 export interface EventDate {
-	dateMode: 'date' | 'timed';
+	dateMode: 'date' | 'timed' | 'undated';
 	precision: Precision;
 	startDate: string | null;
 	endDate: string | null;
@@ -75,6 +75,7 @@ export function disambiguationFor(value: Date, timeZone: string): Disambiguation
 }
 
 export function formatEventDate(locale: Locale, value: EventDate): string {
+	if (value.dateMode === 'undated') throw new RangeError('Undated plan has no date to format');
 	const format = (date: string | Date) =>
 		new Intl.DateTimeFormat(
 			locale,
@@ -94,6 +95,7 @@ export function formatEventDate(locale: Locale, value: EventDate): string {
 
 /** Date-only periods finish at the next UTC day/month/year boundary. End dates are inclusive. */
 export function hasHappened(value: EventDate, now = new Date()): boolean {
+	if (value.dateMode === 'undated') return false;
 	if (value.dateMode === 'timed')
 		return (value.endsAt ?? value.startsAt)!.getTime() <= now.getTime();
 	const last = Temporal.PlainDate.from((value.endDate ?? value.startDate)!);

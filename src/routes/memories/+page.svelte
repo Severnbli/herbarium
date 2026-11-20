@@ -20,23 +20,25 @@
 {#if data.event}
 	<a href={resolve('/events/[id]', { id: data.event.id })}>{data.event.title}</a>
 {/if}
-<div class="heading">
+<header class="heading">
 	<h1>{m.memory.title}</h1>
-	<!-- eslint-disable svelte/no-navigation-without-resolve -->
 	<a
 		class="button"
-		href={`${resolve('/memories/new')}${data.event ? `?event=${data.event.id}` : ''}`}
-		>{m.memory.upload}</a
+		href={data.event ? resolve(`/memories/new?event=${data.event.id}`) : resolve('/memories/new')}
 	>
-	<!-- eslint-enable svelte/no-navigation-without-resolve -->
-	{#if !data.event}
-		<a class="button secondary" href={resolve('/memories/import')}>{m.mediaImport.title}</a>
-	{/if}
-</div>
+		{m.memory.addMedia}
+	</a>
+</header>
+{#if !data.event}
+	<div class="gallery-actions">
+		<a href="#albums">{m.memory.albums}</a>
+		<a href={resolve('/memories/import')}>{m.mediaImport.bulk}</a>
+	</div>
+{/if}
 <MemoryGrid rows={data.rows} locale={data.locale} {m} />
 <MemoryPagination page={data.page} hasNext={data.hasNext} url={pageUrl} {m} />
 {#if !data.event}
-	<section aria-labelledby="albums">
+	<section class="albums" aria-labelledby="albums">
 		<h2 id="albums">{m.memory.albums}</h2>
 		{#if data.albums.length}
 			<ul>
@@ -64,6 +66,23 @@
 	.heading h1 {
 		flex: 1 1 auto;
 		margin: 0;
+	}
+
+	.gallery-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.45rem 1.1rem;
+		margin-block: 0.65rem 1rem;
+	}
+	.albums {
+		background: var(--linen);
+		padding: clamp(1rem, 4vw, 1.5rem);
+		border: 1px solid var(--line);
+		border-top: 3px solid var(--moss);
+		border-radius: var(--radius);
+	}
+	.albums h2 {
+		margin-top: 0;
 	}
 	li {
 		overflow-wrap: anywhere;

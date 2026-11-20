@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { createTestDb } from '../testing.ts';
 import { addUser } from '../auth/fixtures.ts';
-import { event } from '../db/schema.ts';
+import { event, eventReminder, reminderDelivery } from '../db/schema.ts';
 import {
 	createEvent,
 	findEvent,
@@ -15,6 +15,8 @@ import {
 	eventToForm,
 	PAGE_SIZE
 } from './events.ts';
+import { saveReminderOffsets } from '../reminders/preferences.ts';
+import { listTimeline } from './timeline.ts';
 import { emptyEventForm } from './schemas.ts';
 let fixture: ReturnType<typeof createTestDb>;
 beforeEach(() => {
@@ -105,6 +107,54 @@ describe('shared events', () => {
 		expect(completed.createdBy).toBe(row.createdBy);
 		expect(listEvents(db, {}).total).toBe(1);
 	});
+	it('keeps undated plans out of the timeline and resets pending reminders when rescheduled', async () => {
+		const { db } = fixture;
+		const actor = await addUser(db, 'planner');
+		const when = new Date('2030-03-01T10:00:00Z');
+		const id = createEvent(db, actor, { ...base, kind: 'plan' }, when);
+		db.insert(eventReminder).values({ eventId: id, minutes: 0 }).run();
+		db.insert(reminderDelivery)
+			.values([
+				{
+					eventId: id,
+					userId: actor,
+					occurrence: '2030-03-03',
+					minutes: 0,
+					dueAt: when,
+					nextAttemptAt: when,
+					status: 'sent'
+				},
+				{
+					eventId: id,
+					userId: actor,
+					occurrence: '2030-03-04',
+					minutes: 0,
+					dueAt: when,
+					nextAttemptAt: when,
+					status: 'pending'
+				}
+			])
+			.run();
+		updateEvent(db, id, { ...base, kind: 'plan', dateMode: 'undated' }, when);
+		expect(findEvent(db, id)).toMatchObject({
+			createdBy: actor,
+			dateMode: 'undated',
+			startDate: null,
+			sortDate: null
+		});
+		expect(listEvents(db, { date: 'undated' }).rows.map((row) => row.id)).toEqual([id]);
+		expect(listEvents(db, { year: '2020' }).rows).toHaveLength(0);
+		expect(listTimeline(db, {}).rows).toHaveLength(0);
+		expect(saveReminderOffsets(db, id, [15], when)).toBe(false);
+		expect(db.select().from(reminderDelivery).all()).toMatchObject([{ status: 'sent' }]);
+		expect(() => completePlan(db, id, when)).toThrow('not_finished');
+		expect(() => updateEvent(db, id, { ...base, dateMode: 'undated' }, when)).toThrow();
+		updateEvent(db, id, { ...base, kind: 'plan' }, when);
+		expect(db.select().from(eventReminder).all()).toMatchObject([{ eventId: id, minutes: 0 }]);
+		completePlan(db, id, when);
+		expect(findEvent(db, id)).toMatchObject({ kind: 'moment', createdAt: when });
+	});
+
 	it('stores one occasion, expands by range and removes the rule when changing kind', async () => {
 		const { db } = fixture;
 		const actor = await addUser(db, 'alice');

@@ -1,6 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { z } from 'zod';
-import { formatEventDate, hasHappened } from '#lib/domain/event-date.ts';
+import { hasHappened } from '#lib/domain/event-date.ts';
+import { formatEventDateLabel } from '#lib/i18n/format.ts';
 import { db } from '#lib/server/app.ts';
 import { audit } from '#lib/server/audit.ts';
 import { requireUser } from '#lib/server/auth/guard.ts';
@@ -30,7 +31,7 @@ export const load: PageServerLoad = async (event) => {
 			basemap: row.lat !== null && row.lon !== null && (await hasBasemap(getConfig().dataDir)),
 			reminderOffsets: getReminderOffsets(db(), id),
 			memories: listMemories(db(), { eventId: id }),
-			dateLabel: formatEventDate(event.locals.locale, row),
+			dateLabel: formatEventDateLabel(event.locals.locale, row),
 			notesHtml: renderNotes(row.notes),
 			recurrence:
 				row.recurrenceRule && row.occasionType
@@ -77,7 +78,7 @@ export const actions: Actions = {
 		const actor = requireUser(event);
 		const id = routeEventId(event.params);
 		const parsed = parseForm(z.strictObject({ currentPassword }), await event.request.formData());
-		if (!parsed.success) return fail(400, { problem: 'invalid' as const });
+		if (!parsed.success) return fail(400, { deleteProblem: true, problem: 'invalid' as const });
 		const check = await confirmPassword(
 			db(),
 			actor.id,
@@ -86,8 +87,12 @@ export const actions: Actions = {
 		);
 		if (!check.ok)
 			return check.reason === 'rate_limited'
-				? fail(429, { problem: 'rate_limited' as const, minutes: minutesUntil(check.retryAfterMs) })
-				: fail(400, { problem: 'wrong_password' as const });
+				? fail(429, {
+						deleteProblem: true,
+						problem: 'rate_limited' as const,
+						minutes: minutesUntil(check.retryAfterMs)
+					})
+				: fail(400, { deleteProblem: true, problem: 'wrong_password' as const });
 		try {
 			db().transaction((tx) => {
 				deleteEvent(tx, id);
