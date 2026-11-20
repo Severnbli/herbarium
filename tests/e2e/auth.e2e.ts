@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process';
-import { copyFileSync, mkdirSync, readFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
@@ -411,10 +411,15 @@ test('mixed upload retries preserve successful files and link to the intended de
 }, testInfo) => {
 	mkdirSync(testInfo.outputDir, { recursive: true });
 	const gpsPhoto = testInfo.outputPath('synthetic-batch-gps.jpg');
-	const photo = await sharp({ create: { width: 32, height: 32, channels: 3, background: 'olive' } })
-		.jpeg()
+	const photo = await sharp(randomBytes(640 * 640 * 3), {
+		raw: { width: 640, height: 640, channels: 3 }
+	})
+		.jpeg({ quality: 90, chromaSubsampling: '4:4:4' })
 		.toBuffer();
-	await sharp(photo).toFile(gpsPhoto);
+	// Media above the ordinary form limit still fits within the configured upload limit.
+	expect(photo.length).toBeGreaterThan(512 * 1024);
+	expect(photo.length).toBeLessThan(1024 * 1024);
+	writeFileSync(gpsPhoto, photo);
 	await run('exiftool', [
 		'-overwrite_original',
 		'-GPSLatitude=12.34',

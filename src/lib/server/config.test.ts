@@ -143,15 +143,33 @@ describe('loadConfig', () => {
 			});
 		});
 
-		it('rejects invalid numbers', () => {
-			const env = { ...prodEnv, MAX_FILE_BYTES: '-1' };
+		it.each([
+			['1Gib', '1025 MiB', 1024 ** 3, 1025 * 1024 ** 2],
+			['512 MiB', '525312 KiB', 512 * 1024 ** 2, 513 * 1024 ** 2]
+		])('parses %s per file and %s per request', (file, request, maxFileBytes, maxRequestBytes) => {
+			const env = { ...prodEnv, MAX_FILE_BYTES: file, MAX_REQUEST_BYTES: request };
+			expect(loadConfig(env, { production: true }).limits).toEqual({
+				maxFileBytes,
+				maxRequestBytes
+			});
+		});
+
+		it.each(['-1', '0 MiB', '512 MB', '1 GiB extra', '1025 MiB'])('rejects %s per file', (file) => {
+			const env = { ...prodEnv, MAX_FILE_BYTES: file };
 			expect(issuesOf(() => loadConfig(env, { production: true }))).toEqual([
 				expect.stringContaining('MAX_FILE_BYTES')
 			]);
 		});
 
+		it('rejects a request limit above the maximum', () => {
+			const env = { ...prodEnv, MAX_REQUEST_BYTES: '1026 MiB' };
+			expect(issuesOf(() => loadConfig(env, { production: true }))).toEqual([
+				expect.stringContaining('MAX_REQUEST_BYTES')
+			]);
+		});
+
 		it('requires the file limit to fit in the request limit', () => {
-			const env = { ...prodEnv, MAX_FILE_BYTES: '5000', MAX_REQUEST_BYTES: '1000' };
+			const env = { ...prodEnv, MAX_FILE_BYTES: '1GiB', MAX_REQUEST_BYTES: '512 MiB' };
 			expect(issuesOf(() => loadConfig(env, { production: true }))).toEqual([
 				expect.stringContaining('must not exceed')
 			]);
