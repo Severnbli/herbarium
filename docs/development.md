@@ -73,7 +73,7 @@ Unit tests cover date precision, DST gaps/folds, validation, sanitized notes, en
 
 Select **New plan** to save a title with **No date yet**, or choose this date type while editing a plan. Find it through the Home link or open **Filters** in Events. On the detail page, use **Set date** or **Change date** to update its schedule and **Add place** or **Change place** to update its location.
 
-For an occasion, use day precision and open **For occasions** to set the repeat schedule. Select **Yearly** for anniversaries and birthdays to show the anniversary number or age. Custom schedules repeat by a chosen number of days, weeks, months or years. The occasion detail shows the localized schedule and upcoming dates.
+For an occasion, use day precision and open **For occasions** to set the repeat schedule. Anniversaries and birthdays repeat yearly and show the anniversary number or age. For a general occasion, set **Repeat every** and select days, weeks, months or years. The occasion detail shows the localized schedule and upcoming dates.
 
 ## Memories
 
@@ -85,7 +85,7 @@ The media integration tests use synthetic JPEG, PNG, HEIC, MP4 and MOV files. Th
 
 ## Calendar
 
-Open **Calendar** to switch between month, week and day views. Expand **Jump to date** to enter a specific day. On narrow screens, the month and week are displayed as stacked days. Use the plus button on a date to prefill a new event. Past dates default to moments and today or future dates default to plans. The kind can still be changed on the event form.
+Open **Calendar** to switch between month, week and day views. Use **Jump to date** to choose a specific day. On narrow screens, the month and week are displayed as stacked days. Use the plus button on a date to prefill a new event. Past dates default to moments and today or future dates default to plans. The kind can still be changed on the event form.
 
 ## Reminders
 
@@ -101,7 +101,7 @@ Tests cover cursor boundaries with events on the same date, deleted anchors, com
 
 ## Maps
 
-Open **Map** to filter pinned events by kind, local start year and category. The list beside the map links to the same events and works without JavaScript. On a create or edit form, expand **Location on the map** to search for a place, paste a latitude and longitude pair, or set and drag a pin. The two coordinate fields also work without JavaScript. On an existing event, attach a photo to review its GPS suggestion before saving the point.
+Open **Map** to filter pinned events by kind, local start year and category. Saved places can be added, edited and deleted from the map. Events can use a saved place or a new location for each stop. The list beside the map links to the same events and works without JavaScript. On a create or edit form, expand **Location on the map** to search for a place, paste a latitude and longitude pair, or set and drag a pin. The two coordinate fields also work without JavaScript. On an existing event, attach a photo to review its GPS suggestion before saving the point.
 
 Playwright installs a small [Belarus tileset fixture](../tests/fixtures/maps/README.md) and blocks outbound HTTP requests during the map flow. It checks authenticated ranges, glyph and sprite delivery, pin editing, event previews and keyboard access to the list. See the [deployment guide](deployment.md#offline-maps) to install a larger map for development.
 
