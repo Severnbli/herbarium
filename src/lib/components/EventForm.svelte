@@ -12,6 +12,8 @@
 		m,
 		locale,
 		basemap,
+		places = [],
+		savedPlaces,
 		eventId,
 		values,
 		fields = [],
@@ -22,6 +24,8 @@
 		m: Messages;
 		locale: Locale;
 		basemap: boolean;
+		places?: { place: string; lat: string; lon: string }[];
+		savedPlaces: { id: string; place: string; lat: number; lon: number }[];
 		eventId?: string;
 		values: EventForm;
 		fields?: string[];
@@ -29,6 +33,8 @@
 		submitLabel: string;
 		cancelHref: string;
 	} = $props();
+	let nextKey = 0;
+	let stops = $state(untrack(() => places.map((initial) => ({ key: nextKey++, initial }))));
 	let mounted = $state(false);
 	let kind = $state<string>(untrack(() => values.kind));
 	let mode = $state<string>(untrack(() => values.dateMode));
@@ -214,12 +220,37 @@
 				{locale}
 				{basemap}
 				{eventId}
+				{savedPlaces}
 				initial={values}
 				latError={errorFor('lat')}
 				lonError={errorFor('lon')}
 				placeError={errorFor('place')}
 			/>
 		{/key}
+		{#each stops as stop (stop.key)}
+			<div class="stop">
+				<LocationPicker
+					{m}
+					{locale}
+					{basemap}
+					{savedPlaces}
+					initial={stop.initial}
+					extra
+					latError={errorFor('places')}
+				/>
+				{#if mounted}<button
+						class="secondary"
+						type="button"
+						onclick={() => (stops = stops.filter((s) => s.key !== stop.key))}>{m.map.remove}</button
+					>{/if}
+			</div>
+		{/each}
+		{#if mounted && stops.length < 100}<button
+				class="secondary"
+				type="button"
+				onclick={() => stops.push({ key: nextKey++, initial: { place: '', lat: '', lon: '' } })}
+				>{m.map.addStop}</button
+			>{/if}
 	</fieldset>
 	<Textarea
 		name="notes"
@@ -238,6 +269,10 @@
 </form>
 
 <style>
+	.stop {
+		border-block-start: 1px solid var(--line);
+		padding-block: 1rem;
+	}
 	fieldset {
 		min-width: 0;
 		margin-block: 1.25rem;

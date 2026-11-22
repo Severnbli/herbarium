@@ -14,6 +14,8 @@
 	<EventForm
 		{m}
 		locale={data.locale}
+		savedPlaces={data.savedPlaces}
+		places={form?.places ?? []}
 		basemap={data.basemap}
 		values={form?.values ?? data.values}
 		fields={form?.fields}

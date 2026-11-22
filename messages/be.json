@@ -414,5 +414,11 @@
 	"event_filters": "Фільтры",
 	"event_clearFilters": "Скінуць фільтры",
 	"mediaImport_bulk": "Масавы імпарт",
-	"memory_changeEventLink": "Змяніць сувязь з падзеяй"
+	"memory_changeEventLink": "Змяніць сувязь з падзеяй",
+	"map_saved": "Захаваныя месцы",
+	"map_useSaved": "Выбраць захаванае месца",
+	"map_savePlace": "Захаваць месца",
+	"map_addStop": "Дадаць яшчэ адно месца",
+	"map_remove": "Прыбраць",
+	"map_addSaved": "Захаваць новае месца"
 }

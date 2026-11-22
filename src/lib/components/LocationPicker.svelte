@@ -19,6 +19,8 @@
 		latError,
 		lonError,
 		placeError,
+		savedPlaces = [],
+		extra = false,
 		eventId
 	}: {
 		m: Messages;
@@ -28,9 +30,12 @@
 		latError?: string;
 		lonError?: string;
 		placeError?: string;
+		savedPlaces?: { id: string; place: string; lat: number; lon: number }[];
+		extra?: boolean;
 		eventId?: string;
 	} = $props();
 
+	const uid = $props.id();
 	let { lat, lon, place } = $state(
 		untrack(() => ({ lat: initial.lat, lon: initial.lon, place: initial.place }))
 	);
@@ -99,8 +104,26 @@
 	}
 </script>
 
+{#if mounted && savedPlaces.length}
+	<label for={uid + '-saved'}>{m.map.useSaved}</label>
+	<select
+		id={uid + '-saved'}
+		onchange={(e) => {
+			const chosen = savedPlaces.find((p) => p.id === e.currentTarget.value);
+			if (chosen) {
+				setPoint(chosen);
+				place = chosen.place;
+			}
+			e.currentTarget.value = '';
+		}}
+	>
+		<option value="">{m.map.useSaved}</option>
+		{#each savedPlaces as saved (saved.id)}<option value={saved.id}>{saved.place}</option>{/each}
+	</select>
+{/if}
 <Field
-	name="place"
+	id={uid + '-place'}
+	name={extra ? 'extra-place' : 'place'}
 	label={m.event.place}
 	value={place}
 	oninput={(event) => (place = event.currentTarget.value)}
@@ -112,9 +135,9 @@
 	{#if mounted && expanded}
 		<div class="tools">
 			<div class="input-action">
-				<label for="place-search">{m.map.searchLabel}</label>
+				<label for={uid + '-place-search'}>{m.map.searchLabel}</label>
 				<input
-					id="place-search"
+					id={uid + '-place-search'}
 					type="search"
 					bind:value={searchText}
 					maxlength={100}
@@ -152,7 +175,7 @@
 									setPoint(result);
 									place = result.name;
 									results = null;
-									document.getElementById('field-place')?.focus();
+									document.getElementById(uid + '-place')?.focus();
 								}}
 							>
 								{result.name} <small>{countries.of(result.country) ?? result.country}</small>
@@ -162,19 +185,19 @@
 				</ul>
 			{/if}
 			<div class="input-action">
-				<label for="paste-coordinates">{m.map.paste}</label>
+				<label for={uid + '-paste-coordinates'}>{m.map.paste}</label>
 				<input
-					id="paste-coordinates"
+					id={uid + '-paste-coordinates'}
 					bind:value={paste}
 					placeholder="53.9023, 27.5619"
 					maxlength={70}
 					aria-invalid={pasteError}
-					aria-describedby={pasteError ? 'paste-error' : undefined}
+					aria-describedby={pasteError ? uid + '-paste-error' : undefined}
 					onkeydown={(event) => onEnter(event, usePair)}
 				/>
 				<button type="button" class="secondary" onclick={usePair}>{m.map.usePin}</button>
 			</div>
-			{#if pasteError}<p role="status" id="paste-error">{m.map.badPair}</p>{/if}
+			{#if pasteError}<p role="status" id={uid + '-paste-error'}>{m.map.badPair}</p>{/if}
 			<p class="hint">{m.map.pickHint}</p>
 			<MapCanvas {locale} {m} {basemap} {position} onPick={setPoint} />
 		</div>
@@ -182,7 +205,8 @@
 	<p class="hint">{m.event.coordinatesHint}</p>
 	<div class="coordinate-fields">
 		<Field
-			name="lat"
+			id={uid + '-lat'}
+			name={extra ? 'extra-lat' : 'lat'}
 			label={m.event.lat}
 			value={lat}
 			oninput={(event) => (lat = event.currentTarget.value)}
@@ -191,7 +215,8 @@
 			maxlength={32}
 		/>
 		<Field
-			name="lon"
+			id={uid + '-lon'}
+			name={extra ? 'extra-lon' : 'lon'}
 			label={m.event.lon}
 			value={lon}
 			oninput={(event) => (lon = event.currentTarget.value)}

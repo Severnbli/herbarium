@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import LocationPicker from '#lib/components/LocationPicker.svelte';
 	import Field from '#lib/components/Field.svelte';
 	import MapCanvas from '#lib/components/MapCanvas.svelte';
 	import Ornament from '#lib/components/Ornament.svelte';
@@ -7,8 +8,19 @@
 	import { messages } from '#lib/i18n/index.ts';
 	import type { PageProps } from './$types';
 
-	let { data }: PageProps = $props();
+	let { data, form }: PageProps = $props();
 	const m = $derived(messages(data.locale));
+	const entries = $derived([
+		...data.entries,
+		...data.savedPlaces.map((p) => ({
+			...p,
+			kind: 'saved' as const,
+			title: p.place,
+			place: '',
+			date: '',
+			preview: null
+		}))
+	]);
 	const kinds = ['moment', 'plan', 'occasion'] as const;
 	const categories = ['trip', 'date', 'milestone', 'none'] as const;
 </script>
@@ -47,12 +59,32 @@
 </form>
 
 <div class="map-layout">
-	<MapCanvas locale={data.locale} {m} basemap={data.basemap} entries={data.entries} />
-	<section aria-labelledby="pinned-places">
+	<MapCanvas locale={data.locale} {m} basemap={data.basemap} {entries} />
+	<section aria-labelledby="saved-places">
+		<h2 id="saved-places">{m.map.saved}</h2>
+		{#if data.savedPlaces.length}<ul>
+				{#each data.savedPlaces as place (place.id)}<li>
+						{place.place}
+						<p>{place.lat}, {place.lon}</p>
+					</li>{/each}
+			</ul>{/if}
+		<details open={form?.invalid}>
+			<summary>{m.map.addSaved}</summary>
+			<form method="POST" action="?/save">
+				{#if form?.invalid}<p role="alert">{m.error.form}</p>{/if}
+				<LocationPicker
+					{m}
+					locale={data.locale}
+					basemap={data.basemap}
+					initial={{ lat: '', lon: '', place: '' }}
+				/>
+				<button>{m.map.savePlace}</button>
+			</form>
+		</details>
 		<h2 id="pinned-places">{m.map.places}</h2>
 		{#if data.entries.length}
 			<ul role="list">
-				{#each data.entries as entry (entry.id)}
+				{#each data.entries as entry (entry.pinId)}
 					<li class={entry.kind}>
 						<a href={resolve('/events/[id]', { id: entry.id })}>{entry.title}</a>
 						<p>{entry.date}</p>
@@ -94,6 +126,14 @@
 		border-inline-start: 1px solid var(--line);
 		max-height: clamp(23rem, 63vh, 42rem);
 		overflow: auto;
+	}
+	summary {
+		cursor: pointer;
+		color: var(--madder);
+		padding-block: 0.65rem;
+	}
+	details {
+		margin-bottom: 1.5rem;
 	}
 	h2 {
 		margin-top: 0;

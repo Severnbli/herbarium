@@ -113,11 +113,39 @@ const reminderOffset = z.custom<ReminderOffset>((value) =>
 );
 export const archiveManifest = z
 	.strictObject({
-		version: z.union([z.literal(1), z.literal(2)]),
+		version: z.union([z.literal(1), z.literal(2), z.literal(3)]),
 		exportedAt: timestamp,
 		authors: z
 			.array(z.strictObject({ id: mediaId, displayName, createdAt: timestamp }))
 			.max(MAX_ARCHIVE_ROWS),
+		savedPlaces: z
+			.array(
+				z.strictObject({
+					id: mediaId,
+					place: z.string().min(1).max(200),
+					lat: z.number().min(-90).max(90),
+					lon: z.number().min(-180).max(180),
+					createdBy: mediaId
+				})
+			)
+			.max(MAX_ARCHIVE_ROWS)
+			.default([]),
+		eventPlaces: z
+			.array(
+				z
+					.strictObject({
+						eventId: mediaId,
+						position: z.int().min(0).max(99),
+						place: z.string().max(200),
+						lat: z.number().min(-90).max(90).nullable(),
+						lon: z.number().min(-180).max(180).nullable()
+					})
+					.refine(
+						(p) => (p.lat === null) === (p.lon === null) && Boolean(p.place || p.lat !== null)
+					)
+			)
+			.max(MAX_ARCHIVE_ROWS)
+			.default([]),
 		events: z.array(archivedEvent).max(MAX_ARCHIVE_ROWS),
 		memories: z.array(archivedMemory).max(MAX_ARCHIVE_ROWS),
 		albums: z
@@ -142,7 +170,7 @@ export const archiveManifest = z
 			)
 			.max(MAX_ARCHIVE_ROWS)
 	})
-	.refine((row) => row.version === 2 || row.events.every((event) => event.dateMode !== 'undated'));
+	.refine((row) => row.version >= 2 || row.events.every((event) => event.dateMode !== 'undated'));
 
 export type ArchiveManifest = z.output<typeof archiveManifest>;
 

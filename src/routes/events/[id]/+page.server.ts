@@ -9,7 +9,13 @@ import { getConfig } from '#lib/server/config.ts';
 import { hasBasemap } from '#lib/server/maps/assets.ts';
 import { confirmPassword } from '#lib/server/auth/login.ts';
 import { currentPassword, parseForm } from '#lib/server/auth/schemas.ts';
-import { EventError, completePlan, deleteEvent, findEvent } from '#lib/server/events/events.ts';
+import {
+	EventError,
+	completePlan,
+	deleteEvent,
+	listEventPlaces,
+	findEvent
+} from '#lib/server/events/events.ts';
 import { handleEventError, routeEventId } from '#lib/server/events/forms.ts';
 import { describeOccasion } from '#lib/server/events/occasion-labels.ts';
 import { renderNotes } from '#lib/server/events/notes.ts';
@@ -26,9 +32,13 @@ export const load: PageServerLoad = async (event) => {
 	const id = routeEventId(event.params);
 	try {
 		const row = findEvent(db(), id);
+		const places = listEventPlaces(db(), id);
 		return {
 			event: row,
-			basemap: row.lat !== null && row.lon !== null && (await hasBasemap(getConfig().dataDir)),
+			places,
+			basemap:
+				(row.lat !== null || places.some((p) => p.lat !== null)) &&
+				(await hasBasemap(getConfig().dataDir)),
 			reminderOffsets: getReminderOffsets(db(), id),
 			memories: listMemories(db(), { eventId: id }),
 			dateLabel: formatEventDateLabel(event.locals.locale, row),

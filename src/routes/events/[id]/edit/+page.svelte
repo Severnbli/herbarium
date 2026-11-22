@@ -13,6 +13,8 @@
 	<EventForm
 		{m}
 		locale={data.locale}
+		savedPlaces={data.savedPlaces}
+		places={form?.places ?? data.places}
 		basemap={data.basemap}
 		eventId={data.id}
 		values={form?.values ?? data.values}

@@ -10,6 +10,25 @@
 	let { data, form }: PageProps = $props();
 	const m = $derived(messages(data.locale));
 	const edit = $derived(resolve('/events/[id]/edit', { id: data.event.id }));
+	const pins = $derived(
+		[data.event, ...data.places].flatMap((stop, index) =>
+			stop.lat === null || stop.lon === null
+				? []
+				: [
+						{
+							id: data.event.id,
+							pinId: String(index),
+							kind: data.event.kind,
+							title: data.event.title,
+							place: stop.place,
+							date: data.dateLabel,
+							lat: stop.lat,
+							lon: stop.lon,
+							preview: null
+						}
+					]
+		)
+	);
 	const undated = $derived(data.event.dateMode === 'undated');
 </script>
 
@@ -35,10 +54,15 @@
 		</div>
 		<div>
 			{#if data.event.place}<p>{data.event.place}</p>{/if}
+			{#each data.places as stop (stop.position)}<p>
+					{stop.place || [stop.lat, stop.lon].join(', ')}
+				</p>{/each}
 			<!-- The fragment targets the place fieldset on the resolved edit page. -->
 			<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
 			<a href={edit + '#event-place'}>
-				{data.event.place || data.event.lat !== null ? m.event.changePlace : m.event.addPlace}
+				{data.places.length || data.event.place || data.event.lat !== null
+					? m.event.changePlace
+					: m.event.addPlace}
 			</a>
 		</div>
 	</div>
@@ -94,15 +118,18 @@
 		{#if !data.canComplete}<p>{m.event.notFinished}</p>{/if}
 	</section>
 {/if}
-{#if data.event.lat !== null && data.event.lon !== null}
+{#if pins.length}
 	<section aria-labelledby="event-location">
 		<h2 id="event-location">{m.map.location}</h2>
-		<p>{m.event.lat}: {data.event.lat}, {m.event.lon}: {data.event.lon}</p>
+		{#each pins as pin (pin.pinId)}<p>
+				{pin.place ? pin.place + ' · ' : ''}{m.event.lat}: {pin.lat}, {m.event.lon}: {pin.lon}
+			</p>{/each}
 		<MapCanvas
 			locale={data.locale}
 			{m}
 			basemap={data.basemap}
-			position={{ lat: data.event.lat, lon: data.event.lon }}
+			entries={pins.length > 1 ? pins : undefined}
+			position={pins.length === 1 ? pins[0] : null}
 		/>
 	</section>
 {/if}

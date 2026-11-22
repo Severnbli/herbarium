@@ -12,6 +12,8 @@ import {
 	albumMemory,
 	auditLog,
 	event,
+	eventPlace,
+	savedPlace,
 	eventReminder,
 	invite,
 	keyRotation,
@@ -50,6 +52,7 @@ function checkFresh(db: Db) {
 			.from(auditLog)
 			.where(eq(auditLog.event, 'archive_restored'))
 			.get() ||
+		db.select({ id: savedPlace.id }).from(savedPlace).limit(1).get() ||
 		db.select({ id: event.id }).from(event).limit(1).get() ||
 		db.select({ id: memory.id }).from(memory).limit(1).get() ||
 		db.select({ id: album.id }).from(album).limit(1).get() ||
@@ -80,6 +83,7 @@ function indexRows<T extends { id: string }>(rows: T[]) {
 }
 
 function validateReferences(manifest: ArchiveManifest) {
+	indexRows(manifest.savedPlaces);
 	const authors = indexRows(manifest.authors);
 	const events = indexRows(manifest.events);
 	const memories = indexRows(manifest.memories);
@@ -87,7 +91,8 @@ function validateReferences(manifest: ArchiveManifest) {
 	const links = new Set(manifest.albumMemories.map((row) => `${row.albumId}:${row.memoryId}`));
 	const reminders = new Set(manifest.reminders.map((row) => `${row.eventId}:${row.minutes}`));
 	if (
-		[...manifest.events, ...manifest.memories, ...manifest.albums].some(
+		manifest.eventPlaces.some((p) => !events.has(p.eventId)) ||
+		[...manifest.savedPlaces, ...manifest.events, ...manifest.memories, ...manifest.albums].some(
 			(row) => !authors.has(row.createdBy)
 		) ||
 		manifest.memories.some((row) => row.eventId !== null && !events.has(row.eventId)) ||
@@ -185,6 +190,8 @@ export async function restoreArchive(
 			for (const row of manifest.events) tx.insert(event).values(row).run();
 			for (const row of memories) tx.insert(memory).values(row).run();
 			for (const row of assets) tx.insert(mediaFile).values(row).run();
+			for (const row of manifest.eventPlaces) tx.insert(eventPlace).values(row).run();
+			for (const row of manifest.savedPlaces) tx.insert(savedPlace).values(row).run();
 			for (const row of manifest.albums) tx.insert(album).values(row).run();
 			for (const row of manifest.albumMemories) tx.insert(albumMemory).values(row).run();
 			for (const row of manifest.reminders) tx.insert(eventReminder).values(row).run();

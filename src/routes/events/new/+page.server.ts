@@ -1,4 +1,5 @@
 import { error, fail, redirect } from '@sveltejs/kit';
+import { listSavedPlaces } from '#lib/server/maps/places.ts';
 import { db } from '#lib/server/app.ts';
 import { requireUser } from '#lib/server/auth/guard.ts';
 import { getConfig } from '#lib/server/config.ts';
@@ -16,6 +17,7 @@ export const load: PageServerLoad = async (event) => {
 		return {
 			values: { ...emptyEventForm },
 			calendarDate: null,
+			savedPlaces: listSavedPlaces(db()),
 			basemap: await hasBasemap(getConfig().dataDir)
 		};
 	const [key, value] = query[0]!;
@@ -23,6 +25,7 @@ export const load: PageServerLoad = async (event) => {
 		return {
 			values: { ...emptyEventForm, kind: 'plan', dateMode: 'undated' } satisfies EventForm,
 			calendarDate: null,
+			savedPlaces: listSavedPlaces(db()),
 			basemap: await hasBasemap(getConfig().dataDir)
 		};
 	const date = calendarDate.safeParse(value);
@@ -33,6 +36,7 @@ export const load: PageServerLoad = async (event) => {
 	return {
 		values: { ...emptyEventForm, kind, start: date.data, timeZone },
 		calendarDate: date.data,
+		savedPlaces: listSavedPlaces(db()),
 		basemap: await hasBasemap(getConfig().dataDir)
 	};
 };
@@ -44,9 +48,10 @@ export const actions: Actions = {
 			return fail(400, {
 				problem: 'invalid' as const,
 				fields: parsed.fields,
+				places: parsed.places,
 				values: parsed.values
 			});
-		const id = createEvent(db(), actor.id, parsed.values);
+		const id = createEvent(db(), actor.id, parsed.values, undefined, parsed.places);
 		redirect(303, `/events/${id}`);
 	}
 };

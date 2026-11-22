@@ -38,7 +38,7 @@ function geojson(entries: MapEntry[]): FeatureCollection<Point> {
 		type: 'FeatureCollection',
 		features: entries.map((event) => ({
 			type: 'Feature',
-			properties: { id: event.id, kind: event.kind },
+			properties: { id: event.pinId ?? event.id, kind: event.kind },
 			geometry: { type: 'Point', coordinates: coordinate(event) }
 		}))
 	};
@@ -85,7 +85,11 @@ function eventLayers(style: StyleSpecification, entries: MapEntry[], dark: boole
 			source: sourceId,
 			filter: ['!', ['has', 'point_count']],
 			layout: {
-				'icon-image': ['concat', 'events:', ['get', 'kind']],
+				'icon-image': [
+					'concat',
+					'events:',
+					['match', ['get', 'kind'], 'saved', 'plan', ['get', 'kind']]
+				],
 				'icon-anchor': 'bottom',
 				'icon-allow-overlap': true
 			}
@@ -97,12 +101,19 @@ function eventLayers(style: StyleSpecification, entries: MapEntry[], dark: boole
 function popupContent(entry: MapEntry) {
 	const panel = document.createElement('div');
 	panel.className = 'event-map-popup';
-	const title = document.createElement('a');
+	const title =
+		entry.kind === 'saved' ? document.createElement('strong') : document.createElement('a');
 	title.textContent = entry.title;
-	title.href = resolve('/events/[id]', { id: entry.id });
+	if (title instanceof HTMLAnchorElement) title.href = resolve('/events/[id]', { id: entry.id });
 	const date = document.createElement('p');
 	date.textContent = entry.date;
-	panel.append(title, date);
+	panel.append(title);
+	if (entry.date) panel.append(date);
+	if (entry.place) {
+		const name = document.createElement('p');
+		name.textContent = entry.place;
+		panel.append(name);
+	}
 	if (entry.preview) {
 		const image = document.createElement('img');
 		image.alt = entry.preview.label;
@@ -250,7 +261,9 @@ export function createMap({
 		map.on('click', clusterLayer, expandCluster);
 		map.on('click', markerLayer, (event) => {
 			const feature = event.features?.[0];
-			const entry = entries?.find((candidate) => candidate.id === feature?.properties.id);
+			const entry = entries?.find(
+				(candidate) => (candidate.pinId ?? candidate.id) === feature?.properties.id
+			);
 			if (!entry) return;
 			popup?.remove();
 			popup = new Popup({ offset: 27, maxWidth: '16rem' })

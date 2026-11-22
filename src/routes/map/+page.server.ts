@@ -1,4 +1,9 @@
-import { error } from '@sveltejs/kit';
+import { parseForm } from '#lib/server/auth/schemas.ts';
+import { placeFields } from '#lib/server/events/schemas.ts';
+import { savedPlace } from '#lib/server/db/schema.ts';
+import { generateId } from '#lib/server/crypto/tokens.ts';
+import { listSavedPlaces } from '#lib/server/maps/places.ts';
+import { error, fail, redirect } from '@sveltejs/kit';
 import { formatEventDateLabel } from '#lib/i18n/format.ts';
 import type { MapEntry } from '#lib/maps/entry.ts';
 import { db } from '#lib/server/app.ts';
@@ -6,7 +11,7 @@ import { requireUser } from '#lib/server/auth/guard.ts';
 import { getConfig } from '#lib/server/config.ts';
 import { hasBasemap } from '#lib/server/maps/assets.ts';
 import { listPinnedEvents, mapFilters } from '#lib/server/maps/events.ts';
-import type { PageServerLoad } from './$types';
+import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
 	requireUser(event);
@@ -20,6 +25,7 @@ export const load: PageServerLoad = async (event) => {
 
 	const entries: MapEntry[] = listPinnedEvents(db(), parsed.data).map((row) => ({
 		id: row.id,
+		pinId: row.id + '/' + row.position,
 		kind: row.kind,
 		title: row.title,
 		date: formatEventDateLabel(event.locals.locale, row),
@@ -31,5 +37,26 @@ export const load: PageServerLoad = async (event) => {
 			label: row.preview.altText || row.preview.originalName
 		}
 	}));
-	return { entries, filters: parsed.data, basemap: await hasBasemap(getConfig().dataDir) };
+	const savedPlaces = listSavedPlaces(db());
+	return {
+		entries,
+		savedPlaces,
+		filters: parsed.data,
+		basemap: await hasBasemap(getConfig().dataDir)
+	};
+};
+
+const savedFields = placeFields.refine((p) => Boolean(p.place && p.lat && p.lon));
+export const actions: Actions = {
+	save: async (event) => {
+		const member = requireUser(event);
+		const result = parseForm(savedFields, await event.request.formData());
+		if (!result.success) return fail(400, { invalid: true });
+		const { place, lat, lon } = result.data;
+		db()
+			.insert(savedPlace)
+			.values({ id: generateId(), place, lat: Number(lat), lon: Number(lon), createdBy: member.id })
+			.run();
+		redirect(303, '/map#saved-places');
+	}
 };
