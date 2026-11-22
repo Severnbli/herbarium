@@ -36,7 +36,7 @@
 		<Button type="submit">{m.memory.save}</Button>
 	</form>
 </details>
-<MemoryGrid rows={data.rows} locale={data.locale} {m} />
+<MemoryGrid rows={data.rows} {m} />
 <MemoryPagination page={data.page} hasNext={data.hasNext} url={pageUrl} {m} />
 {#if form?.problem === 'wrong_password'}<p role="alert">{m.error.wrongPassword}</p>
 {:else if form?.problem === 'rate_limited'}<p role="alert">{m.error.rateLimited(form.minutes)}</p>

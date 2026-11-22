@@ -496,9 +496,9 @@ test('mixed upload retries preserve successful files and link to the intended de
 	await page.getByRole('link', { name: 'Return to Synthetic upload plan' }).click();
 	await expect(page).toHaveURL(eventUrl);
 	const eventMemories = page.getByRole('region', { name: 'Memories' });
-	await expect(eventMemories.getByRole('link', { name: /retry-photo.jpg/ })).toHaveCount(1);
+	await expect(eventMemories.getByRole('link', { name: 'Photo', exact: true })).toHaveCount(2);
 	await expect(eventMemories.getByRole('link', { name: /invalid.jpg/ })).toHaveCount(0);
-	await eventMemories.getByRole('link', { name: /synthetic-batch-video.mp4/ }).click();
+	await eventMemories.getByRole('link', { name: 'Video', exact: true }).click();
 	await expect(page.locator('video')).toBeVisible();
 
 	await page.goto('/memories');
@@ -511,8 +511,8 @@ test('mixed upload retries preserve successful files and link to the intended de
 	await queue.getByRole('button', { name: 'Upload', exact: true }).click();
 	await expect(queue.getByText('2 of 2 uploaded')).toBeVisible();
 	await page.getByRole('link', { name: 'Return to Synthetic mixed album' }).click();
-	await expect(page.getByRole('link', { name: /synthetic-batch-video.mp4/ })).toBeVisible();
-	await expect(page.getByRole('link', { name: /synthetic-batch-gps.jpg/ })).toBeVisible();
+	await expect(page.getByRole('link', { name: 'Video', exact: true })).toBeVisible();
+	await expect(page.getByRole('link', { name: 'Photo', exact: true })).toBeVisible();
 
 	await page.goto('/memories/new');
 	await queue.getByLabel('Choose files').setInputFiles({
@@ -525,21 +525,21 @@ test('mixed upload retries preserve successful files and link to the intended de
 	await page.getByRole('link', { name: 'Return to Memories' }).click();
 	const unlinked = page.getByRole('region', { name: 'Memories without an event' });
 	const linked = page.getByRole('region', { name: 'Synthetic upload plan' });
-	await expect(unlinked.getByRole('link', { name: /^Photo ·/ })).toHaveCount(2);
-	await expect(unlinked.getByRole('link', { name: /^Video ·/ })).toHaveCount(1);
+	await expect(unlinked.getByRole('link', { name: /^Photo$/ })).toHaveCount(2);
+	await expect(unlinked.getByRole('link', { name: /^Video$/ })).toHaveCount(1);
 	await expect(linked.getByRole('link', { name: 'Synthetic upload plan' })).toHaveAttribute(
 		'href',
 		new URL(eventUrl).pathname
 	);
-	await expect(linked.getByRole('link', { name: /^Photo ·/ })).toHaveCount(2);
-	const clip = linked.getByRole('link', { name: /^Video ·/ });
+	await expect(linked.getByRole('link', { name: /^Photo$/ })).toHaveCount(2);
+	const clip = linked.getByRole('link', { name: /^Video$/ });
 	await clip.click();
 	await expect(page.getByRole('dialog', { name: 'Video' }).locator('video')).toBeVisible();
 	await page.keyboard.press('Escape');
 	await expect(clip).toBeFocused();
 	await expect(page.getByText(/standalone-swatch\.jpg|synthetic-batch-video\.mp4/)).toHaveCount(0);
 	await page.goto(`/memories?event=${new URL(eventUrl).pathname.split('/').pop()}`);
-	await expect(page.getByRole('link', { name: /^Video ·/ })).toBeVisible();
+	await expect(page.getByRole('link', { name: /^Video$/ })).toBeVisible();
 	await expect(page.getByText('synthetic-batch-video.mp4', { exact: true })).toHaveCount(0);
 
 	await page.goto('/events/new?kind=plan');
@@ -566,7 +566,7 @@ test('mixed upload retries preserve successful files and link to the intended de
 	});
 	expect(stale.status()).toBe(400);
 	await page.goto(destination);
-	await expect(page.getByRole('link', { name: /synthetic-batch-gps.jpg/ })).toBeVisible();
+	await expect(page.getByRole('link', { name: 'Photo', exact: true })).toBeVisible();
 	await expect(page.getByText(/Latitude: 12.34/)).toHaveCount(0);
 	await page.goto(gpsMemory);
 	await page

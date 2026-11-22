@@ -104,7 +104,7 @@
 		</a>
 	</div>
 	<!-- eslint-disable svelte/no-navigation-without-resolve -->
-	<MemoryGrid rows={data.memories.rows} locale={data.locale} {m} />
+	<MemoryGrid rows={data.memories.rows} {m} />
 	{#if data.memories.hasNext}
 		<a href={`${resolve('/memories')}?event=${data.event.id}`}>{m.memory.browse}</a>
 	{/if}

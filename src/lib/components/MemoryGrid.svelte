@@ -4,21 +4,15 @@
 	import MemoryPreview from '#lib/components/MemoryPreview.svelte';
 	import type { MemoryCard, MemoryGroup } from '#lib/domain/memory.ts';
 	import type { Messages } from '#lib/i18n/catalog.ts';
-	import type { Locale } from '#lib/i18n/index.ts';
-	import { formatDateOnly } from '#lib/i18n/format.ts';
 
 	let {
 		rows = [],
 		groups,
-		locale,
-		m,
-		hideFilenames = false
+		m
 	}: {
 		rows?: MemoryCard[];
 		groups?: MemoryGroup[];
-		locale: Locale;
 		m: Messages;
-		hideFilenames?: boolean;
 	} = $props();
 	const gridId = $props.id();
 	let open = $state(false);
@@ -26,11 +20,7 @@
 	const cards = $derived(groups?.flatMap((group) => group.rows) ?? rows);
 	const index = $derived(cards.findIndex((row) => row.id === selectedId));
 	const selected = $derived(cards[index]);
-	const title = $derived(selected ? caption(selected) || mediaType(selected) : m.memory.title);
-
-	function caption(row: MemoryCard) {
-		return row.caption || (hideFilenames ? '' : row.originalName);
-	}
+	const title = $derived(selected ? selected.caption || mediaType(selected) : m.memory.title);
 
 	function mediaType(row: MemoryCard) {
 		return row.isVideo ? m.memory.video : m.memory.photo;
@@ -62,15 +52,12 @@
 {#snippet thumbnails(items: MemoryCard[])}
 	<ul class="memories">
 		{#each items as row (row.id)}
-			{@const label = caption(row)}
-			{@const date = formatDateOnly(locale, row.sortDate)}
+			{@const label = row.caption}
 			<li>
 				<a
 					class="memory"
 					href={resolve('/memories/[id]', { id: row.id })}
-					aria-label={label || row.altText || row.isVideo
-						? undefined
-						: `${mediaType(row)} · ${date}`}
+					aria-label={label || row.altText || mediaType(row)}
 					onclick={(event) => show(event, row.id)}
 				>
 					<img
@@ -80,10 +67,7 @@
 						decoding="async"
 					/>
 					{#if label}<span>{label}</span>{/if}
-					<span class="label">
-						{#if row.isVideo}{m.memory.video} ·
-						{/if}<time datetime={row.sortDate}>{date}</time>
-					</span>
+					{#if row.isVideo}<span class="label">{m.memory.video}</span>{/if}
 				</a>
 			</li>
 		{/each}
@@ -113,7 +97,7 @@
 <Dialog bind:open {title} closeLabel={m.design.close} onkeydown={navigate} wide>
 	{#if open && selected}
 		{#key selected.id}
-			<MemoryPreview memory={selected} {m} fallbackLabel={hideFilenames ? title : undefined} />
+			<MemoryPreview memory={selected} {m} fallbackLabel={title} />
 		{/key}
 		<div class="controls">
 			<button type="button" class="secondary" disabled={index === 0} onclick={() => step(-1)}
@@ -140,14 +124,14 @@
 	.memories {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(min(9rem, 100%), 1fr));
-		gap: 1rem;
+		gap: 0.65rem;
 		list-style: none;
 		padding: 0;
 	}
 	.memory {
 		display: grid;
 		gap: 0.35rem;
-		padding: 0.5rem;
+		padding: 0.25rem;
 		border: 1px solid var(--line);
 		border-radius: var(--radius);
 		overflow-wrap: anywhere;
