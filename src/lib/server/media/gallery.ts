@@ -131,6 +131,7 @@ export function findMemory(db: Db, id: string) {
 		.select({
 			...card,
 			captureDate: memory.captureDate,
+			uploadedAt: memory.createdAt,
 			createdByName: user.displayName,
 			contentType: mediaFile.contentType,
 			eventId: memory.eventId,

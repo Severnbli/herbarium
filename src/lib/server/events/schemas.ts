@@ -19,6 +19,14 @@ const coordinate = (min: number, max: number) =>
 		.max(32)
 		.refine((value) => value === '' || readCoordinate(value, min, max) !== null);
 
+export const placeFields = z
+	.strictObject({
+		place: z.string().trim().max(200),
+		lat: coordinate(-90, 90),
+		lon: coordinate(-180, 180)
+	})
+	.refine(({ lat, lon }) => (lat === '') === (lon === ''));
+
 export const eventFormSchema = z
 	.strictObject({
 		kind: z.enum(['moment', 'plan', 'occasion']),

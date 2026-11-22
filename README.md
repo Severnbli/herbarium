@@ -7,13 +7,23 @@ Herbarium is a self-hosted shared calendar and chronicle for a couple, a family 
 ## What you can do
 
 - Record moments with exact or approximate dates, plan upcoming events and mark them complete when they happen.
-- Track birthdays and anniversaries, browse the calendar by month, week or day, and opt in to email reminders.
-- Upload photos and videos, organize albums, or import a folder and group files by capture date.
-- Browse a timeline and pin events on a self-hosted map. Choose whether to use a photo’s suggested location.
+- Choose a day, month, year or time when dating an event. Birthdays and anniversaries repeat yearly. For another occasion, choose an interval such as every two weeks. Browse the calendar by month, week or day, and opt in to reminder emails.
+- Browse photos and videos by event or album. Import a folder to group files by capture date. Open a preview for a closer look, then choose **Open details** for file information.
+- Keep a shared address book on the self-hosted map. Save places like home or a favorite campsite, then add several stops to a trip. Each event keeps its own copy of those places.
 - Invite people into a shared instance and use Herbarium in Belarusian, Russian or English. Install it from a compatible browser to open it from your home screen.
 - Keep encrypted backups and export shared data with the original media for portable restores.
 
 ![Herbarium calendar in the dark Kupalle theme with sample plans and an anniversary](docs/screenshots/calendar.webp)
+
+## Places and preferences
+
+In **Map**, choose **Save a new place**, enter a name, and search, drop a pin or enter coordinates. Select a saved place by name to update it. In the event editor, use **Choose a saved place** or enter a new one, then **Add another place** for the next stop.
+
+![Map showing saved places and a weekend trip with two stops](docs/screenshots/map.webp)
+
+Open **Account** from any section to change language, appearance, reminders or security settings. Close the popup to return to the same view.
+
+![Account preferences open over the calendar](docs/screenshots/account.webp)
 
 ## Deploy
 

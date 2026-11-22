@@ -36,6 +36,7 @@ import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = (event) => {
 	const user = requireUser(event);
+	event.depends('herbarium:account');
 	const currentId = event.locals.session?.id;
 	return {
 		now: Date.now(),

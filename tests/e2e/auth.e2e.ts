@@ -38,6 +38,8 @@ const PROTECTED = [
 	'/events/' + 'a'.repeat(22) + '/edit',
 	'/timeline',
 	'/map',
+	'/map/places/new',
+	'/map/places/' + id,
 	'/map/assets/basemap.pmtiles',
 	'/map/assets/glyphs/Noto%20Sans%20Regular/0-255.pbf',
 	'/map/assets/markers.png',
@@ -142,6 +144,8 @@ test('rejects anonymous access to every route', async ({ browser }) => {
 		'/logout',
 		'/events/new',
 		'/map/search',
+		'/map/places/new?/save',
+		'/map/places/' + id + '?/remove',
 		'/events/' + 'a'.repeat(22) + '?/complete',
 		'/events/' + 'a'.repeat(22) + '?/reminders',
 		'/events/' + 'a'.repeat(22) + '?/delete',
@@ -318,7 +322,7 @@ test('members create, edit, filter, complete and delete shared events without Ja
 	await expect(page.getByRole('alert')).toBeVisible();
 	await expect(page.getByLabel('Title', { exact: true })).toHaveValue('Synthetic spring journey');
 	await page.getByLabel('Start', { exact: true }).fill('2020-03');
-	await page.getByLabel('Date precision').selectOption('month');
+	await page.getByLabel('Date type').selectOption('month');
 	await page.getByLabel('Event kind').selectOption('plan');
 	await page.getByRole('button', { name: 'Save event', exact: true }).click();
 	const detail = page.url();
@@ -496,9 +500,9 @@ test('mixed upload retries preserve successful files and link to the intended de
 	await page.getByRole('link', { name: 'Return to Synthetic upload plan' }).click();
 	await expect(page).toHaveURL(eventUrl);
 	const eventMemories = page.getByRole('region', { name: 'Memories' });
-	await expect(eventMemories.getByRole('link', { name: /retry-photo.jpg/ })).toHaveCount(1);
+	await expect(eventMemories.getByRole('link', { name: 'Photo', exact: true })).toHaveCount(2);
 	await expect(eventMemories.getByRole('link', { name: /invalid.jpg/ })).toHaveCount(0);
-	await eventMemories.getByRole('link', { name: /synthetic-batch-video.mp4/ }).click();
+	await eventMemories.getByRole('link', { name: 'Video', exact: true }).click();
 	await expect(page.locator('video')).toBeVisible();
 
 	await page.goto('/memories');
@@ -511,8 +515,8 @@ test('mixed upload retries preserve successful files and link to the intended de
 	await queue.getByRole('button', { name: 'Upload', exact: true }).click();
 	await expect(queue.getByText('2 of 2 uploaded')).toBeVisible();
 	await page.getByRole('link', { name: 'Return to Synthetic mixed album' }).click();
-	await expect(page.getByRole('link', { name: /synthetic-batch-video.mp4/ })).toBeVisible();
-	await expect(page.getByRole('link', { name: /synthetic-batch-gps.jpg/ })).toBeVisible();
+	await expect(page.getByRole('link', { name: 'Video', exact: true })).toBeVisible();
+	await expect(page.getByRole('link', { name: 'Photo', exact: true })).toBeVisible();
 
 	await page.goto('/memories/new');
 	await queue.getByLabel('Choose files').setInputFiles({
@@ -525,21 +529,21 @@ test('mixed upload retries preserve successful files and link to the intended de
 	await page.getByRole('link', { name: 'Return to Memories' }).click();
 	const unlinked = page.getByRole('region', { name: 'Memories without an event' });
 	const linked = page.getByRole('region', { name: 'Synthetic upload plan' });
-	await expect(unlinked.getByRole('link', { name: /^Photo ·/ })).toHaveCount(2);
-	await expect(unlinked.getByRole('link', { name: /^Video ·/ })).toHaveCount(1);
+	await expect(unlinked.getByRole('link', { name: /^Photo$/ })).toHaveCount(2);
+	await expect(unlinked.getByRole('link', { name: /^Video$/ })).toHaveCount(1);
 	await expect(linked.getByRole('link', { name: 'Synthetic upload plan' })).toHaveAttribute(
 		'href',
 		new URL(eventUrl).pathname
 	);
-	await expect(linked.getByRole('link', { name: /^Photo ·/ })).toHaveCount(2);
-	const clip = linked.getByRole('link', { name: /^Video ·/ });
+	await expect(linked.getByRole('link', { name: /^Photo$/ })).toHaveCount(2);
+	const clip = linked.getByRole('link', { name: /^Video$/ });
 	await clip.click();
 	await expect(page.getByRole('dialog', { name: 'Video' }).locator('video')).toBeVisible();
 	await page.keyboard.press('Escape');
 	await expect(clip).toBeFocused();
 	await expect(page.getByText(/standalone-swatch\.jpg|synthetic-batch-video\.mp4/)).toHaveCount(0);
 	await page.goto(`/memories?event=${new URL(eventUrl).pathname.split('/').pop()}`);
-	await expect(page.getByRole('link', { name: /^Video ·/ })).toBeVisible();
+	await expect(page.getByRole('link', { name: /^Video$/ })).toBeVisible();
 	await expect(page.getByText('synthetic-batch-video.mp4', { exact: true })).toHaveCount(0);
 
 	await page.goto('/events/new?kind=plan');
@@ -566,7 +570,7 @@ test('mixed upload retries preserve successful files and link to the intended de
 	});
 	expect(stale.status()).toBe(400);
 	await page.goto(destination);
-	await expect(page.getByRole('link', { name: /synthetic-batch-gps.jpg/ })).toBeVisible();
+	await expect(page.getByRole('link', { name: 'Photo', exact: true })).toBeVisible();
 	await expect(page.getByText(/Latitude: 12.34/)).toHaveCount(0);
 	await page.goto(gpsMemory);
 	await page
@@ -604,9 +608,8 @@ test('members create and edit recurring occasions without JavaScript', async ({ 
 	await page.getByRole('link', { name: 'Edit event', exact: true }).click();
 	await expect(page.getByLabel('Occasion type')).toHaveValue('anniversary');
 	await page.getByLabel('Occasion type').selectOption('general');
-	await page.getByLabel('Repeat', { exact: true }).selectOption('custom');
-	await page.getByLabel('Custom frequency').selectOption('WEEKLY');
-	await page.getByLabel('Custom interval').fill('2');
+	await page.getByLabel('Unit', { exact: true }).selectOption('WEEKLY');
+	await page.getByLabel('Repeat every').fill('2');
 	await page.getByRole('button', { name: 'Save changes', exact: true }).click();
 	await expect(page.getByText('Recurrence: Every 2 weeks', { exact: true })).toBeVisible();
 
@@ -646,11 +649,7 @@ test('calendar expands occasions and creates events from a date on a phone witho
 
 	await page.goto('/calendar');
 	await page.getByRole('link', { name: 'Week', exact: true }).click();
-	await page
-		.locator('summary')
-		.filter({ hasText: /^Jump to date$/ })
-		.click();
-	await page.getByLabel('Date', { exact: true }).fill('2100-02-28');
+	await page.getByLabel('Jump to date', { exact: true }).fill('2100-02-28');
 	await page.getByRole('button', { name: 'Go', exact: true }).click();
 	await expect(page).toHaveURL('/calendar?view=week&date=2100-02-28');
 	await expect(page.getByRole('link', { name: 'Synthetic calendar plan' })).toBeVisible();
@@ -794,8 +793,8 @@ test('dashboard, event and timeline screens render in three languages and both t
 		await page.goto('/events/new');
 		await expect(page.getByRole('heading', { name: heading, exact: true })).toBeVisible();
 		await page.locator('input[name="title"]').fill(`Synthetic ${locale} event`);
+		await page.locator('select[name="when"]').selectOption('year');
 		await page.locator('input[name="start"]').fill('2020');
-		await page.locator('select[name="precision"]').selectOption('year');
 		await page.locator('textarea[name="notes"]').fill('A **synthetic** memory.');
 		await page.getByRole('button', { name: save, exact: true }).click();
 		await expect(
@@ -1307,6 +1306,57 @@ test('loads local tiles and glyphs, searches for places and edits pins without o
 	expect(violations).toEqual([]);
 });
 
+test('reuses saved places for separate stops and preserves the event when a place changes', async ({
+	browser
+}) => {
+	const page = await newPage(browser);
+	await login(page, member.username, member.password);
+	await page.goto('/map');
+	await page.getByRole('link', { name: 'Save a new place' }).click();
+	await page.locator('input[name=place]').fill('Garden gate');
+	await page.locator('input[name=lat]').fill('53.91');
+	await page.locator('input[name=lon]').fill('27.57');
+	await page.getByRole('button', { name: 'Save place' }).click();
+	const saved = await page.getByRole('link', { name: 'Garden gate' }).getAttribute('href');
+	await page.goto('/events/new?kind=plan');
+	await page.getByLabel('Title', { exact: true }).fill('Garden walk');
+	await page.getByLabel('Choose a saved place').selectOption({ label: 'Garden gate' });
+	await page.getByRole('button', { name: 'Add another place' }).click();
+	await page.locator('[name="extra-place"]').fill('Riverside');
+	await page.locator('.stop summary').click();
+	await page.locator('[name="extra-lat"]').fill('53.95');
+	await page.locator('[name="extra-lon"]').fill('27.62');
+	await page.getByRole('link', { name: 'Account', exact: true }).click();
+	await expect(page.getByRole('dialog', { name: 'Account' })).toBeVisible();
+	await expect(page).toHaveURL('/events/new?kind=plan');
+	const panel = page.getByRole('dialog');
+	await panel.locator('[name=locale]').selectOption('be');
+	await panel.getByRole('button', { name: 'Save language' }).click();
+	await expect(page.locator('html')).toHaveAttribute('lang', 'be');
+	await panel.locator('[name=locale]').selectOption('en');
+	await panel.locator('form[action$="?/language"] button').click();
+	await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+	await page.keyboard.press('Escape');
+	await expect(page.getByLabel('Title', { exact: true })).toHaveValue('Garden walk');
+	await page.getByRole('button', { name: 'Save event' }).click();
+	await expect(page.getByRole('heading', { name: 'Garden walk' })).toBeVisible();
+	const eventUrl = page.url();
+	await page.goto('/map');
+	await expect(page.getByRole('link', { name: 'Garden walk' })).toHaveCount(2);
+	await page.goto(saved!);
+	await page.locator('input[name=place]').fill('New gate');
+	await page.getByRole('button', { name: 'Save place' }).click();
+	await page.getByRole('link', { name: 'New gate' }).click();
+	await page.locator('summary').filter({ hasText: 'Delete saved place' }).click();
+	await page.getByLabel('Confirm with your password').fill(member.password);
+	await page.getByRole('button', { name: 'Delete saved place' }).click();
+	await expect(page.getByRole('link', { name: 'New gate' })).toHaveCount(0);
+	await page.goto(eventUrl);
+	await expect(page.getByText('Garden gate', { exact: true })).toBeVisible();
+	await expect(page.getByText('Riverside', { exact: true })).toBeVisible();
+	await page.context().close();
+});
+
 test('the dashboard opens after login and shows upcoming and past dates without JavaScript', async ({
 	browser
 }) => {
@@ -1626,6 +1676,8 @@ test('appearance follows the system, persists overrides and works on a narrow sc
 	await expect(page.getByLabel('Appearance', { exact: true })).toHaveCount(0);
 	await page.getByRole('link', { name: 'Account', exact: true }).click();
 	await page.getByLabel('Appearance', { exact: true }).selectOption('dark');
+	await page.keyboard.press('Escape');
+	await expect(page.getByRole('link', { name: 'Account', exact: true })).toBeFocused();
 	await page.getByRole('link', { name: 'Home', exact: true }).click();
 	await page.reload();
 	await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');

@@ -114,7 +114,7 @@
 		<h2 id="recent-title">{m.home.recent}</h2>
 		<a href={resolve('/memories')}>{m.nav.memories}</a>
 	</div>
-	<MemoryGrid rows={data.memories} locale={data.locale} {m} />
+	<MemoryGrid rows={data.memories} {m} />
 	{#if !data.memories.length}
 		<a href={resolve('/memories/new')}>{m.memory.addMedia}</a>
 	{/if}

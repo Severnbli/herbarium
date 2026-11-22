@@ -1,6 +1,7 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import { and, desc, eq, ne, sql } from 'drizzle-orm';
 import { z } from 'zod';
+import { getReminderPreferences } from '#lib/server/reminders/preferences.ts';
 import { db, keys } from '#lib/server/app.ts';
 import { audit } from '#lib/server/audit.ts';
 import { requireUser } from '#lib/server/auth/guard.ts';
@@ -25,7 +26,7 @@ import type { Actions, PageServerLoad } from './$types';
 const eventSearch = z.strictObject({ q: z.string().trim().max(200).default('') });
 
 export const load: PageServerLoad = (request) => {
-	requireUser(request);
+	const member = requireUser(request);
 	const id = routeMediaId(request.params);
 	const query = eventSearch.safeParse(
 		queryFields(request.request, request.url, [
@@ -61,6 +62,7 @@ export const load: PageServerLoad = (request) => {
 	);
 	return {
 		memory: row,
+		timeZone: getReminderPreferences(database, member.id).timeZone,
 		events,
 		search: query.data.q,
 		albums: listAlbums(database).map((album) => ({

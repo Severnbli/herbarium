@@ -131,6 +131,7 @@ export const AUDIT_EVENTS = [
 	'recovery_code_used',
 	'recovery_codes_regenerated',
 	'event_deleted',
+	'saved_place_deleted',
 	'memory_deleted',
 	'album_deleted',
 	'export_started',
@@ -400,4 +401,28 @@ export const albumMemory = sqliteTable(
 		primaryKey({ columns: [table.albumId, table.memoryId] }),
 		index('album_memory_memory_idx').on(table.memoryId)
 	]
+);
+
+export const savedPlace = sqliteTable('saved_place', {
+	id: text('id').primaryKey(),
+	place: text('place').notNull(),
+	lat: real('lat').notNull(),
+	lon: real('lon').notNull(),
+	createdBy: text('created_by')
+		.notNull()
+		.references(() => user.id)
+});
+
+export const eventPlace = sqliteTable(
+	'event_place',
+	{
+		eventId: text('event_id')
+			.notNull()
+			.references(() => event.id, { onDelete: 'cascade' }),
+		position: integer('position').notNull(),
+		place: text('place').notNull(),
+		lat: real('lat'),
+		lon: real('lon')
+	},
+	(table) => [primaryKey({ columns: [table.eventId, table.position] })]
 );
