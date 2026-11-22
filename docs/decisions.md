@@ -174,3 +174,7 @@ Members can place an existing memory in a different event or keep it in the gall
 **Status:** Accepted.
 
 Use the existing event link to give photos and videos shared context in the Memories gallery. Include unlinked files in their own group. Sort groups by their newest memory and paginate the resulting order so even a large event can be browsed with a bounded number of thumbnails per page. Show member-written captions in the gallery and lightbox. Keep original filenames available on the details page and on downloads.
+
+## Shared places and event history
+
+Saved places form a circle-wide address book in the encrypted database. Selecting one copies its label and coordinates into the event. The original event location remains its first stop, including for photo suggestions. Additional stops have an explicit order and share the event's lifetime. Portable archive version 3 includes both collections and restores archives from versions 1 and 2.

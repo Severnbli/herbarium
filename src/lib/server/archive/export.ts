@@ -8,6 +8,8 @@ import {
 	album,
 	albumMemory,
 	event,
+	eventPlace,
+	savedPlace,
 	eventReminder,
 	mediaFile,
 	memory,
@@ -58,6 +60,10 @@ function snapshot(db: Db) {
 					.from(user)
 					.orderBy(user.id)
 			),
+			savedPlaces: queryRows(tx.select().from(savedPlace).orderBy(savedPlace.id)),
+			eventPlaces: queryRows(
+				tx.select().from(eventPlace).orderBy(eventPlace.eventId, eventPlace.position)
+			),
 			events: queryRows(tx.select().from(event).orderBy(event.id)),
 			memories: memoryRows(),
 			albums: queryRows(tx.select().from(album).orderBy(album.id)),
@@ -76,7 +82,7 @@ function snapshot(db: Db) {
 			chunks.push(part);
 		}
 
-		append(`{"version":2,"exportedAt":${JSON.stringify(new Date())}`);
+		append(`{"version":3,"exportedAt":${JSON.stringify(new Date())}`);
 		for (const [name, rows] of Object.entries(collections)) {
 			append(`,"${name}":[`);
 			let count = 0;

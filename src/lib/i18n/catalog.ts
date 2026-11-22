@@ -6,6 +6,8 @@ export function messages(locale: Locale) {
 	return {
 		appName: m.appName({}, { locale }),
 		memory: {
+			captured: m.memory_captured({}, { locale }),
+			uploadedOn: m.memory_uploadedOn({}, { locale }),
 			changeEventLink: m.memory_changeEventLink({}, { locale }),
 			uploadProgress: (complete: number, total: number) =>
 				m.memory_uploadProgress({ complete, total }, { locale }),
@@ -98,6 +100,14 @@ export function messages(locale: Locale) {
 			empty: m.calendar_empty({}, { locale })
 		},
 		map: {
+			deletePlace: m.map_deletePlace({}, { locale }),
+			saved: m.map_saved({}, { locale }),
+			useSaved: m.map_useSaved({}, { locale }),
+			savePlace: m.map_savePlace({}, { locale }),
+			addStop: m.map_addStop({}, { locale }),
+			remove: m.map_remove({}, { locale }),
+			addSaved: m.map_addSaved({}, { locale }),
+
 			nav: m.map_nav({}, { locale }),
 			title: m.map_title({}, { locale }),
 			canvas: m.map_canvas({}, { locale }),
@@ -138,6 +148,15 @@ export function messages(locale: Locale) {
 			latest: m.timeline_latest({}, { locale })
 		},
 		event: {
+			repeatEvery: m.event_repeatEvery({}, { locale }),
+			unit: m.event_unit({}, { locale }),
+			annualHint: m.event_annualHint({}, { locale }),
+			units: {
+				DAILY: m.event_unitDay({}, { locale }),
+				WEEKLY: m.event_unitWeek({}, { locale }),
+				MONTHLY: m.event_unitMonth({}, { locale }),
+				YEARLY: m.event_unitYear({}, { locale })
+			},
 			clearFilters: m.event_clearFilters({}, { locale }),
 			filters: m.event_filters({}, { locale }),
 			dateSection: m.event_dateSection({}, { locale }),
@@ -154,12 +173,6 @@ export function messages(locale: Locale) {
 			dateRequired: m.event_dateRequired({}, { locale }),
 			recurrence: m.event_recurrence({}, { locale }),
 			occasionSettings: m.event_occasionSettings({}, { locale }),
-			repeat: m.event_repeat({}, { locale }),
-			yearly: m.event_yearly({}, { locale }),
-			monthly: m.event_monthly({}, { locale }),
-			custom: m.event_custom({}, { locale }),
-			frequency: m.event_frequency({}, { locale }),
-			interval: m.event_interval({}, { locale }),
 			occasionType: m.event_occasionType({}, { locale }),
 			general: m.event_general({}, { locale }),
 			anniversary: m.event_anniversary({}, { locale }),
@@ -170,7 +183,6 @@ export function messages(locale: Locale) {
 			YEARLY: m.event_YEARLY({}, { locale }),
 			upcoming: m.event_upcoming({}, { locale }),
 			noneUpcoming: m.event_noneUpcoming({}, { locale }),
-			recurrenceHint: m.event_recurrenceHint({}, { locale }),
 			every: (interval: string) => m.event_every({ interval }, { locale }),
 			anniversaryCount: (count: string, suffix: string) =>
 				m.event_anniversaryCount({ count, suffix }, { locale }),

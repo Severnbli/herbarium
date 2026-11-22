@@ -1,3 +1,4 @@
+import { listSavedPlaces } from '#lib/server/maps/places.ts';
 import { error } from '@sveltejs/kit';
 import { formatEventDateLabel } from '#lib/i18n/format.ts';
 import type { MapEntry } from '#lib/maps/entry.ts';
@@ -20,6 +21,7 @@ export const load: PageServerLoad = async (event) => {
 
 	const entries: MapEntry[] = listPinnedEvents(db(), parsed.data).map((row) => ({
 		id: row.id,
+		pinId: row.id + '/' + row.position,
 		kind: row.kind,
 		title: row.title,
 		date: formatEventDateLabel(event.locals.locale, row),
@@ -31,5 +33,11 @@ export const load: PageServerLoad = async (event) => {
 			label: row.preview.altText || row.preview.originalName
 		}
 	}));
-	return { entries, filters: parsed.data, basemap: await hasBasemap(getConfig().dataDir) };
+	const savedPlaces = listSavedPlaces(db());
+	return {
+		entries,
+		savedPlaces,
+		filters: parsed.data,
+		basemap: await hasBasemap(getConfig().dataDir)
+	};
 };

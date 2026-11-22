@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+
 	import Field from '#lib/components/Field.svelte';
 	import MapCanvas from '#lib/components/MapCanvas.svelte';
 	import Ornament from '#lib/components/Ornament.svelte';
@@ -9,6 +10,17 @@
 
 	let { data }: PageProps = $props();
 	const m = $derived(messages(data.locale));
+	const entries = $derived([
+		...data.entries,
+		...data.savedPlaces.map((p) => ({
+			...p,
+			kind: 'saved' as const,
+			title: p.place,
+			place: '',
+			date: '',
+			preview: null
+		}))
+	]);
 	const kinds = ['moment', 'plan', 'occasion'] as const;
 	const categories = ['trip', 'date', 'milestone', 'none'] as const;
 </script>
@@ -47,12 +59,22 @@
 </form>
 
 <div class="map-layout">
-	<MapCanvas locale={data.locale} {m} basemap={data.basemap} entries={data.entries} />
-	<section aria-labelledby="pinned-places">
+	<MapCanvas locale={data.locale} {m} basemap={data.basemap} {entries} />
+	<section aria-labelledby="saved-places">
+		<h2 id="saved-places">{m.map.saved}</h2>
+		{#if data.savedPlaces.length}<ul>
+				{#each data.savedPlaces as place (place.id)}<li>
+						<a href={resolve('/map/places/[id]', { id: place.id })}>{place.place}</a>
+						<p>{place.lat}, {place.lon}</p>
+					</li>{/each}
+			</ul>{/if}
+		<a class="button secondary" href={resolve('/map/places/[id]', { id: 'new' })}
+			>{m.map.addSaved}</a
+		>
 		<h2 id="pinned-places">{m.map.places}</h2>
 		{#if data.entries.length}
 			<ul role="list">
-				{#each data.entries as entry (entry.id)}
+				{#each data.entries as entry (entry.pinId)}
 					<li class={entry.kind}>
 						<a href={resolve('/events/[id]', { id: entry.id })}>{entry.title}</a>
 						<p>{entry.date}</p>
@@ -94,6 +116,9 @@
 		border-inline-start: 1px solid var(--line);
 		max-height: clamp(23rem, 63vh, 42rem);
 		overflow: auto;
+	}
+	section > .button {
+		margin-bottom: 1.5rem;
 	}
 	h2 {
 		margin-top: 0;

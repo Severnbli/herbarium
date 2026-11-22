@@ -36,18 +36,31 @@
 		open = false;
 	}}
 >
-	<h2 {id}>{title}</h2>
+	<header>
+		<h2 {id}>{title}</h2>
+		<button
+			bind:this={closeButton}
+			type="button"
+			onclick={() => {
+				open = false;
+			}}
+			class="secondary">{closeLabel}</button
+		>
+	</header>
 	{@render children()}
-	<button
-		bind:this={closeButton}
-		type="button"
-		onclick={() => {
-			open = false;
-		}}>{closeLabel}</button
-	>
 </dialog>
 
 <style>
+	header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		margin-bottom: 1rem;
+	}
+	header h2 {
+		margin: 0;
+	}
 	dialog {
 		color: var(--ink);
 		background: var(--paper);

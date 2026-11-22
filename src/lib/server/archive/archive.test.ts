@@ -16,6 +16,8 @@ import {
 	albumMemory,
 	auditLog,
 	event,
+	savedPlace,
+	eventPlace,
 	eventReminder,
 	mediaFile,
 	memory,
@@ -95,6 +97,14 @@ it('streams a consistent snapshot and restores content to a different encrypted 
 		},
 		date
 	);
+	from.db
+		.insert(savedPlace)
+		.values({ id: generateId(), place: 'Garden', lat: 0, lon: 0, createdBy: author })
+		.run();
+	from.db
+		.insert(eventPlace)
+		.values({ eventId, position: 0, place: 'Second stop', lat: 10, lon: 20 })
+		.run();
 	from.db.insert(eventReminder).values({ eventId: undatedId, minutes: 0, createdAt: date }).run();
 	from.db.transaction((tx) => {
 		for (let index = 0; index < 250; index++) {
@@ -179,6 +189,8 @@ it('streams a consistent snapshot and restores content to a different encrypted 
 	expect(to.db.select().from(event).orderBy(event.id).all()).toEqual(
 		from.db.select().from(event).orderBy(event.id).all()
 	);
+	expect(to.db.select().from(savedPlace).all()).toEqual(from.db.select().from(savedPlace).all());
+	expect(to.db.select().from(eventPlace).all()).toEqual(from.db.select().from(eventPlace).all());
 	expect(to.db.select().from(albumMemory).all()).toEqual([{ albumId, memoryId }]);
 	expect(to.db.select().from(eventReminder).all()).toEqual(
 		expect.arrayContaining([

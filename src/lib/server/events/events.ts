@@ -8,14 +8,14 @@ import {
 } from '#lib/domain/event-date.ts';
 import { generateId } from '../crypto/tokens.ts';
 import type { Db } from '../db/index.ts';
-import { event, reminderDelivery, user } from '../db/schema.ts';
+import { event, eventPlace, reminderDelivery, user } from '../db/schema.ts';
 import {
 	expandOccasion,
 	readRecurrence,
 	recurrenceRule,
 	validateOccurrenceRange
 } from './recurrence.ts';
-import { eventFilters, eventFormSchema, eventId, type EventForm } from './schemas.ts';
+import { eventFilters, eventFormSchema, placeFields, eventId, type EventForm } from './schemas.ts';
 
 export class EventError extends Error {
 	constructor(public readonly code: 'not_found' | 'not_finished') {
@@ -67,12 +67,45 @@ function storage(input: EventForm) {
 	};
 }
 
-export function createEvent(db: Db, actorId: string, input: EventForm, now = new Date()): string {
+type Stop = Pick<EventForm, 'place' | 'lat' | 'lon'>;
+function insertPlaces(db: Db, eventId: string, places: Stop[]) {
+	for (const [position, input] of places.entries()) {
+		const { place, lat, lon } = placeFields.parse(input);
+		db.insert(eventPlace)
+			.values({
+				eventId,
+				position,
+				place,
+				lat: lat ? Number(lat) : null,
+				lon: lon ? Number(lon) : null
+			})
+			.run();
+	}
+}
+export function listEventPlaces(db: Db, id: string) {
+	return db
+		.select()
+		.from(eventPlace)
+		.where(eq(eventPlace.eventId, id))
+		.orderBy(eventPlace.position)
+		.all();
+}
+
+export function createEvent(
+	db: Db,
+	actorId: string,
+	input: EventForm,
+	now = new Date(),
+	places: Stop[] = []
+): string {
 	const values = storage(input);
 	const id = generateId();
-	db.insert(event)
-		.values({ id, ...values, createdBy: actorId, createdAt: now, updatedAt: now })
-		.run();
+	db.transaction((tx) => {
+		tx.insert(event)
+			.values({ id, ...values, createdBy: actorId, createdAt: now, updatedAt: now })
+			.run();
+		insertPlaces(tx, id, places);
+	});
 	return id;
 }
 
@@ -88,10 +121,20 @@ export function findEvent(db: Db, id: string) {
 	return { ...row.event, createdByName: row.createdByName };
 }
 
-export function updateEvent(db: Db, id: string, input: EventForm, now = new Date()): void {
+export function updateEvent(
+	db: Db,
+	id: string,
+	input: EventForm,
+	now = new Date(),
+	places?: Stop[]
+): void {
 	const values = storage(input);
 	db.transaction((tx) => {
 		const previous = findEvent(tx, id);
+		if (places) {
+			tx.delete(eventPlace).where(eq(eventPlace.eventId, id)).run();
+			insertPlaces(tx, id, places);
+		}
 		// Editing the kind must obey the same rule as the completion action.
 		if (previous.kind === 'plan' && values.kind === 'moment' && !hasHappened(values, now))
 			throw new EventError('not_finished');

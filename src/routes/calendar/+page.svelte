@@ -47,14 +47,12 @@
 		{/if}
 	</nav>
 </div>
-<details class="date-jump">
-	<summary>{m.calendar.jump}</summary>
-	<form method="GET" class="jump">
-		<input type="hidden" name="view" value={data.view} />
-		<Field name="date" type="date" label={m.event.dateSection} value={data.date} required />
-		<button class="secondary">{m.calendar.go}</button>
-	</form>
-</details>
+
+<form method="GET" class="jump">
+	<input type="hidden" name="view" value={data.view} />
+	<Field name="date" type="date" label={m.calendar.jump} value={data.date} required />
+	<button class="secondary">{m.calendar.go}</button>
+</form>
 
 <div class="grid" class:single={data.view === 'day'}>
 	{#each data.weekdays as label (label)}
@@ -149,16 +147,9 @@
 	.period {
 		margin-top: 0.75rem;
 	}
-	.date-jump {
-		margin-block: 0.4rem 0.85rem;
-	}
-	.date-jump summary {
-		cursor: pointer;
-		color: var(--madder);
-	}
 	.jump {
 		align-items: end;
-		margin-top: 0.55rem;
+		margin-block: 0.55rem 1rem;
 	}
 	.jump :global(.field),
 	.jump button {

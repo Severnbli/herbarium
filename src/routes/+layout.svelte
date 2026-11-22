@@ -1,5 +1,11 @@
 <script lang="ts">
 	import '#lib/design.css';
+	import { preloadData, goto, invalidate, invalidateAll, afterNavigate } from '$app/navigation';
+	import { applyAction } from '$app/forms';
+	import type { SubmitFunction } from '$app/forms';
+	import type { PageProps as AccountProps } from './account/$types';
+	import AccountSettings from '#lib/components/AccountSettings.svelte';
+	import Dialog from '#lib/components/Dialog.svelte';
 	import Ornament from '#lib/components/Ornament.svelte';
 	import ThemePicker from '#lib/components/ThemePicker.svelte';
 	import { page } from '$app/state';
@@ -9,6 +15,59 @@
 	import type { LayoutProps } from './$types';
 
 	let { data, children }: LayoutProps = $props();
+	let accountOpen = $state(false);
+	let account = $state.raw<AccountProps['data']>();
+	let accountForm = $state.raw<AccountProps['form']>(null);
+	afterNavigate(() => {
+		accountOpen = false;
+		account = undefined;
+		accountForm = null;
+	});
+	async function loadAccount() {
+		const url = resolve('/account');
+		const result = await preloadData(url);
+		if (result.type === 'loaded' && result.status === 200) {
+			account = result.data as AccountProps['data'];
+			return true;
+		}
+		await goto(url);
+		return false;
+	}
+	async function openAccount(e: MouseEvent) {
+		if (
+			e.button ||
+			e.metaKey ||
+			e.ctrlKey ||
+			e.shiftKey ||
+			e.altKey ||
+			page.url.pathname === '/account'
+		)
+			return;
+		e.preventDefault();
+		accountForm = null;
+		accountOpen = await loadAccount();
+	}
+	const submitAccount: SubmitFunction =
+		() =>
+		async ({ result }) => {
+			if (
+				(result.type === 'redirect' && !result.location.startsWith('/account')) ||
+				result.type === 'error'
+			) {
+				await applyAction(result);
+				return;
+			}
+			if (result.type === 'success' || result.type === 'failure')
+				accountForm = result.data as AccountProps['form'];
+			if (result.type !== 'failure') {
+				if (result.type === 'redirect') await invalidateAll();
+				else await invalidate('herbarium:account');
+				if (accountOpen) await loadAccount();
+			}
+		};
+	$effect(() => {
+		document.documentElement.lang = data.locale;
+	});
 	const m = $derived(messages(data.locale));
 </script>
 
@@ -20,10 +79,14 @@
 <a class="skip" href="#content">{m.design.skip}</a>
 <header class="shell">
 	<div class="masthead">
-		<a class="brand" href={resolve('/')}>{m.appName}</a>
+		<a class="brand" href={resolve('/')}
+			><span class="brand-flower"><Ornament /></span>{m.appName}</a
+		>
 		{#if data.user}
 			<a
 				class="account-link"
+				onclick={openAccount}
+				aria-haspopup="dialog"
 				href={resolve('/account')}
 				aria-current={page.url.pathname.startsWith('/account') ? 'page' : undefined}
 			>
@@ -51,8 +114,9 @@
 				href={resolve('/timeline')}
 				aria-current={page.url.pathname === '/timeline' ? 'page' : undefined}>{m.timeline.title}</a
 			>
-			<a href={resolve('/map')} aria-current={page.url.pathname === '/map' ? 'page' : undefined}
-				>{m.map.nav}</a
+			<a
+				href={resolve('/map')}
+				aria-current={page.url.pathname.startsWith('/map') ? 'page' : undefined}>{m.map.nav}</a
 			>
 			<a
 				href={resolve('/memories')}
@@ -67,10 +131,20 @@
 	{/if}
 </header>
 
+{#if data.user}
+	<Dialog bind:open={accountOpen} title={m.account.title} closeLabel={m.design.close}>
+		{#if accountOpen && account}<AccountSettings
+				data={account}
+				form={accountForm}
+				submit={submitAccount}
+			/>{/if}
+	</Dialog>
+{/if}
+
 <main
 	id="content"
 	tabindex="-1"
-	class:wide={['/', '/calendar', '/map'].includes(page.url.pathname)}
+	class:wide={['/', '/calendar', '/map', '/memories'].includes(page.url.pathname)}
 >
 	{#if !data.user}
 		<Ornament kind="flower" />
@@ -82,6 +156,8 @@
 
 <style>
 	.shell {
+		background: var(--paper);
+		border-top: 3px solid var(--moss);
 		border-bottom: 1px solid var(--line);
 	}
 	.masthead,
@@ -98,7 +174,15 @@
 		justify-content: space-between;
 		gap: 0.4rem 0.85rem;
 	}
+	.brand-flower :global(svg) {
+		width: 1.8rem;
+		height: 2.3rem;
+		margin: 0;
+	}
 	.brand {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.55rem;
 		font:
 			1.55rem Herbarium Serif,
 			serif;
@@ -126,7 +210,7 @@
 		text-decoration: underline;
 	}
 	a[aria-current='page'] {
-		background: var(--paper);
+		background: var(--linen);
 		color: var(--madder);
 		font-weight: 650;
 		box-shadow: inset 0 -2px var(--madder);
