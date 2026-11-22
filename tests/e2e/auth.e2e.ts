@@ -1626,6 +1626,8 @@ test('appearance follows the system, persists overrides and works on a narrow sc
 	await expect(page.getByLabel('Appearance', { exact: true })).toHaveCount(0);
 	await page.getByRole('link', { name: 'Account', exact: true }).click();
 	await page.getByLabel('Appearance', { exact: true }).selectOption('dark');
+	await page.keyboard.press('Escape');
+	await expect(page.getByRole('link', { name: 'Account', exact: true })).toBeFocused();
 	await page.getByRole('link', { name: 'Home', exact: true }).click();
 	await page.reload();
 	await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
