@@ -42,6 +42,16 @@ export function parseEventForm(data: FormData) {
 		object.dateMode = object.precision === 'day' ? choice! : 'date';
 		delete object.when;
 	}
+	if (object && 'cycleUnit' in object && !('frequency' in object) && !('repeat' in object)) {
+		object.frequency = object.cycleUnit!;
+		delete object.cycleUnit;
+		if (object.occasionType === 'anniversary' || object.occasionType === 'birthday') {
+			object.interval = '1';
+			object.repeat = 'yearly';
+		} else {
+			object.repeat = 'custom';
+		}
+	}
 	const parsed = eventFormSchema.safeParse(object);
 	if (parsed.success && validStops)
 		return {

@@ -608,9 +608,8 @@ test('members create and edit recurring occasions without JavaScript', async ({ 
 	await page.getByRole('link', { name: 'Edit event', exact: true }).click();
 	await expect(page.getByLabel('Occasion type')).toHaveValue('anniversary');
 	await page.getByLabel('Occasion type').selectOption('general');
-	await page.getByLabel('Repeat', { exact: true }).selectOption('custom');
-	await page.getByLabel('Custom frequency').selectOption('WEEKLY');
-	await page.getByLabel('Custom interval').fill('2');
+	await page.getByLabel('Unit', { exact: true }).selectOption('WEEKLY');
+	await page.getByLabel('Repeat every').fill('2');
 	await page.getByRole('button', { name: 'Save changes', exact: true }).click();
 	await expect(page.getByText('Recurrence: Every 2 weeks', { exact: true })).toBeVisible();
 

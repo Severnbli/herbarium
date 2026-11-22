@@ -35,6 +35,7 @@
 	} = $props();
 	let nextKey = 0;
 	let stops = $state(untrack(() => places.map((initial) => ({ key: nextKey++, initial }))));
+	let occasionType = $state<string>(untrack(() => values.occasionType));
 	let mounted = $state(false);
 	let kind = $state<string>(untrack(() => values.kind));
 	let mode = $state<string>(
@@ -214,44 +215,44 @@
 		open={kind === 'occasion' || invalid.has('occasionType') || invalid.has('interval')}
 	>
 		<summary>{m.event.occasionSettings}</summary>
-		<p>{m.event.recurrenceHint}</p>
-		<Select
-			name="repeat"
-			label={m.event.repeat}
-			value={values.repeat}
-			options={(['yearly', 'monthly', 'custom'] as const).map((value) => ({
-				value,
-				label: m.event[value]
-			}))}
-		/>
-		<Select
-			name="frequency"
-			label={m.event.frequency}
-			value={values.frequency}
-			options={(['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'] as const).map((value) => ({
-				value,
-				label: m.event[value]
-			}))}
-		/>
-		<Field
-			name="interval"
-			label={m.event.interval}
-			value={values.interval}
-			inputmode="numeric"
-			maxlength={2}
-			pattern="[1-9][0-9]?"
-			error={errorFor('interval')}
-		/>
 		<Select
 			name="occasionType"
 			label={m.event.occasionType}
-			value={values.occasionType}
+			bind:value={occasionType}
 			aria-invalid={invalid.has('occasionType')}
 			options={(['general', 'anniversary', 'birthday'] as const).map((value) => ({
 				value,
 				label: m.event[value]
 			}))}
 		/>
+		{#if !mounted || occasionType === 'general'}
+			<div class="recurrence-fields">
+				<Field
+					name="interval"
+					type="number"
+					label={m.event.repeatEvery}
+					value={values.interval}
+					min={1}
+					max={99}
+					required
+					error={errorFor('interval')}
+				/>
+				<Select
+					name="cycleUnit"
+					label={m.event.unit}
+					value={values.repeat === 'custom'
+						? values.frequency
+						: values.repeat === 'monthly'
+							? 'MONTHLY'
+							: 'YEARLY'}
+					options={(['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'] as const).map((value) => ({
+						value,
+						label: m.event.units[value]
+					}))}
+				/>
+			</div>
+		{/if}
+		{#if !mounted || occasionType !== 'general'}<p>{m.event.annualHint}</p>{/if}
 	</details>
 	<fieldset id="event-place">
 		<legend>{m.map.location}</legend>
@@ -310,6 +311,12 @@
 </form>
 
 <style>
+	.recurrence-fields {
+		display: grid;
+		grid-template-columns: minmax(4rem, 7rem) minmax(6rem, 1fr);
+		gap: 1rem;
+		align-items: baseline;
+	}
 	.stop {
 		border-block-start: 1px solid var(--line);
 		padding-block: 1rem;
