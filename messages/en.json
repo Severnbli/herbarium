@@ -417,5 +417,7 @@
 	"event_unitDay": "Days",
 	"event_unitWeek": "Weeks",
 	"event_unitMonth": "Months",
-	"event_unitYear": "Years"
+	"event_unitYear": "Years",
+	"memory_captured": "Captured",
+	"memory_uploadedOn": "Uploaded"
 }

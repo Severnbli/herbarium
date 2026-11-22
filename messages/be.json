@@ -421,5 +421,7 @@
 	"event_unitDay": "Дні",
 	"event_unitWeek": "Тыдні",
 	"event_unitMonth": "Месяцы",
-	"event_unitYear": "Гады"
+	"event_unitYear": "Гады",
+	"memory_captured": "Дата здымкі",
+	"memory_uploadedOn": "Дата дадання"
 }

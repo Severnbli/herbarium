@@ -421,5 +421,7 @@
 	"event_unitDay": "Дни",
 	"event_unitWeek": "Недели",
 	"event_unitMonth": "Месяцы",
-	"event_unitYear": "Годы"
+	"event_unitYear": "Годы",
+	"memory_captured": "Дата съёмки",
+	"memory_uploadedOn": "Дата добавления"
 }

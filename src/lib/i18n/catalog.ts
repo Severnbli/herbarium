@@ -6,6 +6,8 @@ export function messages(locale: Locale) {
 	return {
 		appName: m.appName({}, { locale }),
 		memory: {
+			captured: m.memory_captured({}, { locale }),
+			uploadedOn: m.memory_uploadedOn({}, { locale }),
 			changeEventLink: m.memory_changeEventLink({}, { locale }),
 			uploadProgress: (complete: number, total: number) =>
 				m.memory_uploadProgress({ complete, total }, { locale }),

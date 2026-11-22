@@ -5,7 +5,7 @@
 	import MemoryPreview from '#lib/components/MemoryPreview.svelte';
 	import Select from '#lib/components/Select.svelte';
 	import Textarea from '#lib/components/Textarea.svelte';
-	import { formatDateOnly } from '#lib/i18n/format.ts';
+	import { formatDateOnly, formatDateTime } from '#lib/i18n/format.ts';
 	import { messages } from '#lib/i18n/index.ts';
 	import type { PageProps } from './$types';
 
@@ -21,11 +21,19 @@
 <h1>{row.originalName}</h1>
 <MemoryPreview memory={row} {m} />
 {#if row.caption}<p class="caption">{row.caption}</p>{/if}
-<p>
-	<time datetime={row.sortDate}>{formatDateOnly(data.locale, row.sortDate)}</time> · {m.event.createdBy(
-		row.createdByName
-	)}
-</p>
+<dl class="file-dates">
+	{#if row.captureDate}<dt>{m.memory.captured}</dt>
+		<dd>
+			<time datetime={row.captureDate}>{formatDateOnly(data.locale, row.captureDate)}</time>
+		</dd>{/if}
+	<dt>{m.memory.uploadedOn}</dt>
+	<dd>
+		<time datetime={row.uploadedAt.toISOString()}
+			>{formatDateTime(data.locale, row.uploadedAt, data.timeZone)}</time
+		>
+		· {m.event.createdBy(row.createdByName)}
+	</dd>
+</dl>
 <!-- The query selects attachment disposition on the resolved original endpoint. -->
 <!-- eslint-disable svelte/no-navigation-without-resolve -->
 <a
@@ -151,6 +159,17 @@
 </details>
 
 <style>
+	.file-dates {
+		display: grid;
+		grid-template-columns: auto 1fr;
+		gap: 0.25rem 1rem;
+	}
+	.file-dates dt {
+		color: var(--muted);
+	}
+	.file-dates dd {
+		margin: 0;
+	}
 	h1,
 	p,
 	li {
