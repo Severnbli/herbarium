@@ -36,6 +36,12 @@ export function parseEventForm(data: FormData) {
 		.safeParse(names!.map((place, i) => ({ place, lat: lats![i], lon: lons![i] })));
 	const validStops = stops.success && columns.every((column) => column.length === names!.length);
 	const object = formObject(data);
+	if (object && 'when' in object && !('precision' in object) && !('dateMode' in object)) {
+		const choice = object.when;
+		object.precision = choice === 'month' || choice === 'year' ? choice : 'day';
+		object.dateMode = object.precision === 'day' ? choice! : 'date';
+		delete object.when;
+	}
 	const parsed = eventFormSchema.safeParse(object);
 	if (parsed.success && validStops)
 		return {

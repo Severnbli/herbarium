@@ -37,7 +37,37 @@
 	let stops = $state(untrack(() => places.map((initial) => ({ key: nextKey++, initial }))));
 	let mounted = $state(false);
 	let kind = $state<string>(untrack(() => values.kind));
-	let mode = $state<string>(untrack(() => values.dateMode));
+	let mode = $state<string>(
+		untrack(() =>
+			values.dateMode === 'date' && values.precision !== 'day' ? values.precision : values.dateMode
+		)
+	);
+	let start = $state(untrack(() => values.start));
+	let end = $state(untrack(() => values.end));
+	const inputType = $derived(
+		!mounted
+			? 'text'
+			: mode === 'timed'
+				? 'datetime-local'
+				: mode === 'month'
+					? 'month'
+					: mode === 'year'
+						? 'text'
+						: 'date'
+	);
+	function changeDateType(next: string) {
+		const convert = (value: string) => {
+			if (!value || next === 'undated') return value;
+			const date = value.slice(0, 10);
+			if (next === 'year') return date.slice(0, 4);
+			if (next === 'month') return date.length >= 7 ? date.slice(0, 7) : '';
+			if (date.length !== 10) return '';
+			return next === 'timed' ? date + 'T00:00' : date;
+		};
+		start = convert(start);
+		end = convert(end);
+		mode = next;
+	}
 	onMount(() => {
 		mounted = true;
 	});
@@ -62,7 +92,11 @@
 			label={m.event.kind}
 			bind:value={kind}
 			onchange={(event) => {
-				if (event.currentTarget.value !== 'plan' && mode === 'undated') mode = 'date';
+				if (
+					(event.currentTarget.value !== 'plan' && mode === 'undated') ||
+					(event.currentTarget.value === 'occasion' && ['month', 'year'].includes(mode))
+				)
+					changeDateType('date');
 			}}
 			aria-invalid={invalid.has('kind')}
 			options={[
@@ -92,9 +126,10 @@
 	<fieldset id="event-date">
 		<legend>{m.event.dateSection}</legend>
 		<Select
-			name="dateMode"
+			name="when"
 			label={m.event.dateMode}
-			bind:value={mode}
+			value={mode}
+			onchange={(e) => changeDateType(e.currentTarget.value)}
 			aria-invalid={invalid.has('dateMode')}
 			aria-describedby={invalid.has('dateMode') || !mounted || kind === 'plan'
 				? 'event-date-hint'
@@ -102,6 +137,12 @@
 			options={[
 				{ value: 'date', label: m.event.dateOnly },
 				{ value: 'timed', label: m.event.timed },
+				...(!mounted || kind !== 'occasion'
+					? [
+							{ value: 'month', label: m.design.month },
+							{ value: 'year', label: m.design.year }
+						]
+					: []),
 				...(!mounted || kind === 'plan' || mode === 'undated'
 					? [{ value: 'undated', label: m.event.undated }]
 					: [])
@@ -113,33 +154,33 @@
 			<p id="event-date-hint" class="hint">{m.event.undatedHint}</p>
 		{/if}
 		<div class="date-fields" hidden={mounted && mode === 'undated'}>
-			<Select
-				name="precision"
-				label={m.design.precision}
-				value={values.precision}
-				aria-invalid={invalid.has('precision')}
-				options={['day', 'month', 'year'].map((value) => ({
-					value,
-					label: m.design[value as 'day' | 'month' | 'year']
-				}))}
-			/>
 			<Field
 				name="start"
 				label={m.event.start}
-				value={values.start}
+				type={inputType}
+				value={start}
+				oninput={(e) => (start = e.currentTarget.value)}
+				inputmode={mounted && mode === 'year' ? 'numeric' : undefined}
+				pattern={mounted && mode === 'year' ? '[0-9]{4}' : undefined}
 				error={errorFor('start')}
-				hint={m.event.dateHint}
+				hint={!mounted ? m.event.dateHint : undefined}
 				required={mounted && mode !== 'undated'}
 				maxlength={32}
 			/>
-			<Field
-				name="end"
-				label={m.event.end}
-				value={values.end}
-				error={errorFor('end')}
-				hint={m.event.endHint}
-				maxlength={32}
-			/>
+			<details open={!mounted || !!values.end || invalid.has('end')}>
+				<summary>{m.event.end}</summary><Field
+					name="end"
+					label={m.event.end}
+					type={inputType}
+					value={end}
+					oninput={(e) => (end = e.currentTarget.value)}
+					inputmode={mounted && mode === 'year' ? 'numeric' : undefined}
+					pattern={mounted && mode === 'year' ? '[0-9]{4}' : undefined}
+					error={errorFor('end')}
+					hint={m.event.endHint}
+					maxlength={32}
+				/>
+			</details>
 			<div hidden={mounted && mode !== 'timed'}>
 				<Field
 					name="timeZone"

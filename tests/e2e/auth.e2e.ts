@@ -318,7 +318,7 @@ test('members create, edit, filter, complete and delete shared events without Ja
 	await expect(page.getByRole('alert')).toBeVisible();
 	await expect(page.getByLabel('Title', { exact: true })).toHaveValue('Synthetic spring journey');
 	await page.getByLabel('Start', { exact: true }).fill('2020-03');
-	await page.getByLabel('Date precision').selectOption('month');
+	await page.getByLabel('Date type').selectOption('month');
 	await page.getByLabel('Event kind').selectOption('plan');
 	await page.getByRole('button', { name: 'Save event', exact: true }).click();
 	const detail = page.url();
@@ -646,11 +646,7 @@ test('calendar expands occasions and creates events from a date on a phone witho
 
 	await page.goto('/calendar');
 	await page.getByRole('link', { name: 'Week', exact: true }).click();
-	await page
-		.locator('summary')
-		.filter({ hasText: /^Jump to date$/ })
-		.click();
-	await page.getByLabel('Date', { exact: true }).fill('2100-02-28');
+	await page.getByLabel('Jump to date', { exact: true }).fill('2100-02-28');
 	await page.getByRole('button', { name: 'Go', exact: true }).click();
 	await expect(page).toHaveURL('/calendar?view=week&date=2100-02-28');
 	await expect(page.getByRole('link', { name: 'Synthetic calendar plan' })).toBeVisible();
@@ -794,8 +790,8 @@ test('dashboard, event and timeline screens render in three languages and both t
 		await page.goto('/events/new');
 		await expect(page.getByRole('heading', { name: heading, exact: true })).toBeVisible();
 		await page.locator('input[name="title"]').fill(`Synthetic ${locale} event`);
+		await page.locator('select[name="when"]').selectOption('year');
 		await page.locator('input[name="start"]').fill('2020');
-		await page.locator('select[name="precision"]').selectOption('year');
 		await page.locator('textarea[name="notes"]').fill('A **synthetic** memory.');
 		await page.getByRole('button', { name: save, exact: true }).click();
 		await expect(
