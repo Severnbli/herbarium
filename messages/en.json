@@ -416,5 +416,6 @@
 	"map_savePlace": "Save place",
 	"map_addStop": "Add another place",
 	"map_remove": "Remove",
-	"map_addSaved": "Save a new place"
+	"map_addSaved": "Save a new place",
+	"map_deletePlace": "Delete saved place"
 }

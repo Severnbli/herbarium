@@ -38,6 +38,8 @@ const PROTECTED = [
 	'/events/' + 'a'.repeat(22) + '/edit',
 	'/timeline',
 	'/map',
+	'/map/places/new',
+	'/map/places/' + id,
 	'/map/assets/basemap.pmtiles',
 	'/map/assets/glyphs/Noto%20Sans%20Regular/0-255.pbf',
 	'/map/assets/markers.png',
@@ -142,6 +144,8 @@ test('rejects anonymous access to every route', async ({ browser }) => {
 		'/logout',
 		'/events/new',
 		'/map/search',
+		'/map/places/new?/save',
+		'/map/places/' + id + '?/remove',
 		'/events/' + 'a'.repeat(22) + '?/complete',
 		'/events/' + 'a'.repeat(22) + '?/reminders',
 		'/events/' + 'a'.repeat(22) + '?/delete',
@@ -1301,6 +1305,50 @@ test('loads local tiles and glyphs, searches for places and edits pins without o
 		expect((await page.request.get('/map?' + query)).status()).toBe(400);
 	expect(outbound).toEqual([]);
 	expect(violations).toEqual([]);
+});
+
+test('reuses saved places for separate stops and preserves the event when a place changes', async ({
+	browser
+}) => {
+	const page = await newPage(browser);
+	await login(page, member.username, member.password);
+	await page.goto('/map');
+	await page.getByRole('link', { name: 'Save a new place' }).click();
+	await page.locator('input[name=place]').fill('Garden gate');
+	await page.locator('input[name=lat]').fill('53.91');
+	await page.locator('input[name=lon]').fill('27.57');
+	await page.getByRole('button', { name: 'Save place' }).click();
+	const saved = await page.getByRole('link', { name: 'Garden gate' }).getAttribute('href');
+	await page.goto('/events/new?kind=plan');
+	await page.getByLabel('Title', { exact: true }).fill('Garden walk');
+	await page.getByLabel('Choose a saved place').selectOption({ label: 'Garden gate' });
+	await page.getByRole('button', { name: 'Add another place' }).click();
+	await page.locator('[name="extra-place"]').fill('Riverside');
+	await page.locator('.stop summary').click();
+	await page.locator('[name="extra-lat"]').fill('53.95');
+	await page.locator('[name="extra-lon"]').fill('27.62');
+	await page.getByRole('link', { name: 'Account', exact: true }).click();
+	await expect(page.getByRole('dialog', { name: 'Account' })).toBeVisible();
+	await expect(page).toHaveURL('/events/new?kind=plan');
+	await page.keyboard.press('Escape');
+	await expect(page.getByLabel('Title', { exact: true })).toHaveValue('Garden walk');
+	await page.getByRole('button', { name: 'Save event' }).click();
+	await expect(page.getByRole('heading', { name: 'Garden walk' })).toBeVisible();
+	const eventUrl = page.url();
+	await page.goto('/map');
+	await expect(page.getByRole('link', { name: 'Garden walk' })).toHaveCount(2);
+	await page.goto(saved!);
+	await page.locator('input[name=place]').fill('New gate');
+	await page.getByRole('button', { name: 'Save place' }).click();
+	await page.getByRole('link', { name: 'New gate' }).click();
+	await page.locator('summary').filter({ hasText: 'Delete saved place' }).click();
+	await page.getByLabel('Confirm with your password').fill(member.password);
+	await page.getByRole('button', { name: 'Delete saved place' }).click();
+	await expect(page.getByRole('link', { name: 'New gate' })).toHaveCount(0);
+	await page.goto(eventUrl);
+	await expect(page.getByText('Garden gate', { exact: true })).toBeVisible();
+	await expect(page.getByText('Riverside', { exact: true })).toBeVisible();
+	await page.context().close();
 });
 
 test('the dashboard opens after login and shows upcoming and past dates without JavaScript', async ({

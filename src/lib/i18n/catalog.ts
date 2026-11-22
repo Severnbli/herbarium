@@ -98,6 +98,7 @@ export function messages(locale: Locale) {
 			empty: m.calendar_empty({}, { locale })
 		},
 		map: {
+			deletePlace: m.map_deletePlace({}, { locale }),
 			saved: m.map_saved({}, { locale }),
 			useSaved: m.map_useSaved({}, { locale }),
 			savePlace: m.map_savePlace({}, { locale }),

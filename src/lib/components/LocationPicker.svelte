@@ -21,6 +21,7 @@
 		placeError,
 		savedPlaces = [],
 		extra = false,
+		required = false,
 		eventId
 	}: {
 		m: Messages;
@@ -32,6 +33,7 @@
 		placeError?: string;
 		savedPlaces?: { id: string; place: string; lat: number; lon: number }[];
 		extra?: boolean;
+		required?: boolean;
 		eventId?: string;
 	} = $props();
 
@@ -39,7 +41,9 @@
 	let { lat, lon, place } = $state(
 		untrack(() => ({ lat: initial.lat, lon: initial.lon, place: initial.place }))
 	);
-	let expanded = $state(untrack(() => !!(latError || lonError || initial.lat || initial.lon)));
+	let expanded = $state(
+		untrack(() => !!(required || latError || lonError || initial.lat || initial.lon))
+	);
 	let mounted = $state(false);
 	let paste = $state('');
 	let pasteError = $state(false);
@@ -123,6 +127,7 @@
 {/if}
 <Field
 	id={uid + '-place'}
+	{required}
 	name={extra ? 'extra-place' : 'place'}
 	label={m.event.place}
 	value={place}
@@ -206,6 +211,7 @@
 	<div class="coordinate-fields">
 		<Field
 			id={uid + '-lat'}
+			{required}
 			name={extra ? 'extra-lat' : 'lat'}
 			label={m.event.lat}
 			value={lat}
@@ -216,6 +222,7 @@
 		/>
 		<Field
 			id={uid + '-lon'}
+			{required}
 			name={extra ? 'extra-lon' : 'lon'}
 			label={m.event.lon}
 			value={lon}

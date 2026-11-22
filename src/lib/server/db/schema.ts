@@ -131,6 +131,7 @@ export const AUDIT_EVENTS = [
 	'recovery_code_used',
 	'recovery_codes_regenerated',
 	'event_deleted',
+	'saved_place_deleted',
 	'memory_deleted',
 	'album_deleted',
 	'export_started',

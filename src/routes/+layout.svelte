@@ -112,8 +112,9 @@
 				href={resolve('/timeline')}
 				aria-current={page.url.pathname === '/timeline' ? 'page' : undefined}>{m.timeline.title}</a
 			>
-			<a href={resolve('/map')} aria-current={page.url.pathname === '/map' ? 'page' : undefined}
-				>{m.map.nav}</a
+			<a
+				href={resolve('/map')}
+				aria-current={page.url.pathname.startsWith('/map') ? 'page' : undefined}>{m.map.nav}</a
 			>
 			<a
 				href={resolve('/memories')}
