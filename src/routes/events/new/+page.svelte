@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
 	import EventForm from '#lib/components/EventForm.svelte';
 	import { messages } from '#lib/i18n/index.ts';
@@ -10,7 +11,7 @@
 
 <svelte:head><title>{heading}</title></svelte:head>
 <h1>{heading}</h1>
-{#key data.values}
+{#key page.url.search}
 	<EventForm
 		{m}
 		locale={data.locale}

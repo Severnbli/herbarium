@@ -1,6 +1,6 @@
 <script lang="ts">
 	import '#lib/design.css';
-	import { preloadData, goto, invalidate, afterNavigate } from '$app/navigation';
+	import { preloadData, goto, invalidate, invalidateAll, afterNavigate } from '$app/navigation';
 	import { applyAction } from '$app/forms';
 	import type { SubmitFunction } from '$app/forms';
 	import type { PageProps as AccountProps } from './account/$types';
@@ -60,12 +60,14 @@
 			if (result.type === 'success' || result.type === 'failure')
 				accountForm = result.data as AccountProps['form'];
 			if (result.type !== 'failure') {
-				await invalidate('herbarium:account');
-				if (result.type === 'redirect' && result.location === '/account')
-					await invalidate('herbarium:locale');
+				if (result.type === 'redirect') await invalidateAll();
+				else await invalidate('herbarium:account');
 				if (accountOpen) await loadAccount();
 			}
 		};
+	$effect(() => {
+		document.documentElement.lang = data.locale;
+	});
 	const m = $derived(messages(data.locale));
 </script>
 

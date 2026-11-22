@@ -1329,6 +1329,13 @@ test('reuses saved places for separate stops and preserves the event when a plac
 	await page.getByRole('link', { name: 'Account', exact: true }).click();
 	await expect(page.getByRole('dialog', { name: 'Account' })).toBeVisible();
 	await expect(page).toHaveURL('/events/new?kind=plan');
+	const panel = page.getByRole('dialog');
+	await panel.locator('[name=locale]').selectOption('be');
+	await panel.getByRole('button', { name: 'Save language' }).click();
+	await expect(page.locator('html')).toHaveAttribute('lang', 'be');
+	await panel.locator('[name=locale]').selectOption('en');
+	await panel.locator('form[action$="?/language"] button').click();
+	await expect(page.locator('html')).toHaveAttribute('lang', 'en');
 	await page.keyboard.press('Escape');
 	await expect(page.getByLabel('Title', { exact: true })).toHaveValue('Garden walk');
 	await page.getByRole('button', { name: 'Save event' }).click();

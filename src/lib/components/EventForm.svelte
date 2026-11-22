@@ -256,19 +256,17 @@
 	</details>
 	<fieldset id="event-place">
 		<legend>{m.map.location}</legend>
-		{#key values}
-			<LocationPicker
-				{m}
-				{locale}
-				{basemap}
-				{eventId}
-				{savedPlaces}
-				initial={values}
-				latError={errorFor('lat')}
-				lonError={errorFor('lon')}
-				placeError={errorFor('place')}
-			/>
-		{/key}
+		<LocationPicker
+			{m}
+			{locale}
+			{basemap}
+			{eventId}
+			{savedPlaces}
+			initial={values}
+			latError={errorFor('lat')}
+			lonError={errorFor('lon')}
+			placeError={errorFor('place')}
+		/>
 		{#each stops as stop (stop.key)}
 			<div class="stop">
 				<LocationPicker
