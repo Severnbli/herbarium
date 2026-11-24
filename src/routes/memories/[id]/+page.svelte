@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import DeleteConfirmation from '#lib/components/DeleteConfirmation.svelte';
 	import Button from '#lib/components/Button.svelte';
 	import Field from '#lib/components/Field.svelte';
 	import MemoryPreview from '#lib/components/MemoryPreview.svelte';
@@ -44,8 +45,6 @@
 <!-- eslint-enable svelte/no-navigation-without-resolve -->
 
 {#if form?.problem === 'coordinates'}<p role="alert">{m.memory.coordinates}</p>
-{:else if form?.problem === 'wrong_password'}<p role="alert">{m.error.wrongPassword}</p>
-{:else if form?.problem === 'rate_limited'}<p role="alert">{m.error.rateLimited(form.minutes)}</p>
 {:else if form?.problem}<p role="alert">{m.error.form}</p>{/if}
 
 <details class="edit-panel">
@@ -138,25 +137,14 @@
 			<Button type="submit">{m.memory.albumAdd}</Button>
 		</form>
 	{:else if !included.length}
-		<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
-		<a href={`${resolve('/memories')}#albums`}>{m.memory.createAlbum}</a>
+		<a class="button quiet" href={resolve('/memories?view=albums')}>{m.memory.createAlbum}</a>
 	{/if}
 </section>
-<details>
-	<summary>{m.memory.delete}</summary>
-	<p>{m.memory.deleteHint}</p>
-	<form method="POST" action="?/delete">
-		<Field
-			name="currentPassword"
-			type="password"
-			label={m.field.currentPassword}
-			autocomplete="current-password"
-			maxlength={256}
-			required
-		/>
-		<Button type="submit" variant="secondary">{m.memory.delete}</Button>
-	</form>
-</details>
+<DeleteConfirmation
+	label={m.memory.delete}
+	description={m.memory.deleteHint}
+	error={form?.deleteProblem ? m.error.form : undefined}
+/>
 
 <style>
 	.file-dates {

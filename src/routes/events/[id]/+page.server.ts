@@ -7,8 +7,7 @@ import { audit } from '#lib/server/audit.ts';
 import { requireUser } from '#lib/server/auth/guard.ts';
 import { getConfig } from '#lib/server/config.ts';
 import { hasBasemap } from '#lib/server/maps/assets.ts';
-import { confirmPassword } from '#lib/server/auth/login.ts';
-import { currentPassword, parseForm } from '#lib/server/auth/schemas.ts';
+import { contentDeletion, parseForm } from '#lib/server/auth/schemas.ts';
 import {
 	EventError,
 	completePlan,
@@ -20,7 +19,7 @@ import { handleEventError, routeEventId } from '#lib/server/events/forms.ts';
 import { describeOccasion } from '#lib/server/events/occasion-labels.ts';
 import { renderNotes } from '#lib/server/events/notes.ts';
 import { listMemories } from '#lib/server/media/gallery.ts';
-import { clientIp, minutesUntil } from '#lib/server/http/request.ts';
+import { clientIp } from '#lib/server/http/request.ts';
 import {
 	getReminderOffsets,
 	reminderOffsetsForm,
@@ -35,6 +34,7 @@ export const load: PageServerLoad = async (event) => {
 		const places = listEventPlaces(db(), id);
 		return {
 			event: row,
+			planContext: row.kind === 'plan',
 			places,
 			basemap:
 				(row.lat !== null || places.some((p) => p.lat !== null)) &&
@@ -87,30 +87,18 @@ export const actions: Actions = {
 	delete: async (event) => {
 		const actor = requireUser(event);
 		const id = routeEventId(event.params);
-		const parsed = parseForm(z.strictObject({ currentPassword }), await event.request.formData());
-		if (!parsed.success) return fail(400, { deleteProblem: true, problem: 'invalid' as const });
-		const check = await confirmPassword(
-			db(),
-			actor.id,
-			parsed.data.currentPassword,
-			clientIp(event)
-		);
-		if (!check.ok)
-			return check.reason === 'rate_limited'
-				? fail(429, {
-						deleteProblem: true,
-						problem: 'rate_limited' as const,
-						minutes: minutesUntil(check.retryAfterMs)
-					})
-				: fail(400, { deleteProblem: true, problem: 'wrong_password' as const });
+		const parsed = parseForm(contentDeletion, await event.request.formData());
+		if (!parsed.success) return fail(400, { deleteProblem: true });
+		let deletedKind: ReturnType<typeof deleteEvent>;
 		try {
-			db().transaction((tx) => {
-				deleteEvent(tx, id);
+			deletedKind = db().transaction((tx) => {
+				const kind = deleteEvent(tx, id);
 				audit(tx, 'event_deleted', { actorId: actor.id, targetId: id, ip: clientIp(event) });
+				return kind;
 			});
 		} catch (cause) {
 			handleEventError(cause);
 		}
-		redirect(303, '/events');
+		redirect(303, deletedKind === 'plan' ? '/plans' : '/events');
 	}
 };

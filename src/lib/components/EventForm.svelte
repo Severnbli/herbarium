@@ -7,7 +7,7 @@
 	import Select from './Select.svelte';
 	import Button from './Button.svelte';
 	import type { Locale, Messages } from '#lib/i18n/index.ts';
-	import type { EventForm } from '#lib/server/events/schemas.ts';
+	import type { EventForm, EventPlaceForm } from '#lib/server/events/schemas.ts';
 	let {
 		m,
 		locale,
@@ -15,6 +15,7 @@
 		places = [],
 		savedPlaces,
 		eventId,
+		fixedKind,
 		values,
 		fields = [],
 		problem,
@@ -24,9 +25,10 @@
 		m: Messages;
 		locale: Locale;
 		basemap: boolean;
-		places?: { place: string; lat: string; lon: string }[];
+		places?: EventPlaceForm[];
 		savedPlaces: { id: string; place: string; lat: number; lon: number }[];
 		eventId?: string;
+		fixedKind?: EventForm['kind'];
 		values: EventForm;
 		fields?: string[];
 		problem?: string;
@@ -88,24 +90,28 @@
 <form method="POST" action={eventId ? resolve('/events/[id]/edit', { id: eventId }) : undefined}>
 	<fieldset>
 		<legend>{m.event.details}</legend>
-		<Select
-			name="kind"
-			label={m.event.kind}
-			bind:value={kind}
-			onchange={(event) => {
-				if (
-					(event.currentTarget.value !== 'plan' && mode === 'undated') ||
-					(event.currentTarget.value === 'occasion' && ['month', 'year'].includes(mode))
-				)
-					changeDateType('date');
-			}}
-			aria-invalid={invalid.has('kind')}
-			options={[
-				{ value: 'moment', label: m.event.moment },
-				{ value: 'plan', label: m.event.plan },
-				{ value: 'occasion', label: m.event.occasion }
-			]}
-		/>
+		{#if fixedKind}
+			<input type="hidden" name="kind" value={fixedKind} />
+		{:else}
+			<Select
+				name="kind"
+				label={m.event.kind}
+				bind:value={kind}
+				onchange={(event) => {
+					if (
+						(event.currentTarget.value !== 'plan' && mode === 'undated') ||
+						(event.currentTarget.value === 'occasion' && ['month', 'year'].includes(mode))
+					)
+						changeDateType('date');
+				}}
+				aria-invalid={invalid.has('kind')}
+				options={[
+					{ value: 'moment', label: m.event.moment },
+					{ value: 'plan', label: m.event.plan },
+					{ value: 'occasion', label: m.event.occasion }
+				]}
+			/>
+		{/if}
 		<Field
 			name="title"
 			label={m.event.title}
@@ -114,16 +120,40 @@
 			required
 			maxlength={200}
 		/>
-		<Select
-			name="category"
-			label={m.event.category}
-			value={values.category}
-			options={['none', 'trip', 'date', 'milestone'].map((value) => ({
-				value,
-				label: m.event[value as 'none' | 'trip' | 'date' | 'milestone']
-			}))}
-		/>
+		{#if fixedKind !== 'plan'}{@render categoryField()}{/if}
 	</fieldset>
+	{#if fixedKind === 'plan'}
+		<details
+			class="plan-options"
+			open={values.dateMode !== 'undated' || fields.some((field) => field !== 'title')}
+		>
+			<summary>{m.plans.more}</summary>
+			{@render details()}
+			{@render categoryField()}
+		</details>
+	{:else}
+		{@render details()}
+	{/if}
+	<div class="actions">
+		<Button type="submit">{submitLabel}</Button><!-- The caller supplies a resolved cancel URL. -->
+		<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
+		<a href={cancelHref}>{m.event.cancel}</a>
+	</div>
+</form>
+
+{#snippet categoryField()}
+	<Select
+		name="category"
+		label={m.event.category}
+		value={values.category}
+		options={['none', 'trip', 'date', 'milestone'].map((value) => ({
+			value,
+			label: m.event[value as 'none' | 'trip' | 'date' | 'milestone']
+		}))}
+	/>
+{/snippet}
+
+{#snippet details()}
 	<fieldset id="event-date">
 		<legend>{m.event.dateSection}</legend>
 		<Select
@@ -211,7 +241,7 @@
 		</div>
 	</fieldset>
 	<details
-		hidden={mounted && kind !== 'occasion'}
+		hidden={fixedKind ? fixedKind !== 'occasion' : mounted && kind !== 'occasion'}
 		open={kind === 'occasion' || invalid.has('occasionType') || invalid.has('interval')}
 	>
 		<summary>{m.event.occasionSettings}</summary>
@@ -301,14 +331,18 @@
 		rows={7}
 		maxlength={20000}
 	/>
-	<div class="actions">
-		<Button type="submit">{submitLabel}</Button><!-- The caller supplies a resolved cancel URL. -->
-		<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
-		<a href={cancelHref}>{m.event.cancel}</a>
-	</div>
-</form>
+{/snippet}
 
 <style>
+	.plan-options {
+		padding: 0.7rem 1rem;
+		border: 1px solid var(--line);
+		border-radius: var(--radius);
+	}
+	.plan-options > summary {
+		color: var(--ink);
+		font-weight: 600;
+	}
 	.recurrence-fields {
 		display: grid;
 		grid-template-columns: minmax(4rem, 7rem) minmax(6rem, 1fr);

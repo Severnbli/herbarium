@@ -1,4 +1,18 @@
-import { and, count, desc, eq, gte, isNull, lte } from 'drizzle-orm';
+import {
+	and,
+	asc,
+	count,
+	desc,
+	eq,
+	gte,
+	isNotNull,
+	isNull,
+	lte,
+	ne,
+	not,
+	sql,
+	type SQL
+} from 'drizzle-orm';
 import {
 	disambiguationFor,
 	hasHappened,
@@ -8,14 +22,21 @@ import {
 } from '#lib/domain/event-date.ts';
 import { generateId } from '../crypto/tokens.ts';
 import type { Db } from '../db/index.ts';
-import { event, eventPlace, reminderDelivery, user } from '../db/schema.ts';
+import { event, eventPlace, reminderDelivery, savedPlace, user } from '../db/schema.ts';
 import {
 	expandOccasion,
 	readRecurrence,
 	recurrenceRule,
 	validateOccurrenceRange
 } from './recurrence.ts';
-import { eventFilters, eventFormSchema, placeFields, eventId, type EventForm } from './schemas.ts';
+import {
+	eventFilters,
+	eventFormSchema,
+	eventId,
+	eventPlaceFields,
+	type EventForm,
+	type EventPlaceForm
+} from './schemas.ts';
 
 export class EventError extends Error {
 	constructor(public readonly code: 'not_found' | 'not_finished') {
@@ -26,8 +47,32 @@ export class EventError extends Error {
 export type EventRecord = typeof event.$inferSelect;
 export const PAGE_SIZE = 30;
 
+type PlaceSnapshot = Pick<EventRecord, 'savedPlaceId' | 'lat' | 'lon'>;
+
+function resolveEventPlace(db: Db, input: EventPlaceForm, previous: readonly PlaceSnapshot[]) {
+	const snapshot = {
+		place: input.place,
+		lat: input.lat === '' ? null : Number(input.lat),
+		lon: input.lon === '' ? null : Number(input.lon)
+	};
+	const saved = input.savedPlaceId
+		? db.select().from(savedPlace).where(eq(savedPlace.id, input.savedPlaceId)).get()
+		: undefined;
+	if (!saved) return { ...snapshot, savedPlaceId: null };
+	const keepCoordinates = previous.some(
+		(stop) =>
+			stop.savedPlaceId === saved.id && stop.lat === snapshot.lat && stop.lon === snapshot.lon
+	);
+	return {
+		savedPlaceId: saved.id,
+		place: saved.place,
+		lat: keepCoordinates ? snapshot.lat : saved.lat,
+		lon: keepCoordinates ? snapshot.lon : saved.lon
+	};
+}
+
 /** Services accept validated inputs only; parsing here also protects non-route callers. */
-function storage(input: EventForm) {
+function storage(db: Db, input: EventForm, previous?: EventRecord) {
 	const value = eventFormSchema.parse(input);
 	const timed = value.dateMode === 'timed';
 	const undated = value.dateMode === 'undated';
@@ -48,10 +93,8 @@ function storage(input: EventForm) {
 		occasionType: value.kind === 'occasion' ? value.occasionType : null,
 		title: value.title,
 		notes: value.notes,
-		place: value.place,
+		...resolveEventPlace(db, value, previous ? [previous] : []),
 		category: value.category,
-		lat: value.lat === '' ? null : Number(value.lat),
-		lon: value.lon === '' ? null : Number(value.lon),
 		dateMode: value.dateMode,
 		precision: undated ? ('day' as const) : value.precision,
 		startDate,
@@ -67,20 +110,19 @@ function storage(input: EventForm) {
 	};
 }
 
-type Stop = Pick<EventForm, 'place' | 'lat' | 'lon'>;
-function insertPlaces(db: Db, eventId: string, places: Stop[]) {
-	for (const [position, input] of places.entries()) {
-		const { place, lat, lon } = placeFields.parse(input);
+function insertPlaces(
+	db: Db,
+	eventId: string,
+	places: EventPlaceForm[],
+	previous: readonly PlaceSnapshot[] = []
+) {
+	const locations = places
+		.map((input) => resolveEventPlace(db, eventPlaceFields.parse(input), previous))
+		.filter((stop) => stop.place || stop.lat !== null);
+	for (const [position, stop] of locations.entries())
 		db.insert(eventPlace)
-			.values({
-				eventId,
-				position,
-				place,
-				lat: lat ? Number(lat) : null,
-				lon: lon ? Number(lon) : null
-			})
+			.values({ eventId, position, ...stop })
 			.run();
-	}
 }
 export function listEventPlaces(db: Db, id: string) {
 	return db
@@ -96,11 +138,11 @@ export function createEvent(
 	actorId: string,
 	input: EventForm,
 	now = new Date(),
-	places: Stop[] = []
+	places: EventPlaceForm[] = []
 ): string {
-	const values = storage(input);
 	const id = generateId();
 	db.transaction((tx) => {
+		const values = storage(tx, input);
 		tx.insert(event)
 			.values({ id, ...values, createdBy: actorId, createdAt: now, updatedAt: now })
 			.run();
@@ -126,14 +168,15 @@ export function updateEvent(
 	id: string,
 	input: EventForm,
 	now = new Date(),
-	places?: Stop[]
+	places?: EventPlaceForm[]
 ): void {
-	const values = storage(input);
 	db.transaction((tx) => {
 		const previous = findEvent(tx, id);
+		const values = storage(tx, input, previous);
 		if (places) {
+			const previousPlaces = listEventPlaces(tx, id);
 			tx.delete(eventPlace).where(eq(eventPlace.eventId, id)).run();
-			insertPlaces(tx, id, places);
+			insertPlaces(tx, id, places, previousPlaces);
 		}
 		// Editing the kind must obey the same rule as the completion action.
 		if (previous.kind === 'plan' && values.kind === 'moment' && !hasHappened(values, now))
@@ -169,33 +212,24 @@ export function completePlan(db: Db, id: string, now = new Date()): void {
 	});
 }
 
-/** The route must confirm the acting member's password before calling this. */
-export function deleteEvent(db: Db, id: string): void {
-	db.transaction((tx) => {
-		findEvent(tx, id);
+export function deleteEvent(db: Db, id: string): EventRecord['kind'] {
+	return db.transaction((tx) => {
+		const { kind } = findEvent(tx, id);
 		tx.delete(event).where(eq(event.id, id)).run();
+		return kind;
 	});
 }
 
-export function listEvents(
-	db: Db,
-	input: { kind?: string; year?: string; date?: string; page?: string }
-) {
-	const filters = eventFilters.parse(input);
-	const where = and(
-		filters.kind ? eq(event.kind, filters.kind) : undefined,
-		filters.date === 'undated' ? isNull(event.sortDate) : undefined,
-		filters.year ? gte(event.sortDate, `${filters.year}-01-01`) : undefined,
-		filters.year ? lte(event.sortDate, `${filters.year}-12-31`) : undefined
-	);
+function pageEvents(db: Db, where: SQL | undefined, order: SQL, requested: number) {
 	const total = db.select({ n: count() }).from(event).where(where).get()!.n;
-	const page = Math.min(Number(filters.page), Math.max(1, Math.ceil(total / PAGE_SIZE)));
+	const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+	const page = Math.min(requested, pages);
 	const rows = db
 		.select({ event, createdByName: user.displayName })
 		.from(event)
 		.innerJoin(user, eq(event.createdBy, user.id))
 		.where(where)
-		.orderBy(desc(filters.date === 'undated' ? event.createdAt : event.sortDate), desc(event.id))
+		.orderBy(order, desc(event.id))
 		.limit(PAGE_SIZE)
 		.offset((page - 1) * PAGE_SIZE)
 		.all();
@@ -203,9 +237,66 @@ export function listEvents(
 		rows: rows.map((row) => ({ ...row.event, createdByName: row.createdByName })),
 		total,
 		page,
-		pages: Math.max(1, Math.ceil(total / PAGE_SIZE)),
-		filters
+		pages
 	};
+}
+
+function startYear(year: string) {
+	return year
+		? and(gte(event.sortDate, `${year}-01-01`), lte(event.sortDate, `${year}-12-31`))
+		: undefined;
+}
+
+export function listEvents(
+	db: Db,
+	input: { kind?: string; year?: string; date?: string; page?: string },
+	journal = false
+) {
+	const filters = eventFilters.parse(input);
+	const where = and(
+		journal ? ne(event.kind, 'plan') : undefined,
+		filters.kind ? eq(event.kind, filters.kind) : undefined,
+		filters.date === 'undated' ? isNull(event.sortDate) : undefined,
+		startYear(filters.year)
+	);
+	const order = desc(filters.date === 'undated' ? event.createdAt : event.sortDate);
+	return { ...pageEvents(db, where, order, Number(filters.page)), filters };
+}
+
+export function listPlans(
+	db: Db,
+	filters: { view: 'scheduled' | 'ideas' | 'review' | 'all'; year: string; page: string },
+	now = new Date()
+) {
+	const today = now.toISOString().slice(0, 10);
+	// Date-only ends are inclusive and stored at the start of their precision period.
+	// The UTC boundaries match hasHappened, which also guards the completion action.
+	const elapsed = sql`case when ${event.dateMode} = 'timed'
+		then coalesce(${event.endsAt}, ${event.startsAt}) <= ${now.getTime()}
+		else coalesce(${event.endDate}, ${event.startDate}) < case ${event.precision}
+			when 'year' then ${today.slice(0, 4) + '-01-01'}
+			when 'month' then ${today.slice(0, 7) + '-01'}
+			else ${today}
+		end
+	end`;
+	const stage = {
+		scheduled: and(isNotNull(event.sortDate), not(elapsed)),
+		ideas: isNull(event.sortDate),
+		review: and(isNotNull(event.sortDate), elapsed),
+		all: undefined
+	}[filters.view];
+	const order = {
+		scheduled: asc(event.sortDate),
+		ideas: desc(event.createdAt),
+		review: desc(event.sortDate),
+		all: desc(event.sortDate)
+	}[filters.view];
+	return pageEvents(
+		db,
+		and(eq(event.kind, 'plan'), stage, startYear(filters.year)),
+		order,
+		Number(filters.page)
+	);
 }
 
 export function listOccurrences(db: Db, from: string, through: string) {
@@ -252,6 +343,7 @@ export function eventToForm(value: EventRecord): EventForm {
 		title: value.title,
 		notes: value.notes,
 		place: value.place,
+		savedPlaceId: value.savedPlaceId ?? '',
 		lat: value.lat?.toString() ?? '',
 		lon: value.lon?.toString() ?? '',
 		category: value.category,

@@ -17,12 +17,12 @@
 <div class="heading">
 	<h1>{m.event.listTitle}</h1>
 	<div class="heading-actions">
-		<!-- The query is appended to a resolved route. -->
-		<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
-		<a class="button secondary" href={resolve('/events/new') + '?kind=plan'}>{m.event.newPlan}</a>
-		<a class="button" href={resolve('/events/new')}>{m.event.newTitle}</a>
+		<a class="button secondary" href={resolve('/events/new?kind=occasion')}>{m.event.newOccasion}</a
+		>
+		<a class="button" href={resolve('/events/new?kind=moment')}>{m.event.newTitle}</a>
 	</div>
 </div>
+<p class="intro">{m.event.journalIntro}</p>
 <details class="filter-panel" open={filtered}>
 	<summary>{m.event.filters}</summary>
 	<form method="GET" action={resolve('/events')} class="filters">
@@ -33,7 +33,6 @@
 			options={[
 				{ value: '', label: m.event.all },
 				{ value: 'moment', label: m.event.moment },
-				{ value: 'plan', label: m.event.plan },
 				{ value: 'occasion', label: m.event.occasion }
 			]}
 		/>
@@ -45,18 +44,10 @@
 			pattern="[0-9]{4}"
 			maxlength={4}
 		/>
-		<Select
-			name="date"
-			label={m.event.dateFilter}
-			value={data.filters.date}
-			options={[
-				{ value: '', label: m.event.all },
-				{ value: 'undated', label: m.event.undated }
-			]}
-		/>
 		<div class="filter-actions">
 			<button>{m.event.filter}</button>
-			{#if filtered}<a href={resolve('/events')}>{m.event.clearFilters}</a>{/if}
+			{#if filtered}<a class="button quiet" href={resolve('/events')}>{m.event.clearFilters}</a
+				>{/if}
 		</div>
 	</form>
 </details>
@@ -84,12 +75,14 @@
 <!-- eslint-disable svelte/no-navigation-without-resolve -->
 {#if data.pages > 1}
 	<nav aria-label={m.event.listTitle}>
-		{#if data.page > 1}<a href={`${resolve('/events')}?${pageQuery(data.page - 1)}`}
-				>{m.event.previous}</a
+		{#if data.page > 1}<a
+				class="button quiet"
+				href={`${resolve('/events')}?${pageQuery(data.page - 1)}`}>{m.event.previous}</a
 			>{/if}
 		<span>{m.event.page(data.page, data.pages)}</span>
-		{#if data.page < data.pages}<a href={`${resolve('/events')}?${pageQuery(data.page + 1)}`}
-				>{m.event.next}</a
+		{#if data.page < data.pages}<a
+				class="button quiet"
+				href={`${resolve('/events')}?${pageQuery(data.page + 1)}`}>{m.event.next}</a
 			>{/if}
 	</nav>
 {/if}
@@ -106,6 +99,9 @@
 		flex-wrap: wrap;
 		gap: 1rem;
 		justify-content: space-between;
+	}
+	.intro {
+		color: var(--muted);
 	}
 	.heading h1 {
 		margin: 0;

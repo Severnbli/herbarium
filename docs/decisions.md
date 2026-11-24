@@ -71,7 +71,7 @@ Status: accepted.
 
 Event forms use explicit text date formats with separate mode and precision selectors. This keeps every create/edit flow usable without JavaScript, including approximate dates and arbitrary time zones. The shared native DatePicker remains available for progressively enhanced feature screens; it is not the event validation boundary. Server errors preserve bounded known fields, reject duplicate and unknown fields and never echo passwords.
 
-Every member can edit or delete any event, preserving the circle's equal content access. Deletion is permanent and requires the acting member's password through the existing rate-limited re-authentication service. Record only the event identifier, actor and client address in the audit log, atomically with deletion; never include title, notes, place or coordinates. Completing a plan changes its kind in place, and the edit path enforces the same elapsed-period rule.
+Every member can edit or delete any event, preserving the circle's equal content access. Deletion is permanent. The original password requirement was superseded by the shared content deletion decision below. Record only the event identifier, actor and client address in the audit log, atomically with deletion; never include title, notes, place or coordinates. Completing a plan changes its kind in place, and the edit path enforces the same elapsed-period rule.
 
 ## Occasion rules and local-date expansion
 
@@ -177,4 +177,24 @@ Use the existing event link to give photos and videos shared context in the Memo
 
 ## Shared places and event history
 
-Saved places form a circle-wide address book in the encrypted database. Selecting one copies its label and coordinates into the event. The original event location remains its first stop, including for photo suggestions. Additional stops have an explicit order and share the event's lifetime. Portable archive version 3 includes both collections and restores archives from versions 1 and 2.
+Saved places form a circle-wide address book in the encrypted database. The original design copied its label and coordinates into the event. The saved place links decision below supersedes that part of the design. The original event location remains its first stop, including for photo suggestions. Additional stops have an explicit order and share the event's lifetime. Portable archive version 3 includes both collections and restores archives from versions 1 and 2.
+
+## Events, Plans and Memories in the navigation
+
+Status: accepted.
+
+Use Events for past moments and recurring occasions, Plans for ideas and activities the circle is organizing, and Memories for photos, videos and albums. Give these sections their own starting actions. Calendar and Map can show entries from multiple sections together. A plan ready to record becomes a moment once a member confirms it. The same event ID preserves bookmarks, authorship and media attachments, and existing plan filters redirect to Plans. This change requires no data migration.
+
+## Confirming shared content deletion
+
+Status: accepted. Supersedes password confirmation for routine content deletion.
+
+Members can already edit shared content. For a single event, plan, memory, album or saved place, show the consequence in a disclosure and require a deliberate submit from a current member session. Validate the confirmation field and reject cross-site form posts. Keep the audit entry atomic with the database deletion. A person who already has access to an unlocked member session can confirm these deletions. Operations on credentials, two-factor settings, exports and keys keep their password verification.
+
+## Saved place links
+
+Status: accepted.
+
+Store the saved place ID alongside each linked event location. A rename updates the name on linked primary locations and additional stops in the same transaction. A stop keeps the coordinates recorded when the place was chosen, so moving the address-book entry preserves the route of earlier events. Deleting the saved place clears its linked IDs and preserves the last saved names and coordinates. Members can enter a custom location on any stop.
+
+When upgrading an existing database or restoring an older archive, recover links whose name and coordinates match exactly one saved place. Older entries with changed locations or more than one match remain custom. Archive version 4 preserves explicit links and custom locations.

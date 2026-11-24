@@ -6,10 +6,10 @@ Herbarium is a self-hosted shared calendar and chronicle for a couple, a family 
 
 ## What you can do
 
-- Record moments with exact or approximate dates, plan upcoming events and mark them complete when they happen.
+- Record past moments and recurring occasions in **Events**. Use **Plans** to collect ideas, set dates and record what happened.
 - Choose a day, month, year or time when dating an event. Birthdays and anniversaries repeat yearly. For another occasion, choose an interval such as every two weeks. Browse the calendar by month, week or day, and opt in to reminder emails.
-- Browse photos and videos by event or album. Import a folder to group files by capture date. Open a preview for a closer look, then choose **Open details** for file information.
-- Keep a shared address book on the self-hosted map. Save places like home or a favorite campsite, then add several stops to a trip. Each event keeps its own copy of those places.
+- Browse photos and videos by event or album in **Memories**. Import a folder to group files by capture date. Open a preview for a closer look, then choose **Open details** for file information.
+- Keep a shared address book on the self-hosted map. Save places like home or a favorite campsite, then add several stops to a trip. A saved place rename reaches all linked stops. Each stop keeps its recorded coordinates.
 - Invite people into a shared instance and use Herbarium in Belarusian, Russian or English. Install it from a compatible browser to open it from your home screen.
 - Keep encrypted backups and export shared data with the original media for portable restores.
 

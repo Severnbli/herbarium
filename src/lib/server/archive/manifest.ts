@@ -14,9 +14,12 @@ import { mediaId } from '#lib/server/media/store.ts';
 export const MAX_MANIFEST_BYTES = 64 * 1024 * 1024;
 export const MAX_ARCHIVE_ROWS = 100_000;
 export const MANIFEST_PATH = 'herbarium.json';
+export const MANIFEST_VERSION = 4;
 const timestamp = z.iso.datetime({ precision: 3 }).transform((value) => new Date(value));
 const localDate = z.iso.date().refine((value) => !value.startsWith('0000'));
 const author = { createdBy: mediaId, createdAt: timestamp };
+
+const savedPlaceId = mediaId.nullable().optional();
 
 const archivedEvent = z
 	.strictObject({
@@ -27,6 +30,7 @@ const archivedEvent = z
 		place: z.string().max(200),
 		lat: z.number().min(-90).max(90).nullable(),
 		lon: z.number().min(-180).max(180).nullable(),
+		savedPlaceId,
 		category: z.enum(CATEGORIES),
 		dateMode: z.enum(['date', 'timed', 'undated']),
 		precision: z.enum(['day', 'month', 'year']),
@@ -113,7 +117,7 @@ const reminderOffset = z.custom<ReminderOffset>((value) =>
 );
 export const archiveManifest = z
 	.strictObject({
-		version: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+		version: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(MANIFEST_VERSION)]),
 		exportedAt: timestamp,
 		authors: z
 			.array(z.strictObject({ id: mediaId, displayName, createdAt: timestamp }))
@@ -138,7 +142,8 @@ export const archiveManifest = z
 						position: z.int().min(0).max(99),
 						place: z.string().max(200),
 						lat: z.number().min(-90).max(90).nullable(),
-						lon: z.number().min(-180).max(180).nullable()
+						lon: z.number().min(-180).max(180).nullable(),
+						savedPlaceId
 					})
 					.refine(
 						(p) => (p.lat === null) === (p.lon === null) && Boolean(p.place || p.lat !== null)
@@ -170,7 +175,13 @@ export const archiveManifest = z
 			)
 			.max(MAX_ARCHIVE_ROWS)
 	})
-	.refine((row) => row.version >= 2 || row.events.every((event) => event.dateMode !== 'undated'));
+	.refine((row) => row.version >= 2 || row.events.every((event) => event.dateMode !== 'undated'))
+	.refine((row) => {
+		const hasLinks = row.version === MANIFEST_VERSION;
+		const valid = (place: { savedPlaceId?: string | null }) =>
+			(place.savedPlaceId !== undefined) === hasLinks;
+		return row.events.every(valid) && row.eventPlaces.every(valid);
+	});
 
 export type ArchiveManifest = z.output<typeof archiveManifest>;
 

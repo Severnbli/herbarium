@@ -154,6 +154,43 @@ button.secondary,
 	background: transparent;
 	color: var(--madder);
 }
+button.secondary:hover:not(:disabled),
+.button.secondary:hover,
+button.quiet:hover:not(:disabled),
+.button.quiet:hover {
+	background: var(--linen);
+	filter: none;
+}
+button.quiet,
+.button.quiet {
+	padding: 0.4rem 0.8rem;
+	border-color: var(--control-line);
+	background: var(--paper);
+	color: var(--ink);
+	font-size: 0.9rem;
+	font-weight: 600;
+	line-height: 1.35;
+	text-align: center;
+}
+.record-link {
+	display: inline-flex;
+	align-items: baseline;
+	gap: 0.55em;
+	color: var(--ink);
+	text-decoration: none;
+}
+.record-link::after {
+	content: '';
+	flex: none;
+	width: 0.38em;
+	height: 0.38em;
+	border-block-start: 0.09em solid currentColor;
+	border-inline-end: 0.09em solid currentColor;
+	transform: rotate(45deg);
+}
+.record-link:hover {
+	color: var(--madder);
+}
 :focus-visible {
 	outline: 3px solid var(--focus);
 	outline-offset: 4px;

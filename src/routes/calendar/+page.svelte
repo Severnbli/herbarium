@@ -2,6 +2,7 @@
 	import { resolve } from '$app/paths';
 	import { formatDateOnly } from '#lib/i18n/format.ts';
 	import { messages } from '#lib/i18n/index.ts';
+	import CollectionNav from '#lib/components/CollectionNav.svelte';
 	import Field from '#lib/components/Field.svelte';
 	import type { PageProps } from './$types';
 
@@ -23,27 +24,29 @@
 
 <svelte:head><title>{m.calendar.title}</title></svelte:head>
 <h1>{m.calendar.title}</h1>
-<nav class="controls views" aria-label={m.calendar.views}>
-	{#each views as view (view)}
-		<a
-			href={resolve(`/calendar?view=${view}&date=${data.date}`)}
-			aria-current={data.view === view ? 'page' : undefined}
-		>
-			{m.calendar[view]}
-		</a>
-	{/each}
-</nav>
+<CollectionNav
+	label={m.calendar.views}
+	items={views.map((view) => ({
+		href: resolve(`/calendar?view=${view}&date=${data.date}`),
+		title: m.calendar[view],
+		current: data.view === view
+	}))}
+/>
 <div class="period">
 	<h2>{period}</h2>
 	<nav class="controls" aria-label={m.calendar.navigation}>
 		{#if data.previous}
-			<a href={resolve(`/calendar?view=${data.view}&date=${data.previous}`)}
+			<a class="button quiet" href={resolve(`/calendar?view=${data.view}&date=${data.previous}`)}
 				>{m.calendar.previous}</a
 			>
 		{/if}
-		<a href={resolve(`/calendar?view=${data.view}&date=${data.today}`)}>{m.calendar.today}</a>
+		<a class="button quiet" href={resolve(`/calendar?view=${data.view}&date=${data.today}`)}
+			>{m.calendar.today}</a
+		>
 		{#if data.next}
-			<a href={resolve(`/calendar?view=${data.view}&date=${data.next}`)}>{m.calendar.next}</a>
+			<a class="button quiet" href={resolve(`/calendar?view=${data.view}&date=${data.next}`)}
+				>{m.calendar.next}</a
+			>
 		{/if}
 	</nav>
 </div>
@@ -124,25 +127,10 @@
 	.cell-heading {
 		justify-content: space-between;
 	}
-	.controls a,
 	.create {
 		display: inline-flex;
 		align-items: center;
 		min-height: 2.75rem;
-	}
-	.views {
-		gap: 0.2rem;
-		margin-top: 0.6rem;
-	}
-	.views a {
-		padding-inline: 0.75rem;
-		border-radius: var(--radius);
-	}
-	.views a[aria-current] {
-		color: var(--paper);
-		background: var(--madder);
-		font-weight: 600;
-		text-decoration: none;
 	}
 	.period {
 		margin-top: 0.75rem;
@@ -201,6 +189,7 @@
 		justify-content: center;
 		width: 2.75rem;
 		font-size: 1.4rem;
+		border-radius: var(--radius);
 		text-decoration: none;
 	}
 	.create:hover {

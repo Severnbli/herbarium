@@ -3,11 +3,13 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { createTestDb } from '../testing.ts';
 import { addUser } from '../auth/fixtures.ts';
-import { event, eventReminder, reminderDelivery } from '../db/schema.ts';
+import { event, eventReminder, reminderDelivery, savedPlace } from '../db/schema.ts';
 import {
 	createEvent,
 	findEvent,
 	listEvents,
+	listEventPlaces,
+	listPlans,
 	listOccurrences,
 	updateEvent,
 	completePlan,
@@ -15,9 +17,11 @@ import {
 	eventToForm,
 	PAGE_SIZE
 } from './events.ts';
+import { generateId } from '../crypto/tokens.ts';
+import { updateSavedPlace } from '../maps/places.ts';
 import { saveReminderOffsets } from '../reminders/preferences.ts';
 import { listTimeline } from './timeline.ts';
-import { emptyEventForm } from './schemas.ts';
+import { emptyEventForm, planFilters } from './schemas.ts';
 let fixture: ReturnType<typeof createTestDb>;
 beforeEach(() => {
 	fixture = createTestDb();
@@ -107,6 +111,44 @@ describe('shared events', () => {
 		expect(completed.createdBy).toBe(row.createdBy);
 		expect(listEvents(db, {}).total).toBe(1);
 	});
+	it('puts plans in their exclusive view at the same boundary that allows completion', async () => {
+		const { db } = fixture;
+		const author = await addUser(db, 'alice');
+		const idea = createEvent(db, author, { ...base, kind: 'plan', dateMode: 'undated' });
+		const day = createEvent(db, author, { ...base, kind: 'plan', start: '2026-03-31' });
+		const month = createEvent(db, author, {
+			...base,
+			kind: 'plan',
+			precision: 'month',
+			start: '2026-02',
+			end: '2026-03'
+		});
+		const year = createEvent(db, author, {
+			...base,
+			kind: 'plan',
+			precision: 'year',
+			start: '2026'
+		});
+		const timed = createEvent(db, author, {
+			...base,
+			kind: 'plan',
+			dateMode: 'timed',
+			start: '2026-04-01T00:00',
+			end: '2026-04-01T00:30',
+			timeZone: 'UTC'
+		});
+		const view = (view: string, now: string) =>
+			listPlans(db, planFilters.parse({ view }), new Date(now)).rows.map(({ id }) => id);
+		expect(view('ideas', '2026-03-31T23:59:59.999Z')).toEqual([idea]);
+		expect(view('review', '2026-03-31T23:59:59.999Z')).toEqual([]);
+		expect(view('review', '2026-04-01T00:00:00Z')).toEqual([day, month]);
+		expect(view('scheduled', '2026-04-01T00:29:59.999Z')).toEqual([year, timed]);
+		expect(view('review', '2026-04-01T00:30:00Z')).toEqual([timed, day, month]);
+		completePlan(db, timed, new Date('2026-04-01T00:30:00Z'));
+		expect(view('review', '2026-04-01T00:30:00Z')).toEqual([day, month]);
+		expect(listEvents(db, {}, true).rows.map(({ id }) => id)).toEqual([timed]);
+	});
+
 	it('keeps undated plans out of the timeline and resets pending reminders when rescheduled', async () => {
 		const { db } = fixture;
 		const actor = await addUser(db, 'planner');
@@ -153,6 +195,48 @@ describe('shared events', () => {
 		expect(db.select().from(eventReminder).all()).toMatchObject([{ eventId: id, minutes: 0 }]);
 		completePlan(db, id, when);
 		expect(findEvent(db, id)).toMatchObject({ kind: 'moment', createdAt: when });
+	});
+
+	it('updates the names of linked stops and keeps their recorded coordinates', async () => {
+		const { db } = fixture;
+		const actor = await addUser(db, 'planner');
+		const savedPlaceId = generateId();
+		db.insert(savedPlace)
+			.values({
+				id: savedPlaceId,
+				place: 'Garden',
+				lat: 0,
+				lon: 4,
+				createdBy: actor
+			})
+			.run();
+		const linked = { place: '', lat: '', lon: '', savedPlaceId };
+		const custom = { place: 'Garden', lat: '0', lon: '4' };
+		const id = createEvent(db, actor, { ...base, ...linked }, undefined, [custom, linked]);
+		expect(findEvent(db, id)).toMatchObject({ place: 'Garden', lat: 0, lon: 4, savedPlaceId });
+		expect(updateSavedPlace(db, savedPlaceId, { place: 'The garden', lat: 1, lon: 2 })).toBe(true);
+		const form = eventToForm(findEvent(db, id));
+		expect(form).toMatchObject({ place: 'The garden', lat: '0', lon: '4', savedPlaceId });
+		expect(listEventPlaces(db, id)).toMatchObject([
+			{ place: 'Garden', lat: 0, lon: 4, savedPlaceId: null },
+			{ place: 'The garden', lat: 0, lon: 4, savedPlaceId }
+		]);
+		updateEvent(db, id, { ...form, title: 'A retitled event' }, undefined, [
+			{ place: form.place, lat: form.lat, lon: form.lon, savedPlaceId }
+		]);
+		expect(listEventPlaces(db, id)).toMatchObject([
+			{ position: 0, place: 'The garden', lat: 0, lon: 4 }
+		]);
+		db.delete(savedPlace).where(eq(savedPlace.id, savedPlaceId)).run();
+		expect(findEvent(db, id)).toMatchObject({
+			place: 'The garden',
+			lat: 0,
+			lon: 4,
+			savedPlaceId: null
+		});
+		expect(listEventPlaces(db, id)).toMatchObject([
+			{ place: 'The garden', lat: 0, lon: 4, savedPlaceId: null }
+		]);
 	});
 
 	it('stores one occasion, expands by range and removes the rule when changing kind', async () => {

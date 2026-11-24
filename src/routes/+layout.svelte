@@ -16,9 +16,11 @@
 
 	let { data, children }: LayoutProps = $props();
 	let accountOpen = $state(false);
+	let viewsOpen = $state(false);
 	let account = $state.raw<AccountProps['data']>();
 	let accountForm = $state.raw<AccountProps['form']>(null);
 	afterNavigate(() => {
+		viewsOpen = false;
 		accountOpen = false;
 		account = undefined;
 		accountForm = null;
@@ -69,7 +71,38 @@
 		document.documentElement.lang = data.locale;
 	});
 	const m = $derived(messages(data.locale));
+	const section = $derived(
+		page.url.pathname.startsWith('/events')
+			? page.data.planContext
+				? '/plans'
+				: '/events'
+			: page.url.pathname.startsWith('/memories')
+				? '/memories'
+				: page.url.pathname.startsWith('/map')
+					? '/map'
+					: page.url.pathname
+	);
+	const collections = $derived([
+		{ path: '/' as const, label: m.nav.home },
+		{ path: '/events' as const, label: m.nav.events },
+		{ path: '/plans' as const, label: m.nav.plans },
+		{ path: '/memories' as const, label: m.nav.memories }
+	]);
+	const views = $derived([
+		{ path: '/calendar' as const, label: m.calendar.title },
+		{ path: '/timeline' as const, label: m.timeline.title },
+		{ path: '/map' as const, label: m.map.nav },
+		{ path: '/members' as const, label: m.nav.members }
+	]);
 </script>
+
+{#snippet viewLinks()}
+	{#each views as item (item.path)}
+		<a href={resolve(item.path)} aria-current={section === item.path ? 'page' : undefined}
+			>{item.label}</a
+		>
+	{/each}
+{/snippet}
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
@@ -97,37 +130,24 @@
 		{/if}
 	</div>
 	{#if data.user}
-		<nav aria-label={m.nav.label}>
-			<a href={resolve('/')} aria-current={page.url.pathname === '/' ? 'page' : undefined}
-				>{m.nav.home}</a
-			>
-			<a
-				href={resolve('/calendar')}
-				aria-current={page.url.pathname === '/calendar' ? 'page' : undefined}>{m.calendar.title}</a
-			>
-			<a
-				href={resolve('/events')}
-				aria-current={page.url.pathname.startsWith('/events') ? 'page' : undefined}
-				>{m.nav.events}</a
-			>
-			<a
-				href={resolve('/timeline')}
-				aria-current={page.url.pathname === '/timeline' ? 'page' : undefined}>{m.timeline.title}</a
-			>
-			<a
-				href={resolve('/map')}
-				aria-current={page.url.pathname.startsWith('/map') ? 'page' : undefined}>{m.map.nav}</a
-			>
-			<a
-				href={resolve('/memories')}
-				aria-current={page.url.pathname.startsWith('/memories') ? 'page' : undefined}
-				>{m.nav.memories}</a
-			>
-			<a
-				href={resolve('/members')}
-				aria-current={page.url.pathname === '/members' ? 'page' : undefined}>{m.nav.members}</a
-			>
-		</nav>
+		<div class="navigation">
+			<nav aria-label={m.nav.label} class="collections">
+				{#each collections as item (item.path)}
+					<a href={resolve(item.path)} aria-current={section === item.path ? 'page' : undefined}
+						>{item.label}</a
+					>
+				{/each}
+			</nav>
+			<nav aria-label={m.nav.views} class="views desktop-views">
+				{@render viewLinks()}
+			</nav>
+			<details class="mobile-views" bind:open={viewsOpen}>
+				<summary>{m.nav.more}</summary>
+				<nav aria-label={m.nav.views} class="views">
+					{@render viewLinks()}
+				</nav>
+			</details>
+		</div>
 	{/if}
 </header>
 
@@ -144,7 +164,7 @@
 <main
 	id="content"
 	tabindex="-1"
-	class:wide={['/', '/calendar', '/map', '/memories'].includes(page.url.pathname)}
+	class:wide={['/', '/calendar', '/events', '/map', '/memories'].includes(page.url.pathname)}
 >
 	{#if !data.user}
 		<Ornament kind="flower" />
@@ -161,7 +181,7 @@
 		border-bottom: 1px solid var(--line);
 	}
 	.masthead,
-	nav {
+	.navigation {
 		max-width: 76rem;
 		margin-inline: auto;
 		padding-inline: clamp(1rem, 4vw, 3rem);
@@ -189,10 +209,23 @@
 		text-decoration: none;
 		color: var(--ink);
 	}
-	nav {
-		column-gap: 0.2rem;
-		padding-bottom: 0.4rem;
+	.navigation {
+		justify-content: space-between;
+		column-gap: 1.5rem;
+		padding-block: 0.2rem 0.6rem;
 	}
+	.navigation nav {
+		display: flex;
+		flex-wrap: wrap;
+		column-gap: 0.2rem;
+	}
+	.collections a {
+		font-weight: 600;
+	}
+	.views a:not([aria-current]) {
+		color: var(--muted);
+	}
+
 	nav a,
 	.account-link {
 		display: inline-flex;
@@ -204,10 +237,44 @@
 		font-size: 0.92rem;
 		text-decoration: none;
 	}
+	.mobile-views {
+		display: none;
+	}
+	@media (max-width: 42rem) {
+		.navigation {
+			display: block;
+			padding-inline: 0.65rem;
+		}
+		.navigation .desktop-views {
+			display: none;
+		}
+		.collections a {
+			padding-inline: 0.4rem;
+			font-size: 0.86rem;
+		}
+		.mobile-views {
+			display: block;
+			width: fit-content;
+			max-width: 100%;
+			margin-block-start: 0.35rem;
+		}
+		.mobile-views summary {
+			width: fit-content;
+			min-height: 2.75rem;
+			padding: 0.4rem 0.75rem;
+			border: 1px solid var(--control-line);
+			border-radius: var(--radius);
+			background: var(--linen);
+			cursor: pointer;
+			font-size: 0.9rem;
+		}
+		.mobile-views .views {
+			margin-top: 0.35rem;
+		}
+	}
 	nav a:hover,
 	.account-link:hover {
-		background: var(--paper);
-		text-decoration: underline;
+		background: var(--linen);
 	}
 	a[aria-current='page'] {
 		background: var(--linen);

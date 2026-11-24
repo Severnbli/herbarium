@@ -1,4 +1,4 @@
-import { error } from '@sveltejs/kit';
+import { error, redirect } from '@sveltejs/kit';
 import { formatEventDateLabel } from '#lib/i18n/format.ts';
 import { db } from '#lib/server/app.ts';
 import { requireUser } from '#lib/server/auth/guard.ts';
@@ -15,7 +15,14 @@ export const load: PageServerLoad = (event) => {
 	}
 	const parsed = eventFilters.safeParse(query);
 	if (!parsed.success) error(400, 'invalid');
-	const result = listEvents(db(), parsed.data);
+	const { kind, date, year, page } = parsed.data;
+	if (kind === 'plan' || (date === 'undated' && !kind)) {
+		const params = new URLSearchParams({ view: date === 'undated' ? 'ideas' : 'all' });
+		if (year) params.set('year', year);
+		if (page !== '1') params.set('page', page);
+		redirect(308, `/plans?${params}`);
+	}
+	const result = listEvents(db(), parsed.data, true);
 	return {
 		...result,
 		rows: result.rows.map((row) => ({

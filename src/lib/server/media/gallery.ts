@@ -156,6 +156,21 @@ export function listAlbums(db: Db) {
 		.all();
 }
 
+export function listAlbumCovers(db: Db) {
+	const cover = db
+		.select({ id: memory.id })
+		.from(albumMemory)
+		.innerJoin(memory, eq(memory.id, albumMemory.memoryId))
+		.where(eq(albumMemory.albumId, album.id))
+		.orderBy(desc(memory.sortDate), desc(memory.id))
+		.limit(1);
+	return db
+		.select({ id: album.id, title: album.title, coverId: sql<string | null>`(${cover})` })
+		.from(album)
+		.orderBy(asc(album.title), asc(album.id))
+		.all();
+}
+
 export function findAlbum(db: Db, id: string) {
 	const row = db
 		.select({ id: album.id, title: album.title })

@@ -8,22 +8,28 @@ import { generateId } from '#lib/server/crypto/tokens.ts';
 import { album, event } from '#lib/server/db/schema.ts';
 import {
 	albumTitle,
-	listAlbums,
+	listAlbumCovers,
 	listGroupedMemories,
 	listMemories,
 	pageField,
-	queryFields,
-	requireNoQuery
+	queryFields
 } from '#lib/server/media/gallery.ts';
 import { mediaId } from '#lib/server/media/store.ts';
 import type { Actions, PageServerLoad } from './$types';
 
-const filters = z.strictObject({ event: mediaId.optional(), page: pageField });
+const albumView = z.strictObject({ view: z.literal('albums').optional() });
+const filters = z.union([
+	z.strictObject({ view: z.literal('albums') }),
+	z.strictObject({ view: z.undefined().optional(), event: mediaId.optional(), page: pageField })
+]);
 export const load: PageServerLoad = (request) => {
 	requireUser(request);
 	const parsed = filters.safeParse(queryFields(request.request, request.url, ['/createAlbum']));
 	if (!parsed.success) error(400, 'Invalid memory query');
 	const sql = db();
+	if (parsed.data.view === 'albums' || request.request.method === 'POST') {
+		return { view: 'albums' as const, albums: listAlbumCovers(sql), event: null };
+	}
 	const eventId = parsed.data.event;
 	const row = eventId
 		? sql
@@ -34,15 +40,20 @@ export const load: PageServerLoad = (request) => {
 		: null;
 	if (eventId && !row) error(404, 'Event unavailable');
 	if (row) {
-		return { ...listMemories(sql, { eventId }, parsed.data.page), albums: [], event: row };
+		return {
+			view: 'gallery' as const,
+			...listMemories(sql, { eventId }, parsed.data.page),
+			event: row
+		};
 	}
-	return { ...listGroupedMemories(sql, parsed.data.page), albums: listAlbums(sql), event: null };
+	return { view: 'gallery' as const, ...listGroupedMemories(sql, parsed.data.page), event: null };
 };
 
 export const actions: Actions = {
 	createAlbum: async (request) => {
 		const actor = requireUser(request);
-		requireNoQuery(request, ['/createAlbum']);
+		const query = albumView.safeParse(queryFields(request.request, request.url, ['/createAlbum']));
+		if (!query.success) error(400, 'Invalid memory query');
 		const parsed = parseForm(albumTitle, await request.request.formData());
 		if (!parsed.success) return fail(400, { problem: 'invalid' });
 		const id = generateId();
