@@ -285,6 +285,7 @@ export function messages(locale: Locale) {
 		nav: {
 			plans: m.nav_plans({}, { locale }),
 			views: m.nav_views({}, { locale }),
+			more: m.nav_more({}, { locale }),
 			memories: m.nav_memories({}, { locale }),
 			events: m.nav_events({}, { locale }),
 			label: m.nav_label({}, { locale }),

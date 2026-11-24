@@ -55,7 +55,8 @@
 			<ul role="list">
 				{#each data.entries as entry (entry.pinId)}
 					<li class={entry.kind}>
-						<a href={resolve('/events/[id]', { id: entry.id })}>{entry.title}</a>
+						<a class="record-link" href={resolve('/events/[id]', { id: entry.id })}>{entry.title}</a
+						>
 						<p>{entry.date}</p>
 						{#if entry.place}<p>{entry.place}</p>{/if}
 					</li>
@@ -72,7 +73,9 @@
 	<h2 id="saved-places">{m.map.saved}</h2>
 	{#if data.savedPlaces.length}<ul>
 			{#each data.savedPlaces as place (place.id)}<li>
-					<a href={resolve('/map/places/[id]', { id: place.id })}>{place.place}</a>
+					<a class="record-link" href={resolve('/map/places/[id]', { id: place.id })}
+						>{place.place}</a
+					>
 					<p>{place.lat}, {place.lon}</p>
 				</li>{/each}
 		</ul>{/if}
@@ -134,9 +137,6 @@
 		list-style: none;
 		display: grid;
 		gap: 0.85rem;
-	}
-	li a {
-		font-weight: bold;
 	}
 	li p {
 		margin: 0;

@@ -137,7 +137,7 @@
 			<Button type="submit">{m.memory.albumAdd}</Button>
 		</form>
 	{:else if !included.length}
-		<a href={resolve('/memories?view=albums')}>{m.memory.createAlbum}</a>
+		<a class="button quiet" href={resolve('/memories?view=albums')}>{m.memory.createAlbum}</a>
 	{/if}
 </section>
 <DeleteConfirmation

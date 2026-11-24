@@ -59,7 +59,7 @@ Open questions belong in the roadmap until resolved. Move their outcome into the
 
 ## Account and navigation
 
-Use **Account** in the masthead to change language or appearance, manage security settings, or sign out. Choose the language directly to apply it. Language follows the member across devices. Appearance follows the browser's saved preference.
+On small screens, open **More** for Calendar, Timeline, Map and Members. Use **Account** in the masthead to change language or appearance, manage security settings, or sign out. Choose the language directly to apply it. Language follows the member across devices. Appearance follows the browser's saved preference.
 
 ## Invitations
 

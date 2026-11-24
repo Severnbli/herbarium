@@ -13,8 +13,8 @@
 <!-- eslint-disable svelte/no-navigation-without-resolve -->
 {#if page > 1 || hasNext}
 	<nav aria-label={m.memory.title}>
-		{#if page > 1}<a href={url(page - 1)}>{m.event.previous}</a>{/if}
-		{#if hasNext}<a href={url(page + 1)}>{m.event.next}</a>{/if}
+		{#if page > 1}<a class="button quiet" href={url(page - 1)}>{m.event.previous}</a>{/if}
+		{#if hasNext}<a class="button quiet" href={url(page + 1)}>{m.event.next}</a>{/if}
 	</nav>
 {/if}
 

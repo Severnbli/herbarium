@@ -46,7 +46,8 @@
 		/>
 		<div class="filter-actions">
 			<button>{m.event.filter}</button>
-			{#if filtered}<a href={resolve('/events')}>{m.event.clearFilters}</a>{/if}
+			{#if filtered}<a class="button quiet" href={resolve('/events')}>{m.event.clearFilters}</a
+				>{/if}
 		</div>
 	</form>
 </details>
@@ -74,12 +75,14 @@
 <!-- eslint-disable svelte/no-navigation-without-resolve -->
 {#if data.pages > 1}
 	<nav aria-label={m.event.listTitle}>
-		{#if data.page > 1}<a href={`${resolve('/events')}?${pageQuery(data.page - 1)}`}
-				>{m.event.previous}</a
+		{#if data.page > 1}<a
+				class="button quiet"
+				href={`${resolve('/events')}?${pageQuery(data.page - 1)}`}>{m.event.previous}</a
 			>{/if}
 		<span>{m.event.page(data.page, data.pages)}</span>
-		{#if data.page < data.pages}<a href={`${resolve('/events')}?${pageQuery(data.page + 1)}`}
-				>{m.event.next}</a
+		{#if data.page < data.pages}<a
+				class="button quiet"
+				href={`${resolve('/events')}?${pageQuery(data.page + 1)}`}>{m.event.next}</a
 			>{/if}
 	</nav>
 {/if}

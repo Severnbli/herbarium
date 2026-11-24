@@ -791,10 +791,10 @@ test('timed events retain their local year and future plans cannot be completed 
 });
 
 test('main workflows render in three languages and both themes on a phone', async ({ browser }) => {
-	for (const [locale, heading, save, timeline, upcoming] of [
-		['en', 'New event', 'Save event', 'Timeline', 'Coming up'],
-		['be', 'Новая падзея', 'Захаваць падзею', 'Храналогія', 'Бліжэйшыя падзеі'],
-		['ru', 'Новое событие', 'Сохранить событие', 'Хронология', 'Ближайшие события']
+	for (const [locale, heading, save, timeline, upcoming, more] of [
+		['en', 'New event', 'Save event', 'Timeline', 'Coming up', 'More'],
+		['be', 'Новая падзея', 'Захаваць падзею', 'Храналогія', 'Бліжэйшыя падзеі', 'Яшчэ'],
+		['ru', 'Новое событие', 'Сохранить событие', 'Хронология', 'Ближайшие события', 'Ещё']
 	]) {
 		const context = await browser.newContext({ locale, viewport: { width: 375, height: 812 } });
 		const page = await context.newPage();
@@ -821,6 +821,9 @@ test('main workflows render in three languages and both themes on a phone', asyn
 		await expect(
 			page.getByRole('heading', { name: `Synthetic ${locale} event`, exact: true })
 		).toBeVisible();
+		const dateAction = page.locator('main a[href$="#event-date"]');
+		await expect(dateAction).toHaveCSS('text-decoration-line', 'none');
+		await expect(dateAction).toHaveCSS('border-top-style', 'solid');
 		for (const colorScheme of ['light', 'dark'] as const) {
 			await page.emulateMedia({ colorScheme });
 			await page.screenshot({
@@ -831,6 +834,10 @@ test('main workflows render in three languages and both themes on a phone', asyn
 				true
 			);
 		}
+		await expect(page.getByRole('link', { name: timeline, exact: true })).toHaveCount(0);
+		const moreMenu = page.getByRole('banner').locator('summary').filter({ hasText: more });
+		await moreMenu.focus();
+		await page.keyboard.press('Enter');
 		await page.getByRole('link', { name: timeline, exact: true }).click();
 		await expect(page.getByRole('heading', { name: timeline, exact: true })).toBeVisible();
 		for (const colorScheme of ['light', 'dark'] as const) {
@@ -877,6 +884,11 @@ test('timeline groups dates and pages through filtered events without JavaScript
 		expect(response.status()).toBe(303);
 	}
 
+	await page
+		.getByRole('banner')
+		.locator('summary')
+		.filter({ hasText: /^More$/ })
+		.click();
 	await page.getByRole('navigation').getByRole('link', { name: 'Timeline', exact: true }).click();
 	const anniversary = page.getByRole('region', { name: '2000' });
 	await expect(
@@ -1335,6 +1347,14 @@ test('loads local tiles and glyphs, searches for places and edits pins without o
 			.getByRole('link', { name: 'Synthetic visit at the same point' })
 	).toBeVisible();
 	await page.getByRole('button', { name: 'Close event preview' }).click();
+	await page.getByRole('link', { name: 'Account', exact: true }).click();
+	const accountPanel = page.getByRole('dialog');
+	await accountPanel.getByRole('button', { name: 'Русский' }).click();
+	await expect(overview).toHaveAttribute('aria-label', 'Интерактивная карта');
+	await expect(page).toHaveURL('/map' + filters);
+	await accountPanel.getByRole('button', { name: 'English' }).click();
+	await expect(overview).toHaveAttribute('aria-label', 'Interactive map');
+	await page.keyboard.press('Escape');
 
 	const offline = await newPage(browser, { javaScriptEnabled: false });
 	await login(offline, member.username, member.password);

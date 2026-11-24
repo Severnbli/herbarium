@@ -32,6 +32,7 @@ const coordinate = ({ lat, lon }: Coordinates): [number, number] => [
 
 let protocolRegistered = false;
 export type MapController = ReturnType<typeof createMap>;
+type Camera = { center: [number, number]; zoom: number };
 
 function groupEntries(entries: MapEntry[]) {
 	const groups = new Map<string, Map<string, MapEntry>>();
@@ -152,6 +153,7 @@ export function createMap({
 	m,
 	basemap,
 	position,
+	camera,
 	entries,
 	onPick,
 	onError
@@ -161,6 +163,7 @@ export function createMap({
 	m: Messages['map'];
 	basemap: boolean;
 	position: Coordinates | null;
+	camera?: Camera;
 	entries?: MapEntry[];
 	onPick?: (point: Coordinates) => void;
 	onError: () => void;
@@ -189,8 +192,8 @@ export function createMap({
 		container,
 		style: style(),
 		attributionControl: false,
-		center: position ? coordinate(position) : defaultCenter,
-		zoom: position ? 12 : 5.5,
+		center: camera?.center ?? (position ? coordinate(position) : defaultCenter),
+		zoom: camera?.zoom ?? (position ? 12 : 5.5),
 		maxZoom: 19,
 		renderWorldCopies: false,
 		cooperativeGestures: true,
@@ -227,7 +230,7 @@ export function createMap({
 			lon: Number(lng.toFixed(6))
 		});
 
-	function setPosition(next: Coordinates | null) {
+	function setPosition(next: Coordinates | null, recenter = true) {
 		if (!next) {
 			marker?.remove();
 			marker = undefined;
@@ -243,11 +246,12 @@ export function createMap({
 			} else {
 				marker.setLngLat(point);
 			}
-			if (!previous || !map.getBounds().contains(point)) map.jumpTo({ center: point, zoom: 12 });
+			if (recenter && (!previous || !map.getBounds().contains(point)))
+				map.jumpTo({ center: point, zoom: 12 });
 		}
 		position = next;
 	}
-	setPosition(position);
+	setPosition(position, !camera);
 
 	function fitEntries() {
 		if (!entries?.length) return;
@@ -282,7 +286,7 @@ export function createMap({
 	}
 
 	if (entries) {
-		fitEntries();
+		if (!camera) fitEntries();
 		map.on('click', clusterLayer, expandCluster);
 		map.on('click', markerLayer, (event) => {
 			const feature = event.features?.[0];
@@ -318,6 +322,10 @@ export function createMap({
 	return {
 		setEntries,
 		setPosition,
+		camera(): Camera {
+			const { lng, lat } = map.getCenter();
+			return { center: [lng, lat], zoom: map.getZoom() };
+		},
 		remove() {
 			observer.disconnect();
 			systemTheme.removeEventListener('change', applyTheme);

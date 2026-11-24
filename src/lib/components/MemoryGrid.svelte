@@ -86,7 +86,9 @@
 		<section class="group" aria-labelledby={heading}>
 			<h2 id={heading}>
 				{#if group.event}
-					<a href={resolve('/events/[id]', { id: group.event.id })}>{group.event.title}</a>
+					<a class="record-link" href={resolve('/events/[id]', { id: group.event.id })}
+						>{group.event.title}</a
+					>
 				{:else}
 					{m.memory.unlinked}
 				{/if}
@@ -109,7 +111,9 @@
 			<button type="button" class="secondary" disabled={index === 0} onclick={() => step(-1)}
 				>{m.memory.previous}</button
 			>
-			<a href={resolve('/memories/[id]', { id: selected.id })}>{m.memory.view}</a>
+			<a class="button quiet" href={resolve('/memories/[id]', { id: selected.id })}
+				>{m.memory.view}</a
+			>
 			<button
 				type="button"
 				class="secondary"
@@ -142,10 +146,16 @@
 		display: grid;
 		gap: 0.35rem;
 		padding: 0.25rem;
+		color: var(--ink);
+		text-decoration: none;
 		align-content: start;
 		border: 1px solid var(--line);
 		border-radius: var(--radius);
 		overflow-wrap: anywhere;
+	}
+	.memory:hover {
+		background: var(--linen);
+		border-color: var(--control-line);
 	}
 	.caption {
 		padding: 0.15rem 0.35rem;

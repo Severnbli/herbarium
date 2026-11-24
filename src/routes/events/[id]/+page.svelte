@@ -63,7 +63,9 @@
 			<p>{data.dateLabel}{data.event.timeZone ? ` (${data.event.timeZone})` : ''}</p>
 			<!-- The fragment targets the date fieldset on the resolved edit page. -->
 			<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
-			<a href={edit + '#event-date'}>{undated ? m.event.schedule : m.event.changeDate}</a>
+			<a class="button quiet" href={edit + '#event-date'}
+				>{undated ? m.event.schedule : m.event.changeDate}</a
+			>
 		</div>
 		<div>
 			{#if data.event.place}<p>{data.event.place}</p>{/if}
@@ -72,7 +74,7 @@
 				</p>{/each}
 			<!-- The fragment targets the place fieldset on the resolved edit page. -->
 			<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
-			<a href={edit + '#event-place'}>
+			<a class="button quiet" href={edit + '#event-place'}>
 				{data.places.length || data.event.place || data.event.lat !== null
 					? m.event.changePlace
 					: m.event.addPlace}
@@ -134,7 +136,9 @@
 	<!-- eslint-disable svelte/no-navigation-without-resolve -->
 	<MemoryGrid rows={data.memories.rows} {m} />
 	{#if data.memories.hasNext}
-		<a href={`${resolve('/memories')}?event=${data.event.id}`}>{m.memory.browse}</a>
+		<a class="button quiet" href={`${resolve('/memories')}?event=${data.event.id}`}
+			>{m.memory.browse}</a
+		>
 	{/if}
 	<!-- eslint-enable svelte/no-navigation-without-resolve -->
 </section>
@@ -238,6 +242,9 @@
 		margin-top: 1rem;
 		padding-top: 1rem;
 		border-top: 1px solid var(--line);
+	}
+	.event-details .button {
+		margin-top: 0.4rem;
 	}
 	.event-details p,
 	.heading h2,

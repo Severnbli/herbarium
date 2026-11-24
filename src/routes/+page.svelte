@@ -26,14 +26,15 @@
 	<section class="panel upcoming" aria-labelledby="upcoming-title">
 		<div class="section-heading">
 			<h2 id="upcoming-title">{m.home.upcoming}</h2>
-			<a href={resolve('/calendar')}>{m.calendar.title}</a>
+			<a class="button quiet" href={resolve('/calendar')}>{m.calendar.title}</a>
 		</div>
 		{#if data.upcoming.length}
 			<ul class="events">
 				{#each data.upcoming as item (item.id)}
 					<li>
 						<div>
-							<a class="event-title" href={resolve('/events/[id]', { id: item.id })}>{item.title}</a
+							<a class="event-title record-link" href={resolve('/events/[id]', { id: item.id })}
+								>{item.title}</a
 							>
 							<div class="event-date">
 								{item.label}{#if item.countLabel}
@@ -50,8 +51,8 @@
 			<p>{m.home.upcomingEmpty}</p>
 		{/if}
 		<div class="planning-links">
-			<a href={resolve('/plans')}>{m.nav.plans}</a>
-			<a href={resolve('/plans?view=ideas')}>{m.event.undatedPlans}</a>
+			<a class="button quiet" href={resolve('/plans')}>{m.nav.plans}</a>
+			<a class="button quiet" href={resolve('/plans?view=ideas')}>{m.event.undatedPlans}</a>
 		</div>
 	</section>
 
@@ -62,7 +63,7 @@
 		{#if data.nextAnniversary}
 			{@const item = data.nextAnniversary}
 			<p class="anniversary-title">
-				<a href={resolve('/events/[id]', { id: item.id })}>{item.title}</a>
+				<a class="record-link" href={resolve('/events/[id]', { id: item.id })}>{item.title}</a>
 			</p>
 			<p class="event-date">
 				{item.label}{#if item.countLabel}
@@ -89,14 +90,15 @@
 	<section class="panel history" aria-labelledby="history-title">
 		<div class="section-heading">
 			<h2 id="history-title">{m.home.history}</h2>
-			<a href={resolve('/timeline')}>{m.timeline.title}</a>
+			<a class="button quiet" href={resolve('/timeline')}>{m.timeline.title}</a>
 		</div>
 		{#if data.onThisDay.length}
 			<ul class="events">
 				{#each data.onThisDay as item (item.id)}
 					<li>
 						<div>
-							<a class="event-title" href={resolve('/events/[id]', { id: item.id })}>{item.title}</a
+							<a class="event-title record-link" href={resolve('/events/[id]', { id: item.id })}
+								>{item.title}</a
 							>
 							<div class="event-date">{item.label}</div>
 						</div>
@@ -107,8 +109,8 @@
 			<p>{m.home.historyEmpty}</p>
 		{/if}
 		<div class="planning-links">
-			<a href={resolve('/events')}>{m.nav.events}</a>
-			<a href={resolve('/events/new?kind=moment')}>{m.event.newTitle}</a>
+			<a class="button quiet" href={resolve('/events')}>{m.nav.events}</a>
+			<a class="button quiet" href={resolve('/events/new?kind=moment')}>{m.event.newTitle}</a>
 		</div>
 	</section>
 </div>
@@ -116,10 +118,10 @@
 <section class="panel recent" aria-labelledby="recent-title">
 	<div class="section-heading">
 		<h2 id="recent-title">{m.home.recent}</h2>
-		<a href={resolve('/memories')}>{m.memory.gallery}</a>
+		<a class="button quiet" href={resolve('/memories')}>{m.memory.gallery}</a>
 	</div>
 	<MemoryGrid rows={data.memories} {m} />
-	<a href={resolve('/memories/new')}>{m.memory.addMedia}</a>
+	<a class="button quiet" href={resolve('/memories/new')}>{m.memory.addMedia}</a>
 </section>
 
 <style>

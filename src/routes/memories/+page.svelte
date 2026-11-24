@@ -126,7 +126,13 @@
 		overflow: hidden;
 		border: 1px solid var(--line);
 		border-radius: var(--radius);
+		color: var(--ink);
+		text-decoration: none;
 		font-weight: 600;
+	}
+	.albums a:hover {
+		border-color: var(--control-line);
+		background: var(--linen);
 	}
 	.albums a > span:last-child {
 		padding: 0.7rem 0.85rem;

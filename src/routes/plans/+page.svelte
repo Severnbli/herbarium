@@ -47,21 +47,26 @@
 		{#each data.rows as plan (plan.id)}
 			<li>
 				<div>
-					<h2><a href={resolve('/events/[id]', { id: plan.id })}>{plan.title}</a></h2>
+					<h2>
+						<a class="record-link" href={resolve('/events/[id]', { id: plan.id })}>{plan.title}</a>
+					</h2>
 					{#if !plan.undated || filters.view === 'all'}<p>{plan.dateLabel}</p>{/if}
 					{#if plan.place}<p>{plan.place}</p>{/if}
 				</div>
+				<!-- Links target specific sections on resolved event routes. -->
+				<!-- eslint-disable svelte/no-navigation-without-resolve -->
 				{#if plan.undated}
-					<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
-					<a class="row-action" href={resolve('/events/[id]/edit', { id: plan.id }) + '#event-date'}
+					<a
+						class="button quiet"
+						href={resolve('/events/[id]/edit', { id: plan.id }) + '#event-date'}
 						>{m.event.schedule}</a
 					>
 				{:else if filters.view === 'review'}
-					<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
-					<a class="row-action" href={resolve('/events/[id]', { id: plan.id }) + '#plan-review'}
+					<a class="button quiet" href={resolve('/events/[id]', { id: plan.id }) + '#plan-review'}
 						>{m.plans.reviewAction}</a
 					>
 				{/if}
+				<!-- eslint-enable svelte/no-navigation-without-resolve -->
 			</li>
 		{/each}
 	</ul>
@@ -73,9 +78,12 @@
 {/if}
 {#if data.pages > 1}
 	<nav aria-label={m.event.page(data.page, data.pages)}>
-		{#if data.page > 1}<a href={pageUrl(data.page - 1)}>{m.event.previous}</a>{/if}
+		{#if data.page > 1}<a class="button quiet" href={pageUrl(data.page - 1)}>{m.event.previous}</a
+			>{/if}
 		<span>{m.event.page(data.page, data.pages)}</span>
-		{#if data.page < data.pages}<a href={pageUrl(data.page + 1)}>{m.event.next}</a>{/if}
+		{#if data.page < data.pages}<a class="button quiet" href={pageUrl(data.page + 1)}
+				>{m.event.next}</a
+			>{/if}
 	</nav>
 {/if}
 
@@ -112,15 +120,7 @@
 	li + li {
 		margin-top: 0.4rem;
 	}
-	li a {
-		color: var(--ink);
-	}
-	.row-action {
-		display: inline-flex;
-		align-items: center;
-		min-height: 2.75rem;
-		color: var(--cornflower);
-	}
+
 	.empty {
 		text-align: center;
 		padding: 1rem;
