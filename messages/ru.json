@@ -408,6 +408,7 @@
 	"memory_changeEventLink": "Изменить связь с событием",
 	"map_saved": "Сохранённые места",
 	"map_useSaved": "Выбрать сохранённое место",
+	"map_customPlace": "Другое место",
 	"map_savePlace": "Сохранить место",
 	"map_addStop": "Добавить ещё одно место",
 	"map_remove": "Убрать",

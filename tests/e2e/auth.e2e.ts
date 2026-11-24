@@ -1373,9 +1373,7 @@ test('loads local tiles and glyphs, searches for places and edits pins without o
 	expect(violations).toEqual([]);
 });
 
-test('reuses saved places for separate stops and preserves the event when a place changes', async ({
-	browser
-}) => {
+test('renames linked saved places while preserving recorded event stops', async ({ browser }) => {
 	const page = await newPage(browser);
 	await login(page, member.username, member.password);
 	await page.goto('/map');
@@ -1411,7 +1409,24 @@ test('reuses saved places for separate stops and preserves the event when a plac
 	await expect(page.getByRole('link', { name: 'Garden walk' })).toHaveCount(2);
 	await page.goto(saved!);
 	await page.locator('input[name=place]').fill('New gate');
+	await page.locator('input[name=lat]').fill('53.92');
 	await page.getByRole('button', { name: 'Save place' }).click();
+	await page.goto(eventUrl);
+	await expect(page.getByText('New gate', { exact: true })).toBeVisible();
+	await expect(page.getByText('New gate · Latitude: 53.91, Longitude: 27.57')).toBeVisible();
+	await expect(page.getByText('Riverside', { exact: true })).toBeVisible();
+
+	const offline = await newPage(browser, { javaScriptEnabled: false });
+	await login(offline, member.username, member.password);
+	await offline.goto('/events/new?kind=plan');
+	await offline.getByLabel('Title', { exact: true }).fill('Offline linked plan');
+	await offline.getByText('Add date, place or notes', { exact: true }).click();
+	await offline.getByLabel('Choose a saved place').selectOption({ label: 'New gate' });
+	await offline.getByRole('button', { name: 'Save plan' }).click();
+	await expect(offline.getByText('New gate · Latitude: 53.92, Longitude: 27.57')).toBeVisible();
+	await offline.context().close();
+
+	await page.goto('/map');
 	await page.getByRole('link', { name: 'New gate' }).click();
 	await page.locator('summary').filter({ hasText: 'Delete saved place' }).click();
 	await expectDeletionGuard(page, page.url() + '?/remove');
@@ -1419,7 +1434,7 @@ test('reuses saved places for separate stops and preserves the event when a plac
 	await page.getByRole('button', { name: 'Delete saved place' }).click();
 	await expect(page.getByRole('link', { name: 'New gate' })).toHaveCount(0);
 	await page.goto(eventUrl);
-	await expect(page.getByText('Garden gate', { exact: true })).toBeVisible();
+	await expect(page.getByText('New gate', { exact: true })).toBeVisible();
 	await expect(page.getByText('Riverside', { exact: true })).toBeVisible();
 	await page.context().close();
 });

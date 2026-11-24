@@ -105,6 +105,8 @@ MapLibre and its stylesheet load when an interactive map mounts. Herbarium uses 
 
 The place picker queries a bundled read-only SQLite gazetteer using bound FTS expressions built from name tokens. Search terms travel in the request body. GeoNames names and coordinates are public reference data in a separate database. Choosing a result fills the place and coordinate fields for the normal event save. Memory upload displays a photo GPS suggestion on a local map and retains the existing session-bound consent action.
 
+Primary and additional event stops may reference a saved place. Renaming updates the stored stop labels in one transaction. Coordinates are recorded when a stop is linked and serve as its historical position. Deleting a saved place clears its foreign keys and leaves the recorded labels and coordinates available.
+
 ## Dashboard
 
 The authenticated root page shows up to six event starts within the next 30 calendar days and includes the current day. Each occasion contributes its first upcoming recurrence in the window, using the same recurrence expansion as the calendar. Timed events must still be upcoming by instant. The dashboard displays those instants and counts down in the member's account time zone. All-day events retain their calendar dates. Month and year precision keep their original labels and can appear while the start period is current or begins in the window.
@@ -115,7 +117,7 @@ The historical lookup seeks by month and day, then walks the event date and ID i
 
 ## Portable archives
 
-Any signed-in member can confirm their password under **Account → Export shared data**. A POST streams a ZIP containing a versioned `herbarium.json` manifest and all cleaned originals. Manifest version 3 includes reusable places and ordered event stops. Restore also accepts versions 1 and 2. The archive contains event coordinates and shared attribution, album memberships and event reminder offsets. The database snapshot is taken before streaming begins, and any original deleted during the download remains readable until the stream closes. The encrypted volume retains operational records and private account settings. An audit row records each export started.
+Any signed-in member can confirm their password under **Account → Export shared data**. A POST streams a ZIP containing a versioned `herbarium.json` manifest and all cleaned originals. Manifest version 4 includes references from event stops to saved places. Restore also accepts versions 1 through 3. The archive contains event coordinates and shared attribution, album memberships and event reminder offsets. The database snapshot is taken before streaming begins, and any original deleted during the download remains readable until the stream closes. The encrypted volume retains operational records and private account settings. An audit row records each export started.
 
 An offline restore command validates the manifest, ZIP entry names, sizes, checksums and relationships. Media goes through the existing memory-only cleaning and encryption pipeline under the destination key. The CLI rebuilds derivatives and commits rows together after every file succeeds. Historical authors keep their display names and record IDs as inactive profiles. The destination owner creates new invitations for members who need access.
 

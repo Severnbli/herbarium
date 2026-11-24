@@ -108,6 +108,7 @@ export function messages(locale: Locale) {
 			deletePlaceHint: m.map_deletePlaceHint({}, { locale }),
 			saved: m.map_saved({}, { locale }),
 			useSaved: m.map_useSaved({}, { locale }),
+			customPlace: m.map_customPlace({}, { locale }),
 			savePlace: m.map_savePlace({}, { locale }),
 			addStop: m.map_addStop({}, { locale }),
 			remove: m.map_remove({}, { locale }),

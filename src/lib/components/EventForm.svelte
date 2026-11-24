@@ -7,7 +7,7 @@
 	import Select from './Select.svelte';
 	import Button from './Button.svelte';
 	import type { Locale, Messages } from '#lib/i18n/index.ts';
-	import type { EventForm } from '#lib/server/events/schemas.ts';
+	import type { EventForm, EventPlaceForm } from '#lib/server/events/schemas.ts';
 	let {
 		m,
 		locale,
@@ -25,7 +25,7 @@
 		m: Messages;
 		locale: Locale;
 		basemap: boolean;
-		places?: { place: string; lat: string; lon: string }[];
+		places?: EventPlaceForm[];
 		savedPlaces: { id: string; place: string; lat: number; lon: number }[];
 		eventId?: string;
 		fixedKind?: EventForm['kind'];

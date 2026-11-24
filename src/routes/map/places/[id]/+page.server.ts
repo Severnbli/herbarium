@@ -9,6 +9,7 @@ import { savedPlace } from '#lib/server/db/schema.ts';
 import { eventId, placeFields } from '#lib/server/events/schemas.ts';
 import { getConfig } from '#lib/server/config.ts';
 import { hasBasemap } from '#lib/server/maps/assets.ts';
+import { updateSavedPlace } from '#lib/server/maps/places.ts';
 import { clientIp } from '#lib/server/http/request.ts';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -60,14 +61,7 @@ export const actions: Actions = {
 				.insert(savedPlace)
 				.values({ ...values, id: generateId(), createdBy: member.id })
 				.run();
-		else if (
-			!db()
-				.update(savedPlace)
-				.set(values)
-				.where(eq(savedPlace.id, placeId(event.params.id)))
-				.run().changes
-		)
-			error(404, 'not_found');
+		else if (!updateSavedPlace(db(), placeId(event.params.id), values)) error(404, 'not_found');
 		redirect(303, '/map#saved-places');
 	},
 	remove: async (event) => {

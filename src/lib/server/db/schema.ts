@@ -164,6 +164,16 @@ export const keyRotation = sqliteTable('key_rotation', {
 	target: blob('target', { mode: 'buffer' }).notNull()
 });
 
+export const savedPlace = sqliteTable('saved_place', {
+	id: text('id').primaryKey(),
+	place: text('place').notNull(),
+	lat: real('lat').notNull(),
+	lon: real('lon').notNull(),
+	createdBy: text('created_by')
+		.notNull()
+		.references(() => user.id)
+});
+
 /** Moments, plans and recurring occasions share their identity. */
 export const event = sqliteTable(
 	'event',
@@ -175,6 +185,7 @@ export const event = sqliteTable(
 		place: text('place').notNull().default(''),
 		lat: real('lat'),
 		lon: real('lon'),
+		savedPlaceId: text('saved_place_id').references(() => savedPlace.id, { onDelete: 'set null' }),
 		category: text('category', { enum: ['none', 'trip', 'date', 'milestone'] })
 			.notNull()
 			.default('none'),
@@ -196,6 +207,7 @@ export const event = sqliteTable(
 		updatedAt: timestamp('updated_at').notNull()
 	},
 	(table) => [
+		index('event_saved_place_idx').on(table.savedPlaceId),
 		index('event_sort_idx').on(table.sortDate, table.id),
 		index('event_kind_sort_idx').on(table.kind, table.sortDate),
 		index('event_month_day_sort_idx').on(
@@ -403,16 +415,6 @@ export const albumMemory = sqliteTable(
 	]
 );
 
-export const savedPlace = sqliteTable('saved_place', {
-	id: text('id').primaryKey(),
-	place: text('place').notNull(),
-	lat: real('lat').notNull(),
-	lon: real('lon').notNull(),
-	createdBy: text('created_by')
-		.notNull()
-		.references(() => user.id)
-});
-
 export const eventPlace = sqliteTable(
 	'event_place',
 	{
@@ -422,7 +424,11 @@ export const eventPlace = sqliteTable(
 		position: integer('position').notNull(),
 		place: text('place').notNull(),
 		lat: real('lat'),
-		lon: real('lon')
+		lon: real('lon'),
+		savedPlaceId: text('saved_place_id').references(() => savedPlace.id, { onDelete: 'set null' })
 	},
-	(table) => [primaryKey({ columns: [table.eventId, table.position] })]
+	(table) => [
+		primaryKey({ columns: [table.eventId, table.position] }),
+		index('event_place_saved_place_idx').on(table.savedPlaceId)
+	]
 );

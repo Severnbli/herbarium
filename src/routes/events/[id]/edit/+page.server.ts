@@ -23,6 +23,7 @@ export const load: PageServerLoad = async (event) => {
 			id,
 			places: listEventPlaces(db(), id).map((row) => ({
 				place: row.place,
+				savedPlaceId: row.savedPlaceId ?? '',
 				lat: row.lat?.toString() ?? '',
 				lon: row.lon?.toString() ?? ''
 			})),

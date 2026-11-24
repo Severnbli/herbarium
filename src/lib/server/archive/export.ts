@@ -17,7 +17,13 @@ import {
 } from '#lib/server/db/schema.ts';
 import { openMedia } from '#lib/server/media/format.ts';
 import { holdMediaFiles, openMediaFile } from '#lib/server/media/store.ts';
-import { MANIFEST_PATH, MAX_ARCHIVE_ROWS, MAX_MANIFEST_BYTES, originalPath } from './manifest.ts';
+import {
+	MANIFEST_PATH,
+	MANIFEST_VERSION,
+	MAX_ARCHIVE_ROWS,
+	MAX_MANIFEST_BYTES,
+	originalPath
+} from './manifest.ts';
 
 let exporting = false;
 
@@ -82,7 +88,7 @@ function snapshot(db: Db) {
 			chunks.push(part);
 		}
 
-		append(`{"version":3,"exportedAt":${JSON.stringify(new Date())}`);
+		append(`{"version":${MANIFEST_VERSION},"exportedAt":${JSON.stringify(new Date())}`);
 		for (const [name, rows] of Object.entries(collections)) {
 			append(`,"${name}":[`);
 			let count = 0;

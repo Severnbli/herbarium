@@ -28,6 +28,7 @@ import {
 	archiveManifest,
 	type ArchiveManifest,
 	MANIFEST_PATH,
+	MANIFEST_VERSION,
 	MAX_ARCHIVE_ROWS,
 	MAX_MANIFEST_BYTES,
 	originalPath
@@ -83,15 +84,23 @@ function indexRows<T extends { id: string }>(rows: T[]) {
 }
 
 function validateReferences(manifest: ArchiveManifest) {
-	indexRows(manifest.savedPlaces);
+	const savedPlaces = indexRows(manifest.savedPlaces);
 	const authors = indexRows(manifest.authors);
 	const events = indexRows(manifest.events);
 	const memories = indexRows(manifest.memories);
 	const albums = indexRows(manifest.albums);
 	const links = new Set(manifest.albumMemories.map((row) => `${row.albumId}:${row.memoryId}`));
 	const reminders = new Set(manifest.reminders.map((row) => `${row.eventId}:${row.minutes}`));
+	const validPlaceLink = (
+		row: ArchiveManifest['events'][number] | ArchiveManifest['eventPlaces'][number]
+	) =>
+		!row.savedPlaceId ||
+		(row.lat !== null &&
+			row.lon !== null &&
+			savedPlaces.get(row.savedPlaceId)?.place === row.place);
 	if (
-		manifest.eventPlaces.some((p) => !events.has(p.eventId)) ||
+		manifest.eventPlaces.some((p) => !events.has(p.eventId) || !validPlaceLink(p)) ||
+		manifest.events.some((row) => !validPlaceLink(row)) ||
 		[...manifest.savedPlaces, ...manifest.events, ...manifest.memories, ...manifest.albums].some(
 			(row) => !authors.has(row.createdBy)
 		) ||
@@ -118,6 +127,17 @@ async function readManifest(zip: ZipFile, entry: Entry) {
 	return result.data;
 }
 
+function legacyPlaceLinks(savedPlaces: ArchiveManifest['savedPlaces']) {
+	const locationKey = (row: { place: string; lat: number | null; lon: number | null }) =>
+		JSON.stringify([row.place, row.lat, row.lon]);
+	const links = new Map<string, string | null>();
+	for (const place of savedPlaces) {
+		const key = locationKey(place);
+		links.set(key, links.has(key) ? null : place.id);
+	}
+	return (row: Parameters<typeof locationKey>[0]) => links.get(locationKey(row)) ?? null;
+}
+
 export async function restoreArchive(
 	db: Db,
 	config: Config,
@@ -137,6 +157,8 @@ export async function restoreArchive(
 		const first = await entries.next();
 		if (first.done) throw new RestoreError('The archive is empty.');
 		const manifest = await readManifest(zip, first.value);
+		const legacyLink =
+			manifest.version < MANIFEST_VERSION ? legacyPlaceLinks(manifest.savedPlaces) : undefined;
 		// Cleaning can add a small container overhead to files accepted at the upload limit.
 		const mediaConfig = {
 			...config,
@@ -187,11 +209,17 @@ export async function restoreArchive(
 					})
 					.run();
 			}
-			for (const row of manifest.events) tx.insert(event).values(row).run();
+			for (const row of manifest.savedPlaces) tx.insert(savedPlace).values(row).run();
+			for (const row of manifest.events)
+				tx.insert(event)
+					.values({ ...row, savedPlaceId: row.savedPlaceId ?? legacyLink?.(row) })
+					.run();
 			for (const row of memories) tx.insert(memory).values(row).run();
 			for (const row of assets) tx.insert(mediaFile).values(row).run();
-			for (const row of manifest.eventPlaces) tx.insert(eventPlace).values(row).run();
-			for (const row of manifest.savedPlaces) tx.insert(savedPlace).values(row).run();
+			for (const row of manifest.eventPlaces)
+				tx.insert(eventPlace)
+					.values({ ...row, savedPlaceId: row.savedPlaceId ?? legacyLink?.(row) })
+					.run();
 			for (const row of manifest.albums) tx.insert(album).values(row).run();
 			for (const row of manifest.albumMemories) tx.insert(albumMemory).values(row).run();
 			for (const row of manifest.reminders) tx.insert(eventReminder).values(row).run();

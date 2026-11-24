@@ -205,6 +205,7 @@ Done when a member can add several photos and videos in one pass and see every s
 - [x] Give Memories a photo-first gallery and a dedicated album view with cover previews.
 - [x] Use immediate language selection, add a play icon to videos and make shared map pins open all events at that point.
 - [x] Let members confirm individual content deletions without re-entering their password. Preserve session checks, CSRF protection and audit records.
+- [x] Propagate saved place renames to linked event locations and preserve those links in exports and restores.
 
 ---
 

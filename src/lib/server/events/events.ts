@@ -22,14 +22,21 @@ import {
 } from '#lib/domain/event-date.ts';
 import { generateId } from '../crypto/tokens.ts';
 import type { Db } from '../db/index.ts';
-import { event, eventPlace, reminderDelivery, user } from '../db/schema.ts';
+import { event, eventPlace, reminderDelivery, savedPlace, user } from '../db/schema.ts';
 import {
 	expandOccasion,
 	readRecurrence,
 	recurrenceRule,
 	validateOccurrenceRange
 } from './recurrence.ts';
-import { eventFilters, eventFormSchema, placeFields, eventId, type EventForm } from './schemas.ts';
+import {
+	eventFilters,
+	eventFormSchema,
+	eventId,
+	eventPlaceFields,
+	type EventForm,
+	type EventPlaceForm
+} from './schemas.ts';
 
 export class EventError extends Error {
 	constructor(public readonly code: 'not_found' | 'not_finished') {
@@ -40,8 +47,32 @@ export class EventError extends Error {
 export type EventRecord = typeof event.$inferSelect;
 export const PAGE_SIZE = 30;
 
+type PlaceSnapshot = Pick<EventRecord, 'savedPlaceId' | 'lat' | 'lon'>;
+
+function resolveEventPlace(db: Db, input: EventPlaceForm, previous: readonly PlaceSnapshot[]) {
+	const snapshot = {
+		place: input.place,
+		lat: input.lat === '' ? null : Number(input.lat),
+		lon: input.lon === '' ? null : Number(input.lon)
+	};
+	const saved = input.savedPlaceId
+		? db.select().from(savedPlace).where(eq(savedPlace.id, input.savedPlaceId)).get()
+		: undefined;
+	if (!saved) return { ...snapshot, savedPlaceId: null };
+	const keepCoordinates = previous.some(
+		(stop) =>
+			stop.savedPlaceId === saved.id && stop.lat === snapshot.lat && stop.lon === snapshot.lon
+	);
+	return {
+		savedPlaceId: saved.id,
+		place: saved.place,
+		lat: keepCoordinates ? snapshot.lat : saved.lat,
+		lon: keepCoordinates ? snapshot.lon : saved.lon
+	};
+}
+
 /** Services accept validated inputs only; parsing here also protects non-route callers. */
-function storage(input: EventForm) {
+function storage(db: Db, input: EventForm, previous?: EventRecord) {
 	const value = eventFormSchema.parse(input);
 	const timed = value.dateMode === 'timed';
 	const undated = value.dateMode === 'undated';
@@ -62,10 +93,8 @@ function storage(input: EventForm) {
 		occasionType: value.kind === 'occasion' ? value.occasionType : null,
 		title: value.title,
 		notes: value.notes,
-		place: value.place,
+		...resolveEventPlace(db, value, previous ? [previous] : []),
 		category: value.category,
-		lat: value.lat === '' ? null : Number(value.lat),
-		lon: value.lon === '' ? null : Number(value.lon),
 		dateMode: value.dateMode,
 		precision: undated ? ('day' as const) : value.precision,
 		startDate,
@@ -81,20 +110,19 @@ function storage(input: EventForm) {
 	};
 }
 
-type Stop = Pick<EventForm, 'place' | 'lat' | 'lon'>;
-function insertPlaces(db: Db, eventId: string, places: Stop[]) {
-	for (const [position, input] of places.entries()) {
-		const { place, lat, lon } = placeFields.parse(input);
+function insertPlaces(
+	db: Db,
+	eventId: string,
+	places: EventPlaceForm[],
+	previous: readonly PlaceSnapshot[] = []
+) {
+	const locations = places
+		.map((input) => resolveEventPlace(db, eventPlaceFields.parse(input), previous))
+		.filter((stop) => stop.place || stop.lat !== null);
+	for (const [position, stop] of locations.entries())
 		db.insert(eventPlace)
-			.values({
-				eventId,
-				position,
-				place,
-				lat: lat ? Number(lat) : null,
-				lon: lon ? Number(lon) : null
-			})
+			.values({ eventId, position, ...stop })
 			.run();
-	}
 }
 export function listEventPlaces(db: Db, id: string) {
 	return db
@@ -110,11 +138,11 @@ export function createEvent(
 	actorId: string,
 	input: EventForm,
 	now = new Date(),
-	places: Stop[] = []
+	places: EventPlaceForm[] = []
 ): string {
-	const values = storage(input);
 	const id = generateId();
 	db.transaction((tx) => {
+		const values = storage(tx, input);
 		tx.insert(event)
 			.values({ id, ...values, createdBy: actorId, createdAt: now, updatedAt: now })
 			.run();
@@ -140,14 +168,15 @@ export function updateEvent(
 	id: string,
 	input: EventForm,
 	now = new Date(),
-	places?: Stop[]
+	places?: EventPlaceForm[]
 ): void {
-	const values = storage(input);
 	db.transaction((tx) => {
 		const previous = findEvent(tx, id);
+		const values = storage(tx, input, previous);
 		if (places) {
+			const previousPlaces = listEventPlaces(tx, id);
 			tx.delete(eventPlace).where(eq(eventPlace.eventId, id)).run();
-			insertPlaces(tx, id, places);
+			insertPlaces(tx, id, places, previousPlaces);
 		}
 		// Editing the kind must obey the same rule as the completion action.
 		if (previous.kind === 'plan' && values.kind === 'moment' && !hasHappened(values, now))
@@ -314,6 +343,7 @@ export function eventToForm(value: EventRecord): EventForm {
 		title: value.title,
 		notes: value.notes,
 		place: value.place,
+		savedPlaceId: value.savedPlaceId ?? '',
 		lat: value.lat?.toString() ?? '',
 		lon: value.lon?.toString() ?? '',
 		category: value.category,

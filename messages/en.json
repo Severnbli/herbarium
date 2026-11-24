@@ -404,6 +404,7 @@
 	"memory_changeEventLink": "Change event link",
 	"map_saved": "Saved places",
 	"map_useSaved": "Choose a saved place",
+	"map_customPlace": "Custom location",
 	"map_savePlace": "Save place",
 	"map_addStop": "Add another place",
 	"map_remove": "Remove",

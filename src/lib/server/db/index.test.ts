@@ -2,10 +2,19 @@ import { randomBytes } from 'node:crypto';
 import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import Database from 'better-sqlite3';
+import { sql } from 'drizzle-orm';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createTestDb } from '../testing';
 import { DatabaseKeyError, openDatabase } from './index';
-import { event, eventReminder, memory, reminderDelivery, user } from './schema';
+import {
+	event,
+	eventPlace,
+	eventReminder,
+	memory,
+	reminderDelivery,
+	savedPlace,
+	user
+} from './schema';
 
 let cleanup: (() => void) | undefined;
 afterEach(() => cleanup?.());
@@ -82,18 +91,23 @@ it('holds an exclusive maintenance lock between transactions', () => {
 	}
 });
 
-it('preserves existing event attachments and reminder state when adding undated plans', () => {
-	const t = createTestDb();
-	cleanup = t.cleanup;
-	const dir = join(t.dir, 'previous-migrations');
+function previousMigrations(root: string, firstExcluded: number) {
+	const dir = join(root, 'previous-migrations');
 	mkdirSync(join(dir, 'meta'), { recursive: true });
 	const journal = JSON.parse(readFileSync('drizzle/meta/_journal.json', 'utf8')) as {
 		entries: { idx: number; tag: string }[];
 	};
-	journal.entries = journal.entries.filter(({ idx }) => idx < 10);
+	journal.entries = journal.entries.filter(({ idx }) => idx < firstExcluded);
 	for (const { tag } of journal.entries)
 		copyFileSync(`drizzle/${tag}.sql`, join(dir, `${tag}.sql`));
 	writeFileSync(join(dir, 'meta', '_journal.json'), JSON.stringify(journal));
+	return dir;
+}
+
+it('preserves existing event attachments and reminder state when adding undated plans', () => {
+	const t = createTestDb();
+	cleanup = t.cleanup;
+	const dir = previousMigrations(t.dir, 10);
 	const path = join(t.dir, 'previous.db');
 	const previous = openDatabase({ path, key: t.key, migrationsFolder: dir });
 	const when = new Date('2030-03-04T12:00:00Z');
@@ -107,20 +121,10 @@ it('preserves existing event attachments and reminder state when adding undated 
 				passwordHash: 'test'
 			})
 			.run();
-		previous.db
-			.insert(event)
-			.values({
-				id: 'dated',
-				kind: 'plan',
-				title: 'Dated plan',
-				dateMode: 'date',
-				precision: 'day',
-				startDate: '2030-03-04',
-				sortDate: '2030-03-04',
-				createdBy: 'member',
-				updatedAt: when
-			})
-			.run();
+		previous.db.run(sql`
+			INSERT INTO event (id, kind, title, date_mode, precision, start_date, sort_date, created_by, updated_at)
+			VALUES ('dated', 'plan', 'Dated plan', 'date', 'day', '2030-03-04', '2030-03-04', 'member', ${when.getTime()})
+		`);
 		previous.db
 			.insert(memory)
 			.values({
@@ -167,6 +171,58 @@ it('preserves existing event attachments and reminder state when adding undated 
 			upgraded.db.insert(eventReminder).values({ eventId: 'unknown', minutes: 0 }).run()
 		).toThrow();
 		expect(() => upgraded.db.update(event).set({ dateMode: 'undated' }).run()).toThrow();
+	} finally {
+		upgraded.close();
+	}
+});
+
+it('links only unique exact legacy matches to saved places during migration', () => {
+	const t = createTestDb();
+	cleanup = t.cleanup;
+	const migrationsFolder = previousMigrations(t.dir, 13);
+	const path = join(t.dir, 'legacy-locations.db');
+	const previous = openDatabase({ path, key: t.key, migrationsFolder });
+	try {
+		previous.db
+			.insert(user)
+			.values({
+				id: 'member',
+				username: 'member',
+				displayName: 'Member',
+				passwordHash: 'test'
+			})
+			.run();
+		previous.db
+			.insert(savedPlace)
+			.values([
+				{ id: 'known', place: 'Garden', lat: 0, lon: 0, createdBy: 'member' },
+				{ id: 'first', place: 'Park', lat: 10, lon: 20, createdBy: 'member' },
+				{ id: 'second', place: 'Park', lat: 10, lon: 20, createdBy: 'member' }
+			])
+			.run();
+		previous.db.run(sql`
+			INSERT INTO event (id, kind, title, place, lat, lon, date_mode, precision, created_by, updated_at)
+			VALUES ('idea', 'plan', 'A plan', 'Garden', 0, 0, 'undated', 'day', 'member', 0)
+		`);
+		previous.db.run(sql`
+			INSERT INTO event_place (event_id, position, place, lat, lon)
+			VALUES ('idea', 0, 'Garden', 0, 0), ('idea', 1, 'Park', 10, 20), ('idea', 2, 'Garden', 1, 0)
+		`);
+	} finally {
+		previous.close();
+	}
+	const upgraded = openDatabase({ path, key: t.key });
+	try {
+		expect(upgraded.db.select().from(event).get()).toMatchObject({
+			savedPlaceId: 'known',
+			lat: 0,
+			lon: 0
+		});
+		expect(upgraded.db.select().from(eventPlace).orderBy(eventPlace.position).all()).toMatchObject([
+			{ savedPlaceId: 'known' },
+			{ savedPlaceId: null },
+			{ savedPlaceId: null }
+		]);
 	} finally {
 		upgraded.close();
 	}
