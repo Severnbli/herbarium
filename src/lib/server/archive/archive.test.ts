@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { Readable } from 'node:stream';
 import { buffer } from 'node:stream/consumers';
 import sharp from 'sharp';
+import { ZipFile } from 'yazl';
 import { afterEach, expect, it } from 'vitest';
 import { addUser } from '#lib/server/auth/fixtures.ts';
 import { loadConfig } from '#lib/server/config.ts';
@@ -29,7 +30,7 @@ import { unwrapDataKey } from '#lib/server/crypto/keys.ts';
 import { createEvent } from '#lib/server/events/events.ts';
 import { emptyEventForm } from '#lib/server/events/schemas.ts';
 import { createExport } from './export.ts';
-import { archiveManifest } from './manifest.ts';
+import { archiveManifest, MANIFEST_PATH } from './manifest.ts';
 import { restoreArchive } from './restore.ts';
 
 const cleanups: (() => unknown)[] = [];
@@ -63,6 +64,11 @@ it('streams a consistent snapshot and restores content to a different encrypted 
 	const author = await addUser(from.db, 'source-account', { role: 'owner' });
 	const owner = await addUser(to.db, 'destination-owner', { role: 'owner' });
 	const eventId = generateId();
+	const savedPlaceId = generateId();
+	from.db
+		.insert(savedPlace)
+		.values({ id: savedPlaceId, place: 'Garden', lat: 0, lon: 0, createdBy: author })
+		.run();
 	const albumId = generateId();
 	const memoryId = generateId();
 	const date = new Date('2025-10-12T12:00:00.000Z');
@@ -73,6 +79,8 @@ it('streams a consistent snapshot and restores content to a different encrypted 
 			kind: 'occasion',
 			title: 'Test anniversary',
 			notes: '**Test**',
+			place: 'Garden',
+			savedPlaceId,
 			lat: 53.9,
 			lon: 27.56,
 			dateMode: 'date',
@@ -98,12 +106,8 @@ it('streams a consistent snapshot and restores content to a different encrypted 
 		date
 	);
 	from.db
-		.insert(savedPlace)
-		.values({ id: generateId(), place: 'Garden', lat: 0, lon: 0, createdBy: author })
-		.run();
-	from.db
 		.insert(eventPlace)
-		.values({ eventId, position: 0, place: 'Second stop', lat: 10, lon: 20 })
+		.values({ eventId, position: 0, place: 'Garden', lat: 10, lon: 20, savedPlaceId })
 		.run();
 	from.db.insert(eventReminder).values({ eventId: undatedId, minutes: 0, createdAt: date }).run();
 	from.db.transaction((tx) => {
@@ -279,4 +283,47 @@ it('accepts the version 1 manifest for a dated plan', () => {
 			events: [{ ...archived, dateMode: 'undated', startDate: null, sortDate: null }]
 		}).success
 	).toBe(false);
+});
+
+it('restores version 3 places and links only unique location matches', async () => {
+	const from = await instance();
+	const to = await instance();
+	const author = await addUser(from.db, 'author', { role: 'owner' });
+	await addUser(to.db, 'owner', { role: 'owner' });
+	const eventId = createEvent(from.db, author, {
+		...emptyEventForm,
+		title: 'Visit',
+		start: '2020-02-29',
+		place: 'Garden',
+		lat: '0',
+		lon: '0'
+	});
+	const unique = { id: generateId(), place: 'Garden', lat: 0, lon: 0, createdBy: author };
+	const duplicate = { id: generateId(), place: 'Park', lat: 10, lon: 20, createdBy: author };
+	const manifest = {
+		version: 3,
+		exportedAt: new Date(),
+		authors: [{ id: author, displayName: 'Archive author', createdAt: new Date() }],
+		savedPlaces: [unique, duplicate, { ...duplicate, id: generateId() }],
+		events: [{ ...from.db.select().from(event).get(), savedPlaceId: undefined }],
+		eventPlaces: [
+			{ eventId, position: 0, place: 'Garden', lat: 0, lon: 0 },
+			{ eventId, position: 1, place: 'Park', lat: 10, lon: 20 }
+		],
+		memories: [],
+		albums: [],
+		albumMemories: [],
+		reminders: []
+	};
+	const zip = new ZipFile();
+	zip.addBuffer(Buffer.from(JSON.stringify(manifest)), MANIFEST_PATH);
+	zip.end();
+	const archive = join(to.config.dataDir, 'legacy.zip');
+	await writeFile(archive, await buffer(zip.outputStream));
+	await restoreArchive(to.db, to.config, to.keyWrap, archive, new AbortController().signal);
+	expect(to.db.select().from(event).get()).toMatchObject({ savedPlaceId: unique.id });
+	expect(to.db.select().from(eventPlace).orderBy(eventPlace.position).all()).toMatchObject([
+		{ savedPlaceId: unique.id },
+		{ savedPlaceId: null }
+	]);
 });

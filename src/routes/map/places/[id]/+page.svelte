@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import LocationPicker from '#lib/components/LocationPicker.svelte';
-	import Field from '#lib/components/Field.svelte';
+	import DeleteConfirmation from '#lib/components/DeleteConfirmation.svelte';
 	import { messages } from '#lib/i18n/index.ts';
 	import type { PageProps } from './$types';
 	let { data, form }: PageProps = $props();
@@ -24,31 +24,10 @@
 	<button>{m.map.savePlace}</button>
 </form>
 {#if data.id !== 'new'}
-	<details open={!!form?.passwordError || !!form?.minutes}>
-		<summary>{m.map.deletePlace}</summary>
-		<form method="POST" action="?/remove">
-			{#if form?.minutes}<p role="alert">{m.error.rateLimited(form.minutes)}</p>{/if}
-			<Field
-				name="currentPassword"
-				type="password"
-				label={m.account.confirmPassword}
-				autocomplete="current-password"
-				maxlength={256}
-				error={form?.passwordError ? m.error.wrongPassword : undefined}
-				required
-			/>
-			<button class="secondary">{m.map.deletePlace}</button>
-		</form>
-	</details>
+	<DeleteConfirmation
+		action="?/remove"
+		label={m.map.deletePlace}
+		description={m.map.deletePlaceHint}
+		error={form?.deleteProblem ? m.error.form : undefined}
+	/>
 {/if}
-
-<style>
-	details {
-		margin-top: 2rem;
-		border-top: 1px solid var(--line);
-		padding-top: 1rem;
-	}
-	summary {
-		cursor: pointer;
-	}
-</style>

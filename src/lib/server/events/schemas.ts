@@ -19,13 +19,17 @@ const coordinate = (min: number, max: number) =>
 		.max(32)
 		.refine((value) => value === '' || readCoordinate(value, min, max) !== null);
 
+const locationFields = {
+	place: z.string().trim().max(200),
+	lat: coordinate(-90, 90),
+	lon: coordinate(-180, 180)
+};
+const savedPlaceChoice = z.union([z.literal(''), eventId]).default('');
 export const placeFields = z
-	.strictObject({
-		place: z.string().trim().max(200),
-		lat: coordinate(-90, 90),
-		lon: coordinate(-180, 180)
-	})
+	.strictObject(locationFields)
 	.refine(({ lat, lon }) => (lat === '') === (lon === ''));
+export const eventPlaceFields = placeFields.safeExtend({ savedPlaceId: savedPlaceChoice });
+export type EventPlaceForm = z.input<typeof eventPlaceFields>;
 
 export const eventFormSchema = z
 	.strictObject({
@@ -39,9 +43,8 @@ export const eventFormSchema = z
 		occasionType: z.enum(OCCASION_TYPES).default('general'),
 		title: z.string().trim().min(1).max(200),
 		notes: z.string().max(20_000),
-		place: z.string().trim().max(200),
-		lat: coordinate(-90, 90),
-		lon: coordinate(-180, 180),
+		...locationFields,
+		savedPlaceId: savedPlaceChoice,
 		category: z.enum(CATEGORIES),
 		dateMode: z.enum(['date', 'timed', 'undated']),
 		precision: z.enum(PRECISIONS),
@@ -103,6 +106,7 @@ export const emptyEventForm: EventForm = {
 	title: '',
 	notes: '',
 	place: '',
+	savedPlaceId: '',
 	lat: '',
 	lon: '',
 	category: 'none',
@@ -115,16 +119,25 @@ export const emptyEventForm: EventForm = {
 	endDisambiguation: 'reject'
 };
 
-export const eventFilters = z.strictObject({
-	kind: z.enum(['', 'moment', 'plan', 'occasion']).default(''),
+const listPosition = {
 	year: z
 		.string()
 		.regex(/^(?:[0-9]{4})?$/)
 		.refine((v) => v !== '0000')
 		.default(''),
-	date: z.enum(['', 'undated']).default(''),
 	page: z
 		.string()
 		.regex(/^[1-9]\d{0,5}$/)
 		.default('1')
+};
+
+export const eventFilters = z.strictObject({
+	kind: z.enum(['', 'moment', 'plan', 'occasion']).default(''),
+	...listPosition,
+	date: z.enum(['', 'undated']).default('')
+});
+
+export const planFilters = z.strictObject({
+	...listPosition,
+	view: z.enum(['scheduled', 'ideas', 'review', 'all']).default('scheduled')
 });

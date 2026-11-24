@@ -4,7 +4,7 @@ import { formObject } from '../auth/schemas.ts';
 import {
 	emptyEventForm,
 	eventFormSchema,
-	placeFields,
+	eventPlaceFields,
 	eventId,
 	type EventForm
 } from './schemas.ts';
@@ -19,22 +19,34 @@ export function routeEventId(params: Record<string, string | undefined>): string
 
 /** Reflect only known, bounded text values; never include a password or uploaded file. */
 export function parseEventForm(data: FormData) {
-	const columns = ['extra-place', 'extra-lat', 'extra-lon'].map((key) => {
+	const take = (key: string) => {
 		const values = data.getAll(key);
 		data.delete(key);
 		return values;
-	});
-	const [names, lats, lons] = columns;
-	const places = names!.slice(0, 100).map((place, i) => ({
-		place: typeof place === 'string' ? place.slice(0, 200) : '',
-		lat: String(lats![i] ?? '').slice(0, 32),
-		lon: String(lons![i] ?? '').slice(0, 32)
+	};
+	const names = take('extra-place');
+	const lats = take('extra-lat');
+	const lons = take('extra-lon');
+	const saved = take('extra-saved-place-id');
+	const safeText = (value: FormDataEntryValue | undefined, length: number) =>
+		typeof value === 'string' ? value.slice(0, length) : '';
+	const places = names.slice(0, 100).map((place, i) => ({
+		place: safeText(place, 200),
+		lat: safeText(lats[i], 32),
+		lon: safeText(lons[i], 32),
+		savedPlaceId: eventId.safeParse(saved[i]).data ?? ''
 	}));
 	const stops = z
-		.array(placeFields)
+		.array(eventPlaceFields)
 		.max(100)
-		.safeParse(names!.map((place, i) => ({ place, lat: lats![i], lon: lons![i] })));
-	const validStops = stops.success && columns.every((column) => column.length === names!.length);
+		.safeParse(
+			names.map((place, i) => ({ place, lat: lats[i], lon: lons[i], savedPlaceId: saved[i] }))
+		);
+	const validStops =
+		stops.success &&
+		lats.length === names.length &&
+		lons.length === names.length &&
+		(saved.length === 0 || saved.length === names.length);
 	const object = formObject(data);
 	if (object && 'when' in object && !('precision' in object) && !('dateMode' in object)) {
 		const choice = object.when;
@@ -57,7 +69,7 @@ export function parseEventForm(data: FormData) {
 		return {
 			ok: true as const,
 			values: parsed.data,
-			places: stops.data.filter((row) => row.place || row.lat)
+			places: stops.data.filter((row) => row.place || row.lat || row.savedPlaceId)
 		};
 	const values = { ...emptyEventForm };
 	for (const key of Object.keys(values) as (keyof EventForm)[]) {
@@ -75,6 +87,7 @@ export function parseEventForm(data: FormData) {
 				disambiguation: ['reject', 'earlier', 'later'],
 				endDisambiguation: ['reject', 'earlier', 'later']
 			};
+			if (key === 'savedPlaceId' && !eventId.safeParse(text).success) continue;
 			if (!enumValues[key] || enumValues[key]!.includes(text))
 				Object.assign(values, { [key]: text.slice(0, key === 'notes' ? 20000 : 200) });
 		}

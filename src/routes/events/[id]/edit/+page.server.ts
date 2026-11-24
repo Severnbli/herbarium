@@ -17,14 +17,17 @@ export const load: PageServerLoad = async (event) => {
 	requireUser(event);
 	const id = routeEventId(event.params);
 	try {
+		const row = findEvent(db(), id);
 		return {
+			planContext: row.kind === 'plan',
 			id,
 			places: listEventPlaces(db(), id).map((row) => ({
 				place: row.place,
+				savedPlaceId: row.savedPlaceId ?? '',
 				lat: row.lat?.toString() ?? '',
 				lon: row.lon?.toString() ?? ''
 			})),
-			values: eventToForm(findEvent(db(), id)),
+			values: eventToForm(row),
 			savedPlaces: listSavedPlaces(db()),
 			basemap: await hasBasemap(getConfig().dataDir)
 		};

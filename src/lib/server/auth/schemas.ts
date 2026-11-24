@@ -17,6 +17,7 @@ export const newPassword = z.string().min(PASSWORD_MIN_LENGTH).max(PASSWORD_MAX_
 
 /** A password being checked: any length up to the cap, so old passwords keep working. */
 export const currentPassword = z.string().min(1).max(PASSWORD_MAX_LENGTH);
+export const contentDeletion = z.strictObject({ confirm: z.literal('delete') });
 
 export const otpCode = z
 	.string()

@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import type { Coordinates } from '#lib/domain/location.ts';
 	import type { Locale, Messages } from '#lib/i18n/index.ts';
 	import type { MapController } from '#lib/maps/client.ts';
@@ -21,27 +20,38 @@
 		onPick?: (point: Coordinates) => void;
 	} = $props();
 
-	let container: HTMLDivElement;
+	let container = $state<HTMLDivElement>();
 	let controller = $state.raw<MapController>();
 	let failed = $state(false);
 	let mounted = $state(false);
 
-	onMount(() => {
+	let camera: ReturnType<MapController['camera']> | undefined;
+	$effect(() => {
+		const target = container;
+		const language = locale;
+		const labels = m.map;
+		const hasBasemap = basemap;
+		if (!target) return;
 		mounted = true;
+		failed = false;
+		controller = undefined;
 		let disposed = false;
+		let active: MapController | undefined;
 		void import('#lib/maps/client.ts')
 			.then(({ createMap }) => {
 				if (disposed) return;
-				controller = createMap({
-					container,
-					locale,
-					m: m.map,
-					basemap,
+				active = createMap({
+					container: target,
+					locale: language,
+					m: labels,
+					basemap: hasBasemap,
 					position,
+					camera,
 					entries,
 					onPick,
 					onError: () => (failed = true)
 				});
+				controller = active;
 			})
 			.catch(() => {
 				if (!disposed) failed = true;
@@ -49,7 +59,10 @@
 
 		return () => {
 			disposed = true;
-			controller?.remove();
+			if (active) {
+				camera = active.camera();
+				active.remove();
+			}
 		};
 	});
 
@@ -122,6 +135,16 @@
 		color: var(--ink);
 		padding: 0.3rem;
 		min-width: 2.75rem;
+	}
+	.canvas :global(.event-map-group) {
+		max-height: 13rem;
+		overflow: auto;
+		overflow-wrap: anywhere;
+	}
+	.canvas :global(.event-map-popup + .event-map-popup) {
+		margin-top: 0.5rem;
+		padding-top: 0.5rem;
+		border-top: 1px solid var(--line);
 	}
 	.canvas :global(.event-map-popup p) {
 		margin: 0.25rem 0;

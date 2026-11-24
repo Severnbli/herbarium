@@ -5,10 +5,11 @@
 	import type { PageProps } from './$types';
 	let { data, form }: PageProps = $props();
 	const m = $derived(messages(data.locale));
+	const heading = $derived(data.planContext ? m.plans.edit : m.event.editTitle);
 </script>
 
-<svelte:head><title>{m.event.editTitle}</title></svelte:head>
-<h1>{m.event.editTitle}</h1>
+<svelte:head><title>{heading}</title></svelte:head>
+<h1>{heading}</h1>
 {#key data.id}
 	<EventForm
 		{m}

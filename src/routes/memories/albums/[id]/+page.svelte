@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import DeleteConfirmation from '#lib/components/DeleteConfirmation.svelte';
 	import Button from '#lib/components/Button.svelte';
 	import Field from '#lib/components/Field.svelte';
 	import MemoryGrid from '#lib/components/MemoryGrid.svelte';
@@ -14,7 +15,7 @@
 </script>
 
 <svelte:head><title>{data.album.title}</title></svelte:head>
-<a href={resolve('/memories')}>{m.memory.back}</a>
+<a href={resolve('/memories?view=albums')}>{m.memory.backToAlbums}</a>
 <header class="heading">
 	<h1>{data.album.title}</h1>
 	<!-- The query is appended to a resolved route. -->
@@ -25,6 +26,7 @@
 </header>
 <details open={form?.problem === 'invalid'}>
 	<summary>{m.memory.rename}</summary>
+	{#if form?.problem}<p role="alert">{m.error.form}</p>{/if}
 	<form method="POST" action="?/rename">
 		<Field
 			name="title"
@@ -38,25 +40,11 @@
 </details>
 <MemoryGrid rows={data.rows} {m} />
 <MemoryPagination page={data.page} hasNext={data.hasNext} url={pageUrl} {m} />
-{#if form?.problem === 'wrong_password'}<p role="alert">{m.error.wrongPassword}</p>
-{:else if form?.problem === 'rate_limited'}<p role="alert">{m.error.rateLimited(form.minutes)}</p>
-{:else if form?.problem}<p role="alert">{m.error.form}</p>{/if}
-
-<details>
-	<summary>{m.memory.albumDelete}</summary>
-	<p>{m.memory.albumDeleteHint}</p>
-	<form method="POST" action="?/delete">
-		<Field
-			name="currentPassword"
-			type="password"
-			label={m.field.currentPassword}
-			autocomplete="current-password"
-			maxlength={256}
-			required
-		/>
-		<Button type="submit" variant="secondary">{m.memory.albumDelete}</Button>
-	</form>
-</details>
+<DeleteConfirmation
+	label={m.memory.albumDelete}
+	description={m.memory.albumDeleteHint}
+	error={form?.deleteProblem ? m.error.form : undefined}
+/>
 
 <style>
 	.heading {

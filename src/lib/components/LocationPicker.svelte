@@ -27,7 +27,7 @@
 		m: Messages;
 		locale: Locale;
 		basemap: boolean;
-		initial: { lat: string; lon: string; place: string };
+		initial: { lat: string; lon: string; place: string; savedPlaceId?: string };
 		latError?: string;
 		lonError?: string;
 		placeError?: string;
@@ -41,6 +41,7 @@
 	let { lat, lon, place } = $state(
 		untrack(() => ({ lat: initial.lat, lon: initial.lon, place: initial.place }))
 	);
+	let savedPlaceId = $state(untrack(() => initial.savedPlaceId ?? ''));
 	let expanded = $state(
 		untrack(() => !!(required || latError || lonError || initial.lat || initial.lon))
 	);
@@ -61,6 +62,7 @@
 	});
 
 	function setPoint(point: Coordinates | null) {
+		savedPlaceId = '';
 		lat = point ? String(point.lat) : '';
 		lon = point ? String(point.lon) : '';
 		pasteError = false;
@@ -108,22 +110,27 @@
 	}
 </script>
 
-{#if mounted && savedPlaces.length}
-	<label for={uid + '-saved'}>{m.map.useSaved}</label>
-	<select
-		id={uid + '-saved'}
-		onchange={(e) => {
-			const chosen = savedPlaces.find((p) => p.id === e.currentTarget.value);
-			if (chosen) {
-				setPoint(chosen);
-				place = chosen.place;
-			}
-			e.currentTarget.value = '';
-		}}
-	>
-		<option value="">{m.map.useSaved}</option>
-		{#each savedPlaces as saved (saved.id)}<option value={saved.id}>{saved.place}</option>{/each}
-	</select>
+{#if savedPlaces.length}
+	<div class="saved-location">
+		<label for={uid + '-saved'}>{m.map.useSaved}</label>
+		<select
+			id={uid + '-saved'}
+			name={extra ? 'extra-saved-place-id' : 'savedPlaceId'}
+			value={savedPlaceId}
+			onchange={(e) => {
+				const chosen = savedPlaces.find((p) => p.id === e.currentTarget.value);
+				if (chosen) {
+					setPoint(chosen);
+					place = chosen.place;
+					expanded = true;
+				}
+				savedPlaceId = chosen?.id ?? '';
+			}}
+		>
+			<option value="">{m.map.customPlace}</option>
+			{#each savedPlaces as saved (saved.id)}<option value={saved.id}>{saved.place}</option>{/each}
+		</select>
+	</div>
 {/if}
 <Field
 	id={uid + '-place'}
@@ -131,7 +138,10 @@
 	name={extra ? 'extra-place' : 'place'}
 	label={m.event.place}
 	value={place}
-	oninput={(event) => (place = event.currentTarget.value)}
+	oninput={(event) => {
+		savedPlaceId = '';
+		place = event.currentTarget.value;
+	}}
 	error={placeError}
 	maxlength={200}
 />
@@ -215,7 +225,10 @@
 			name={extra ? 'extra-lat' : 'lat'}
 			label={m.event.lat}
 			value={lat}
-			oninput={(event) => (lat = event.currentTarget.value)}
+			oninput={(event) => {
+				savedPlaceId = '';
+				lat = event.currentTarget.value;
+			}}
 			inputmode="decimal"
 			error={latError}
 			maxlength={32}
@@ -226,7 +239,10 @@
 			name={extra ? 'extra-lon' : 'lon'}
 			label={m.event.lon}
 			value={lon}
-			oninput={(event) => (lon = event.currentTarget.value)}
+			oninput={(event) => {
+				savedPlaceId = '';
+				lon = event.currentTarget.value;
+			}}
 			inputmode="decimal"
 			error={lonError}
 			maxlength={32}
@@ -251,6 +267,12 @@
 </details>
 
 <style>
+	.saved-location {
+		display: grid;
+		justify-items: start;
+		gap: 0.25rem;
+		margin-block: 0.7rem;
+	}
 	details {
 		margin-block: 1rem;
 	}
