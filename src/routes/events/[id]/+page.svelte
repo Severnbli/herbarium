@@ -33,8 +33,20 @@
 </script>
 
 <svelte:head><title>{data.event.title}</title></svelte:head>
-<a href={resolve('/events')}>{m.event.back}</a>
-<header class="event-header">
+<a
+	href={resolve(
+		data.planContext
+			? undated
+				? '/plans?view=ideas'
+				: data.canComplete
+					? '/plans?view=review'
+					: '/plans'
+			: '/events'
+	)}
+>
+	{data.planContext ? m.event.backToPlans : m.event.back}
+</a>
+<header class="event-header" class:plan={data.planContext}>
 	<p class="kind">
 		{m.event[data.event.kind]}{data.event.category !== 'none'
 			? ` · ${m.event[data.event.category]}`
@@ -42,7 +54,8 @@
 	</p>
 	<div class="heading">
 		<h1>{data.event.title}</h1>
-		<a class="button secondary" href={edit}>{m.event.editTitle}</a>
+		<a class="button secondary" href={edit}>{data.planContext ? m.plans.edit : m.event.editTitle}</a
+		>
 	</div>
 	<p class="byline">{m.event.createdBy(data.event.createdByName)}</p>
 	<div class="event-details">
@@ -67,6 +80,20 @@
 		</div>
 	</div>
 </header>
+{#if data.canComplete || form?.problem === 'not_finished'}
+	<section class="review" id="plan-review" aria-labelledby="review-title">
+		<div>
+			<h2 id="review-title">{m.plans.reviewTitle}</h2>
+			<p>{m.plans.reviewHint}</p>
+			{#if form?.problem === 'not_finished'}<p role="alert">{m.event.notFinished}</p>{/if}
+		</div>
+		{#if data.canComplete}
+			<form method="POST" action="?/complete">
+				<Button type="submit">{m.event.complete}</Button>
+			</form>
+		{/if}
+	</section>
+{/if}
 {#if data.recurrence}
 	<p>{m.event.recurrence}: {data.recurrence.summary}</p>
 	<section aria-labelledby="upcoming-title">
@@ -90,16 +117,17 @@
 		<div class="notes">{@html data.notesHtml}</div>
 	</section>
 {/if}
-{#if form?.problem === 'not_finished'}<p role="alert">{m.event.notFinished}</p>
-{:else if form?.problem === 'invalid' && !form?.deleteProblem}<p role="alert">
+{#if form?.problem === 'invalid' && !form?.deleteProblem}<p role="alert">
 		{m.error.form}
 	</p>{/if}
 <section aria-labelledby="event-memories">
 	<div class="heading">
 		<h2 id="event-memories">{m.memory.title}</h2>
-		<!-- The query is appended to a resolved route. -->
-		<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
-		<a class="button" href={resolve('/memories/new') + `?event=${data.event.id}`}>
+		<a
+			class="button"
+			class:secondary={data.planContext}
+			href={resolve(`/memories/new?event=${data.event.id}`)}
+		>
 			{m.memory.addMedia}
 		</a>
 	</div>
@@ -110,14 +138,6 @@
 	{/if}
 	<!-- eslint-enable svelte/no-navigation-without-resolve -->
 </section>
-{#if data.event.kind === 'plan' && !undated}
-	<section>
-		<form method="POST" action="?/complete">
-			<Button type="submit" disabled={!data.canComplete}>{m.event.complete}</Button>
-		</form>
-		{#if !data.canComplete}<p>{m.event.notFinished}</p>{/if}
-	</section>
-{/if}
 {#if pins.length}
 	<section aria-labelledby="event-location">
 		<h2 id="event-location">{m.map.location}</h2>
@@ -200,6 +220,27 @@
 		border: 1px solid var(--line);
 		border-top: 3px solid var(--madder);
 		border-radius: var(--radius);
+	}
+	.event-header.plan,
+	.review {
+		border-block-start-color: var(--cornflower);
+	}
+	.review {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.75rem 1rem;
+		margin-block: 0 1.75rem;
+		padding: 1rem;
+		border: 1px solid var(--line);
+		border-inline-start: 3px solid var(--cornflower);
+		border-radius: var(--radius);
+	}
+	.review h2,
+	.review p,
+	.review form :global(button) {
+		margin: 0;
 	}
 	.heading,
 	.event-details {

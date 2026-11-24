@@ -178,3 +178,9 @@ Use the existing event link to give photos and videos shared context in the Memo
 ## Shared places and event history
 
 Saved places form a circle-wide address book in the encrypted database. Selecting one copies its label and coordinates into the event. The original event location remains its first stop, including for photo suggestions. Additional stops have an explicit order and share the event's lifetime. Portable archive version 3 includes both collections and restores archives from versions 1 and 2.
+
+## Events, Plans and Memories in the navigation
+
+Status: accepted.
+
+Use Events for past moments and recurring occasions, Plans for ideas and activities the circle is organizing, and Memories for photos, videos and albums. Give these sections their own starting actions. Calendar and Map can show entries from multiple sections together. A plan ready to record becomes a moment once a member confirms it. The same event ID preserves bookmarks, authorship and media attachments, and existing plan filters redirect to Plans. This change requires no data migration.

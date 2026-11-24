@@ -6,6 +6,10 @@ export function messages(locale: Locale) {
 	return {
 		appName: m.appName({}, { locale }),
 		memory: {
+			gallery: m.memory_gallery({}, { locale }),
+			galleryIntro: m.memory_galleryIntro({}, { locale }),
+			backToAlbums: m.memory_backToAlbums({}, { locale }),
+			emptyAlbums: m.memory_emptyAlbums({}, { locale }),
 			captured: m.memory_captured({}, { locale }),
 			uploadedOn: m.memory_uploadedOn({}, { locale }),
 			changeEventLink: m.memory_changeEventLink({}, { locale }),
@@ -147,7 +151,29 @@ export function messages(locale: Locale) {
 			older: m.timeline_older({}, { locale }),
 			latest: m.timeline_latest({}, { locale })
 		},
+		plans: {
+			intro: m.plans_intro({}, { locale }),
+			scheduled: m.plans_scheduled({}, { locale }),
+			ideas: m.plans_ideas({}, { locale }),
+			review: m.plans_review({}, { locale }),
+			reviewAction: m.plans_reviewAction({}, { locale }),
+			reviewTitle: m.plans_reviewTitle({}, { locale }),
+			reviewHint: m.plans_reviewHint({}, { locale }),
+			create: m.plans_create({}, { locale }),
+			edit: m.plans_edit({}, { locale }),
+			more: m.plans_more({}, { locale }),
+			year: (year: string) => m.plans_year({ year }, { locale }),
+			empty: {
+				scheduled: m.plans_emptyScheduled({}, { locale }),
+				ideas: m.plans_emptyIdeas({}, { locale }),
+				review: m.plans_emptyReview({}, { locale }),
+				all: m.plans_emptyAll({}, { locale })
+			}
+		},
 		event: {
+			newOccasion: m.event_newOccasion({}, { locale }),
+			journalIntro: m.event_journalIntro({}, { locale }),
+			backToPlans: m.event_backToPlans({}, { locale }),
 			repeatEvery: m.event_repeatEvery({}, { locale }),
 			unit: m.event_unit({}, { locale }),
 			annualHint: m.event_annualHint({}, { locale }),
@@ -255,6 +281,8 @@ export function messages(locale: Locale) {
 			close: m.design_close({}, { locale })
 		},
 		nav: {
+			plans: m.nav_plans({}, { locale }),
+			views: m.nav_views({}, { locale }),
 			memories: m.nav_memories({}, { locale }),
 			events: m.nav_events({}, { locale }),
 			label: m.nav_label({}, { locale }),

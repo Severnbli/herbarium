@@ -115,16 +115,25 @@ export const emptyEventForm: EventForm = {
 	endDisambiguation: 'reject'
 };
 
-export const eventFilters = z.strictObject({
-	kind: z.enum(['', 'moment', 'plan', 'occasion']).default(''),
+const listPosition = {
 	year: z
 		.string()
 		.regex(/^(?:[0-9]{4})?$/)
 		.refine((v) => v !== '0000')
 		.default(''),
-	date: z.enum(['', 'undated']).default(''),
 	page: z
 		.string()
 		.regex(/^[1-9]\d{0,5}$/)
 		.default('1')
+};
+
+export const eventFilters = z.strictObject({
+	kind: z.enum(['', 'moment', 'plan', 'occasion']).default(''),
+	...listPosition,
+	date: z.enum(['', 'undated']).default('')
+});
+
+export const planFilters = z.strictObject({
+	...listPosition,
+	view: z.enum(['scheduled', 'ideas', 'review', 'all']).default('scheduled')
 });

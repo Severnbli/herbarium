@@ -14,7 +14,7 @@
 </script>
 
 <svelte:head><title>{data.album.title}</title></svelte:head>
-<a href={resolve('/memories')}>{m.memory.back}</a>
+<a href={resolve('/memories?view=albums')}>{m.memory.backToAlbums}</a>
 <header class="heading">
 	<h1>{data.album.title}</h1>
 	<!-- The query is appended to a resolved route. -->

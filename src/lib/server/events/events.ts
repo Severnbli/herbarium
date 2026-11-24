@@ -1,4 +1,18 @@
-import { and, count, desc, eq, gte, isNull, lte } from 'drizzle-orm';
+import {
+	and,
+	asc,
+	count,
+	desc,
+	eq,
+	gte,
+	isNotNull,
+	isNull,
+	lte,
+	ne,
+	not,
+	sql,
+	type SQL
+} from 'drizzle-orm';
 import {
 	disambiguationFor,
 	hasHappened,
@@ -177,25 +191,16 @@ export function deleteEvent(db: Db, id: string): void {
 	});
 }
 
-export function listEvents(
-	db: Db,
-	input: { kind?: string; year?: string; date?: string; page?: string }
-) {
-	const filters = eventFilters.parse(input);
-	const where = and(
-		filters.kind ? eq(event.kind, filters.kind) : undefined,
-		filters.date === 'undated' ? isNull(event.sortDate) : undefined,
-		filters.year ? gte(event.sortDate, `${filters.year}-01-01`) : undefined,
-		filters.year ? lte(event.sortDate, `${filters.year}-12-31`) : undefined
-	);
+function pageEvents(db: Db, where: SQL | undefined, order: SQL, requested: number) {
 	const total = db.select({ n: count() }).from(event).where(where).get()!.n;
-	const page = Math.min(Number(filters.page), Math.max(1, Math.ceil(total / PAGE_SIZE)));
+	const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+	const page = Math.min(requested, pages);
 	const rows = db
 		.select({ event, createdByName: user.displayName })
 		.from(event)
 		.innerJoin(user, eq(event.createdBy, user.id))
 		.where(where)
-		.orderBy(desc(filters.date === 'undated' ? event.createdAt : event.sortDate), desc(event.id))
+		.orderBy(order, desc(event.id))
 		.limit(PAGE_SIZE)
 		.offset((page - 1) * PAGE_SIZE)
 		.all();
@@ -203,9 +208,66 @@ export function listEvents(
 		rows: rows.map((row) => ({ ...row.event, createdByName: row.createdByName })),
 		total,
 		page,
-		pages: Math.max(1, Math.ceil(total / PAGE_SIZE)),
-		filters
+		pages
 	};
+}
+
+function startYear(year: string) {
+	return year
+		? and(gte(event.sortDate, `${year}-01-01`), lte(event.sortDate, `${year}-12-31`))
+		: undefined;
+}
+
+export function listEvents(
+	db: Db,
+	input: { kind?: string; year?: string; date?: string; page?: string },
+	journal = false
+) {
+	const filters = eventFilters.parse(input);
+	const where = and(
+		journal ? ne(event.kind, 'plan') : undefined,
+		filters.kind ? eq(event.kind, filters.kind) : undefined,
+		filters.date === 'undated' ? isNull(event.sortDate) : undefined,
+		startYear(filters.year)
+	);
+	const order = desc(filters.date === 'undated' ? event.createdAt : event.sortDate);
+	return { ...pageEvents(db, where, order, Number(filters.page)), filters };
+}
+
+export function listPlans(
+	db: Db,
+	filters: { view: 'scheduled' | 'ideas' | 'review' | 'all'; year: string; page: string },
+	now = new Date()
+) {
+	const today = now.toISOString().slice(0, 10);
+	// Date-only ends are inclusive and stored at the start of their precision period.
+	// The UTC boundaries match hasHappened, which also guards the completion action.
+	const elapsed = sql`case when ${event.dateMode} = 'timed'
+		then coalesce(${event.endsAt}, ${event.startsAt}) <= ${now.getTime()}
+		else coalesce(${event.endDate}, ${event.startDate}) < case ${event.precision}
+			when 'year' then ${today.slice(0, 4) + '-01-01'}
+			when 'month' then ${today.slice(0, 7) + '-01'}
+			else ${today}
+		end
+	end`;
+	const stage = {
+		scheduled: and(isNotNull(event.sortDate), not(elapsed)),
+		ideas: isNull(event.sortDate),
+		review: and(isNotNull(event.sortDate), elapsed),
+		all: undefined
+	}[filters.view];
+	const order = {
+		scheduled: asc(event.sortDate),
+		ideas: desc(event.createdAt),
+		review: desc(event.sortDate),
+		all: desc(event.sortDate)
+	}[filters.view];
+	return pageEvents(
+		db,
+		and(eq(event.kind, 'plan'), stage, startYear(filters.year)),
+		order,
+		Number(filters.page)
+	);
 }
 
 export function listOccurrences(db: Db, from: string, through: string) {

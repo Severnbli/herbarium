@@ -33,6 +33,7 @@ const PROTECTED = [
 	'/account/export/download',
 	'/calendar',
 	'/events',
+	'/plans',
 	'/events/new',
 	'/events/' + 'a'.repeat(22),
 	'/events/' + 'a'.repeat(22) + '/edit',
@@ -323,7 +324,6 @@ test('members create, edit, filter, complete and delete shared events without Ja
 	await expect(page.getByLabel('Title', { exact: true })).toHaveValue('Synthetic spring journey');
 	await page.getByLabel('Start', { exact: true }).fill('2020-03');
 	await page.getByLabel('Date type').selectOption('month');
-	await page.getByLabel('Event kind').selectOption('plan');
 	await page.getByRole('button', { name: 'Save event', exact: true }).click();
 	const detail = page.url();
 	await expect(
@@ -338,23 +338,27 @@ test('members create, edit, filter, complete and delete shared events without Ja
 	await login(other, owner.username, owner.password);
 	await other.goto(detail);
 	await other.getByRole('link', { name: 'Edit event', exact: true }).click();
+	await other.getByLabel('Event kind').selectOption('plan');
 	await other.getByLabel('Title', { exact: true }).fill('Synthetic shared journey');
 	await other.getByLabel('Category').selectOption('trip');
 	await other.getByLabel('Place', { exact: true }).fill('Synthetic meadow');
 	await other.getByRole('button', { name: 'Save changes' }).click();
 	await expect(other.getByText('Added by Bob')).toBeVisible();
-	await page.goto('/events');
-	await page
-		.locator('summary')
-		.filter({ hasText: /^Filters$/ })
-		.click();
-	await page.getByLabel('Event kind').selectOption('plan');
-	await page.getByLabel('Start year').fill('2020');
-	await page.getByRole('button', { name: 'Filter', exact: true }).click();
+	await page.goto('/events?year=2020');
+	await expect(page.getByRole('link', { name: 'Synthetic shared journey' })).toHaveCount(0);
+	await page.getByRole('banner').getByRole('link', { name: 'Plans', exact: true }).click();
+	await page.getByRole('link', { name: 'Ready to record' }).click();
 	await page.getByRole('link', { name: 'Synthetic shared journey', exact: true }).click();
 	await page.getByRole('button', { name: 'Mark as moment' }).click();
 	await expect(page).toHaveURL(detail);
 	await expect(page.getByText('Moment · Trip', { exact: true })).toBeVisible();
+	await expect(page.getByRole('banner').getByRole('link', { name: 'Events' })).toHaveAttribute(
+		'aria-current',
+		'page'
+	);
+	await page.getByRole('link', { name: 'Back to events' }).click();
+	await page.getByRole('link', { name: 'Synthetic shared journey', exact: true }).click();
+
 	await page
 		.locator('summary')
 		.filter({ hasText: /^Delete event$/ })
@@ -375,10 +379,10 @@ test('members can save, schedule and clear the same plan without JavaScript', as
 }) => {
 	const page = await newPage(browser, { javaScriptEnabled: false });
 	await login(page, member.username, member.password);
-	await page.goto('/events');
+	await page.getByRole('banner').getByRole('link', { name: 'Plans', exact: true }).click();
 	await page.getByRole('link', { name: 'New plan' }).click();
 	await page.getByLabel('Title', { exact: true }).fill('Synthetic weekend idea');
-	await page.getByRole('button', { name: 'Save event', exact: true }).click();
+	await page.getByRole('button', { name: 'Save plan', exact: true }).click();
 	await expect(page.getByText('No date yet', { exact: true })).toBeVisible();
 	const plan = page.url();
 	await expect(page.getByRole('button', { name: 'Mark as moment' })).toHaveCount(0);
@@ -397,6 +401,13 @@ test('members can save, schedule and clear the same plan without JavaScript', as
 	await page.getByRole('button', { name: 'Save changes' }).click();
 	await expect(page).toHaveURL(plan);
 	await expect(page.getByText('June 18, 2033')).toBeVisible();
+	await page.getByRole('link', { name: 'Back to plans' }).click();
+	await expect(page).toHaveURL('/plans');
+	await expect(page.getByRole('link', { name: 'Synthetic weekend idea' })).toBeVisible();
+	await page.getByRole('link', { name: 'Without a date' }).click();
+	await expect(page.getByRole('link', { name: 'Synthetic weekend idea' })).toHaveCount(0);
+	for (const query of ['view=unknown', 'view=ideas&view=scheduled', 'page=0'])
+		expect((await page.request.get('/plans?' + query)).status()).toBe(400);
 	const calendar = '/calendar?view=day&date=2033-06-18';
 	await page.goto(calendar);
 	await page.getByRole('link', { name: 'Synthetic weekend idea' }).click();
@@ -454,7 +465,7 @@ test('mixed upload retries preserve successful files and link to the intended de
 	await login(page, member.username, member.password);
 	await page.goto('/events/new?kind=plan');
 	await page.getByLabel('Title', { exact: true }).fill('Synthetic upload plan');
-	await page.getByRole('button', { name: 'Save event', exact: true }).click();
+	await page.getByRole('button', { name: 'Save plan', exact: true }).click();
 	await expect(page).toHaveURL(/\/events\/[\w-]{22}$/);
 	const eventUrl = page.url();
 	await page.getByRole('link', { name: 'Add photos and videos' }).click();
@@ -506,6 +517,7 @@ test('mixed upload retries preserve successful files and link to the intended de
 	await expect(page.locator('video')).toBeVisible();
 
 	await page.goto('/memories');
+	await page.getByRole('link', { name: 'Albums', exact: true }).click();
 	await page.getByLabel('Album name').fill('Synthetic mixed album');
 	await page.getByRole('button', { name: 'Create album' }).click();
 	await expect(page).toHaveURL(/\/memories\/albums\/[\w-]{22}$/);
@@ -550,7 +562,7 @@ test('mixed upload retries preserve successful files and link to the intended de
 
 	await page.goto('/events/new?kind=plan');
 	await page.getByLabel('Title', { exact: true }).fill('Synthetic destination plan');
-	await page.getByRole('button', { name: 'Save event', exact: true }).click();
+	await page.getByRole('button', { name: 'Save plan', exact: true }).click();
 	await expect(page).toHaveURL(/\/events\/[\w-]{22}$/);
 	const destination = page.url();
 	const gpsMemory = '/memories/' + gps.id;
@@ -735,13 +747,13 @@ test('timed events retain their local year and future plans cannot be completed 
 	await page.getByRole('button', { name: 'Save event', exact: true }).click();
 	const detail = page.url();
 	await expect(page.getByText(/January 1, 9999/)).toBeVisible();
-	await expect(page.getByRole('button', { name: 'Mark as moment' })).toBeDisabled();
+	await expect(page.getByRole('button', { name: 'Mark as moment' })).toHaveCount(0);
 	const blocked = await page.request.post(detail + '?/complete', {
 		form: {},
 		headers: { origin: ORIGIN }
 	});
 	expect(blocked.status()).toBe(400);
-	await page.getByRole('link', { name: 'Edit event', exact: true }).click();
+	await page.getByRole('link', { name: 'Edit plan', exact: true }).click();
 	await expect(page.getByLabel('Start', { exact: true })).toHaveValue('9999-01-01T00:30');
 	await page.getByLabel('Event kind').selectOption('moment');
 	await page.getByRole('button', { name: 'Save changes' }).click();
@@ -769,9 +781,7 @@ test('timed events retain their local year and future plans cannot be completed 
 	await expect(page).toHaveURL('/events');
 });
 
-test('dashboard, event and timeline screens render in three languages and both themes on a phone', async ({
-	browser
-}) => {
+test('main workflows render in three languages and both themes on a phone', async ({ browser }) => {
 	for (const [locale, heading, save, timeline, upcoming] of [
 		['en', 'New event', 'Save event', 'Timeline', 'Coming up'],
 		['be', 'Новая падзея', 'Захаваць падзею', 'Храналогія', 'Бліжэйшыя падзеі'],
@@ -819,6 +829,17 @@ test('dashboard, event and timeline screens render in three languages and both t
 			expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
 				true
 			);
+		}
+		await page.setViewportSize({ width: 320, height: 812 });
+		for (const path of ['/events', '/plans', '/memories', '/memories?view=albums']) {
+			await page.goto(path);
+			await expect(page.locator('main h1')).toBeVisible();
+			for (const colorScheme of ['light', 'dark'] as const) {
+				await page.emulateMedia({ colorScheme });
+				expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+					true
+				);
+			}
 		}
 		await context.close();
 	}
@@ -958,6 +979,7 @@ test('uploads private memories, browses them by keyboard and manages independent
 	expect((await download.body()).equals(readFileSync(photo))).toBe(false);
 
 	await offline.goto('/memories');
+	await offline.getByRole('link', { name: 'Albums', exact: true }).click();
 	await offline.getByLabel('Album name').fill('Synthetic album');
 	await offline.getByRole('button', { name: 'Create album' }).click();
 	await expect(offline.getByRole('heading', { name: 'Synthetic album' })).toBeVisible();
@@ -968,6 +990,10 @@ test('uploads private memories, browses them by keyboard and manages independent
 	await offline.getByRole('link', { name: 'Synthetic album' }).click();
 	await expect(offline).toHaveURL(albumUrl);
 	await expect(offline.getByRole('link', { name: /Winter swatch/ })).toBeVisible();
+	await offline.getByRole('link', { name: 'Back to albums' }).click();
+	await expect(
+		offline.getByRole('link', { name: 'Synthetic album' }).locator('img')
+	).toHaveAttribute('src', /\/media\/[^/]+\/thumbnail$/);
 
 	await offline.goto('/memories/new');
 	const rejected = await offline.request.post('/memories/new', {
@@ -1026,7 +1052,8 @@ test('uploads private memories, browses them by keyboard and manages independent
 		.click();
 	await offline.getByLabel('Current password').fill(member.password);
 	await offline.getByRole('button', { name: 'Delete album', exact: true }).click();
-	await expect(offline).toHaveURL('/memories');
+	await expect(offline).toHaveURL('/memories?view=albums');
+	await offline.getByRole('link', { name: 'Gallery', exact: true }).click();
 	await expect(
 		offline
 			.getByRole('region', { name: 'Memories without an event' })
@@ -1328,6 +1355,7 @@ test('reuses saved places for separate stops and preserves the event when a plac
 	const saved = await page.getByRole('link', { name: 'Garden gate' }).getAttribute('href');
 	await page.goto('/events/new?kind=plan');
 	await page.getByLabel('Title', { exact: true }).fill('Garden walk');
+	await page.getByText('Add date, place or notes', { exact: true }).click();
 	await page.getByLabel('Choose a saved place').selectOption({ label: 'Garden gate' });
 	await page.getByRole('button', { name: 'Add another place' }).click();
 	await page.locator('[name="extra-place"]').fill('Riverside');
@@ -1344,7 +1372,7 @@ test('reuses saved places for separate stops and preserves the event when a plac
 	await expect(page.locator('html')).toHaveAttribute('lang', 'en');
 	await page.keyboard.press('Escape');
 	await expect(page.getByLabel('Title', { exact: true })).toHaveValue('Garden walk');
-	await page.getByRole('button', { name: 'Save event' }).click();
+	await page.getByRole('button', { name: 'Save plan' }).click();
 	await expect(page.getByRole('heading', { name: 'Garden walk' })).toBeVisible();
 	const eventUrl = page.url();
 	await page.goto('/map');

@@ -17,12 +17,12 @@
 <div class="heading">
 	<h1>{m.event.listTitle}</h1>
 	<div class="heading-actions">
-		<!-- The query is appended to a resolved route. -->
-		<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
-		<a class="button secondary" href={resolve('/events/new') + '?kind=plan'}>{m.event.newPlan}</a>
-		<a class="button" href={resolve('/events/new')}>{m.event.newTitle}</a>
+		<a class="button secondary" href={resolve('/events/new?kind=occasion')}>{m.event.newOccasion}</a
+		>
+		<a class="button" href={resolve('/events/new?kind=moment')}>{m.event.newTitle}</a>
 	</div>
 </div>
+<p class="intro">{m.event.journalIntro}</p>
 <details class="filter-panel" open={filtered}>
 	<summary>{m.event.filters}</summary>
 	<form method="GET" action={resolve('/events')} class="filters">
@@ -33,7 +33,6 @@
 			options={[
 				{ value: '', label: m.event.all },
 				{ value: 'moment', label: m.event.moment },
-				{ value: 'plan', label: m.event.plan },
 				{ value: 'occasion', label: m.event.occasion }
 			]}
 		/>
@@ -44,15 +43,6 @@
 			inputmode="numeric"
 			pattern="[0-9]{4}"
 			maxlength={4}
-		/>
-		<Select
-			name="date"
-			label={m.event.dateFilter}
-			value={data.filters.date}
-			options={[
-				{ value: '', label: m.event.all },
-				{ value: 'undated', label: m.event.undated }
-			]}
 		/>
 		<div class="filter-actions">
 			<button>{m.event.filter}</button>
@@ -106,6 +96,9 @@
 		flex-wrap: wrap;
 		gap: 1rem;
 		justify-content: space-between;
+	}
+	.intro {
+		color: var(--muted);
 	}
 	.heading h1 {
 		margin: 0;

@@ -35,6 +35,7 @@ export const load: PageServerLoad = async (event) => {
 		const places = listEventPlaces(db(), id);
 		return {
 			event: row,
+			planContext: row.kind === 'plan',
 			places,
 			basemap:
 				(row.lat !== null || places.some((p) => p.lat !== null)) &&

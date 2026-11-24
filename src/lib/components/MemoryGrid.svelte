@@ -8,10 +8,12 @@
 	let {
 		rows = [],
 		groups,
+		spacious = false,
 		m
 	}: {
 		rows?: MemoryCard[];
 		groups?: MemoryGroup[];
+		spacious?: boolean;
 		m: Messages;
 	} = $props();
 	const gridId = $props.id();
@@ -50,7 +52,7 @@
 </script>
 
 {#snippet thumbnails(items: MemoryCard[])}
-	<ul class="memories">
+	<ul class="memories" class:spacious role="list">
 		{#each items as row (row.id)}
 			{@const label = row.caption}
 			<li>
@@ -132,13 +134,21 @@
 		list-style: none;
 		padding: 0;
 	}
+	.memories.spacious {
+		grid-template-columns: repeat(auto-fill, minmax(min(100%, 13rem), 1fr));
+		gap: 0.85rem;
+	}
 	.memory {
 		display: grid;
 		gap: 0.35rem;
 		padding: 0.25rem;
+		align-content: start;
 		border: 1px solid var(--line);
 		border-radius: var(--radius);
 		overflow-wrap: anywhere;
+	}
+	.caption {
+		padding: 0.15rem 0.35rem;
 	}
 	.thumbnail {
 		position: relative;
@@ -169,6 +179,11 @@
 		border-block: 0.45rem solid transparent;
 		border-inline-start: 0.7rem solid currentColor;
 		margin-inline-start: 0.15rem;
+	}
+	@media (max-width: 32rem) {
+		.memories.spacious {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
 	}
 	.controls {
 		display: flex;

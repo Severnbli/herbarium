@@ -13,29 +13,34 @@ import type { Actions, PageServerLoad } from './$types';
 export const load: PageServerLoad = async (event) => {
 	const member = requireUser(event);
 	const query = [...event.url.searchParams];
-	if (query.length === 0)
-		return {
-			values: { ...emptyEventForm },
-			calendarDate: null,
-			savedPlaces: listSavedPlaces(db()),
-			basemap: await hasBasemap(getConfig().dataDir)
-		};
-	const [key, value] = query[0]!;
-	if (query.length === 1 && key === 'kind' && value === 'plan')
-		return {
-			values: { ...emptyEventForm, kind: 'plan', dateMode: 'undated' } satisfies EventForm,
-			calendarDate: null,
-			savedPlaces: listSavedPlaces(db()),
-			basemap: await hasBasemap(getConfig().dataDir)
-		};
-	const date = calendarDate.safeParse(value);
-	if (query.length !== 1 || key !== 'date' || !date.success) error(400, 'invalid');
+	const [key, value] = query[0] ?? [];
 	const { timeZone } = getReminderPreferences(db(), member.id);
-	const kind: EventForm['kind'] =
-		date.data < calendarToday(new Date(), timeZone) ? 'moment' : 'plan';
+	let calendarDay: string | null = null;
+	let fixedKind: EventForm['kind'] | undefined;
+	let kind: EventForm['kind'] = 'moment';
+	if (
+		query.length === 1 &&
+		key === 'kind' &&
+		(value === 'moment' || value === 'plan' || value === 'occasion')
+	) {
+		fixedKind = kind = value;
+	} else if (query.length) {
+		const date = calendarDate.safeParse(value);
+		if (query.length !== 1 || key !== 'date' || !date.success) error(400, 'invalid');
+		calendarDay = date.data;
+		kind = calendarDay < calendarToday(new Date(), timeZone) ? 'moment' : 'plan';
+	}
 	return {
-		values: { ...emptyEventForm, kind, start: date.data, timeZone },
-		calendarDate: date.data,
+		values: {
+			...emptyEventForm,
+			kind,
+			timeZone,
+			dateMode: fixedKind === 'plan' ? 'undated' : 'date',
+			start: calendarDay ?? ''
+		} satisfies EventForm,
+		fixedKind,
+		planContext: kind === 'plan',
+		calendarDate: calendarDay,
 		savedPlaces: listSavedPlaces(db()),
 		basemap: await hasBasemap(getConfig().dataDir)
 	};

@@ -19,7 +19,7 @@
 		<time datetime={data.today}>{formatDateOnly(data.locale, data.today)}</time>
 		<h1>{m.home.greeting(data.displayName)}</h1>
 	</div>
-	<a class="button" href={resolve('/events/new')}>{m.event.newTitle}</a>
+	<a class="button" href={resolve('/events/new?kind=plan')}>{m.event.newPlan}</a>
 </div>
 
 <div class="dashboard-grid">
@@ -50,8 +50,8 @@
 			<p>{m.home.upcomingEmpty}</p>
 		{/if}
 		<div class="planning-links">
-			<a href={resolve('/events/new?kind=plan')}>{m.event.newPlan}</a>
-			<a href={resolve('/events?date=undated')}>{m.event.undatedPlans}</a>
+			<a href={resolve('/plans')}>{m.nav.plans}</a>
+			<a href={resolve('/plans?view=ideas')}>{m.event.undatedPlans}</a>
 		</div>
 	</section>
 
@@ -106,18 +106,20 @@
 		{:else}
 			<p>{m.home.historyEmpty}</p>
 		{/if}
+		<div class="planning-links">
+			<a href={resolve('/events')}>{m.nav.events}</a>
+			<a href={resolve('/events/new?kind=moment')}>{m.event.newTitle}</a>
+		</div>
 	</section>
 </div>
 
 <section class="panel recent" aria-labelledby="recent-title">
 	<div class="section-heading">
 		<h2 id="recent-title">{m.home.recent}</h2>
-		<a href={resolve('/memories')}>{m.nav.memories}</a>
+		<a href={resolve('/memories')}>{m.memory.gallery}</a>
 	</div>
 	<MemoryGrid rows={data.memories} {m} />
-	{#if !data.memories.length}
-		<a href={resolve('/memories/new')}>{m.memory.addMedia}</a>
-	{/if}
+	<a href={resolve('/memories/new')}>{m.memory.addMedia}</a>
 </section>
 
 <style>

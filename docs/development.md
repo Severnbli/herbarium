@@ -67,17 +67,19 @@ As an owner, open **Members**, enter an optional label, and choose **Create an i
 
 ## Events
 
-Open `/events` after signing in. All members can create and edit moments, plans and occasions, filter by kind and local start year, and delete an event after confirming their own password. Forms work without JavaScript. Date-only input formats are `YYYY-MM-DD`, `YYYY-MM` and `YYYY` for day/month/year precision. Timed input uses `YYYY-MM-DDTHH:mm` and an explicit IANA time zone. Repeated DST clock times require independent earlier/later choices for start and end; nonexistent clock times are rejected. The event's local start year determines its list filter even if the stored UTC instant falls in another year.
+Open **Events** after signing in to browse moments and recurring occasions, filter by kind and local start year, or create a new entry. All members can edit shared entries and delete them after confirming their own password. Forms work without JavaScript. Date-only input formats are `YYYY-MM-DD`, `YYYY-MM` and `YYYY` for day/month/year precision. Timed input uses `YYYY-MM-DDTHH:mm` and an explicit IANA time zone. Repeated DST clock times require independent earlier/later choices for start and end; nonexistent clock times are rejected. The event's local start year determines its list filter even if the stored UTC instant falls in another year.
 
 Unit tests cover date precision, DST gaps/folds, validation, sanitized notes, encrypted storage, pagination, plan transitions and independent route authentication checks. Browser tests exercise shared editing and password-confirmed deletion without JavaScript, local-year filters, blocked early completion, and mobile event pages in all three locales and both themes.
 
-Select **New plan** to save a title with **No date yet**, or choose this date type while editing a plan. Find it through the Home link or open **Filters** in Events. On the detail page, use **Set date** or **Change date** to update its schedule and **Add place** or **Change place** to update its location.
+Use **New recurring occasion** under Events and choose day precision and a repeat schedule. Anniversaries and birthdays repeat yearly and show the anniversary number or age. For a general occasion, set **Repeat every** and select days, weeks, months or years. The occasion detail shows the localized schedule and upcoming dates.
 
-For an occasion, use day precision and open **For occasions** to set the repeat schedule. Anniversaries and birthdays repeat yearly and show the anniversary number or age. For a general occasion, set **Repeat every** and select days, weeks, months or years. The occasion detail shows the localized schedule and upcoming dates.
+## Plans
+
+Open **Plans** and select **New plan** to save an idea with only a title. Open **Add date, place or notes** to provide more when creating it, or reopen it under **Without a date** to set its date. The **Scheduled** view starts with the earliest dated plans. After the end of its scheduled period, open the plan under **Ready to record** and mark it as a moment. Its page and attached memories stay linked to the same record, which now appears in Events.
 
 ## Memories
 
-The **Memories** gallery shows photos and videos under clickable event headings, with a **Memories without an event** section for unlinked files. The gallery and lightbox show captions when available. A play icon identifies videos in the gallery. Choose **Open details** to find the original filename.
+The **Memories** gallery shows photos and videos under clickable event headings, with a **Memories without an event** section for unlinked files. Switch to **Albums** to browse album covers and create albums. The gallery and lightbox show captions when available. A play icon identifies videos in the gallery. Choose **Open details** to find the original filename.
 
 Choose **Add photos and videos** from an event, an album, or **Memories**. Select photos and videos together and follow each file's progress. Retry individual failures while the upload page is open. **Upload one file** is also available and works without JavaScript. Supported files are JPEG, PNG, HEIC and H.264 or HEVC videos in MP4 or MOV. Members can edit alt text and captions, download cleaned originals and organize memories in multiple albums. Open **Change event link** on a memory's page to attach, move, or detach it. With JavaScript enabled, the gallery opens a lightbox with Previous and Next buttons, left and right arrow keys, and Escape to close. The same links open memory pages without JavaScript.
 
@@ -109,7 +111,7 @@ To refresh place search, download the current `BY.zip`, `cities5000.zip` and `al
 
 ## Dashboard
 
-Open **Home** after signing in. **Coming up** counts down to event starts in the next 30 days, including today. Set the time zone under **Account** to change the local day and timed-event labels. Create a yearly occasion of type **Anniversary** with its original date to populate the anniversary highlight and time-together count. **On this day** uses exact original dates from previous years. **Recent memories** shows the latest uploads, including newly added photos with old capture dates.
+Open **Home** after signing in. Create a plan from the page heading, record a past event from **On this day**, or add photos and videos from **Recent memories**. **Coming up** counts down to event starts in the next 30 days, including today. Set the time zone under **Account** to change the local day and timed-event labels. Create a yearly occasion of type **Anniversary** with its original date to populate the anniversary highlight and time-together count. **On this day** uses exact original dates from previous years. **Recent memories** shows the latest uploads, including newly added photos with old capture dates.
 
 Tests cover member time zones, elapsed starts, approximate dates, anniversary selection, leap days, historical matching and upload order. Playwright checks the home page with JavaScript disabled and follows the event and memory links.
 

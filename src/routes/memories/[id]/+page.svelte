@@ -138,8 +138,7 @@
 			<Button type="submit">{m.memory.albumAdd}</Button>
 		</form>
 	{:else if !included.length}
-		<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
-		<a href={`${resolve('/memories')}#albums`}>{m.memory.createAlbum}</a>
+		<a href={resolve('/memories?view=albums')}>{m.memory.createAlbum}</a>
 	{/if}
 </section>
 <details>

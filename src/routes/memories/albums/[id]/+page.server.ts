@@ -52,6 +52,6 @@ export const actions: Actions = {
 			if (!tx.delete(album).where(eq(album.id, id)).run().changes) error(404, 'Album unavailable');
 			audit(tx, 'album_deleted', { actorId: actor.id, targetId: id, ip: clientIp(request) });
 		});
-		redirect(303, '/memories');
+		redirect(303, '/memories?view=albums');
 	}
 };

@@ -197,6 +197,14 @@ Events already support multiple attachments, and the general bulk importer alrea
 
 Done when a member can add several photos and videos in one pass and see every successful upload in the chosen destination.
 
+## Phase 15 – Separate Events, Plans and Memories
+
+- [x] Give Events, Plans and Memories direct navigation and distinct creation flows.
+- [x] Show ideas, scheduled plans and plans ready to record in their own views. When a plan becomes an event, keep the same URL, author and media links.
+- [x] Keep the calendar as a view across dated entries and link Home to the relevant section.
+- [x] Give Memories a photo-first gallery and a dedicated album view with cover previews.
+- [x] Use immediate language selection, add a play icon to videos and make shared map pins open all events at that point.
+
 ---
 
 ## Decisions
