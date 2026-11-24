@@ -537,8 +537,10 @@ test('mixed upload retries preserve successful files and link to the intended de
 	);
 	await expect(linked.getByRole('link', { name: /^Photo$/ })).toHaveCount(2);
 	const clip = linked.getByRole('link', { name: /^Video$/ });
+	await expect(clip.locator('.play')).toBeVisible();
+	await expect(clip).toHaveText('');
 	await clip.click();
-	await expect(page.getByRole('dialog', { name: 'Video' }).locator('video')).toBeVisible();
+	await expect(page.getByRole('dialog', { name: 'Memories' }).locator('video')).toBeVisible();
 	await page.keyboard.press('Escape');
 	await expect(clip).toBeFocused();
 	await expect(page.getByText(/standalone-swatch\.jpg|synthetic-batch-video\.mp4/)).toHaveCount(0);
@@ -1200,6 +1202,7 @@ test('loads local tiles and glyphs, searches for places and edits pins without o
 		return response.headers().location!;
 	};
 	await create('Synthetic second pin', '1982-05-17', '53.901', '27.563', 'date');
+	await create('Synthetic visit at the same point', '1982-05-17', '53.90019', '27.56653', 'trip');
 	await create('Synthetic unpinned event', '1982-05-17', '', '', 'date');
 	await page.goto('/events/new');
 	await page.getByLabel('Title', { exact: true }).fill('Synthetic pinned visit');
@@ -1287,6 +1290,11 @@ test('loads local tiles and glyphs, searches for places and edits pins without o
 	}).toPass({ timeout: 6500 });
 	await expect(page.locator('.maplibregl-popup')).toContainText('Synthetic pinned visit');
 	await expect(page.locator('.maplibregl-popup')).toContainText('May 17, 1982');
+	await expect(
+		page
+			.locator('.maplibregl-popup')
+			.getByRole('link', { name: 'Synthetic visit at the same point' })
+	).toBeVisible();
 	await page.getByRole('button', { name: 'Close event preview' }).click();
 
 	const offline = await newPage(browser, { javaScriptEnabled: false });
@@ -1330,11 +1338,9 @@ test('reuses saved places for separate stops and preserves the event when a plac
 	await expect(page.getByRole('dialog', { name: 'Account' })).toBeVisible();
 	await expect(page).toHaveURL('/events/new?kind=plan');
 	const panel = page.getByRole('dialog');
-	await panel.locator('[name=locale]').selectOption('be');
-	await panel.getByRole('button', { name: 'Save language' }).click();
+	await panel.getByRole('button', { name: 'Беларуская' }).click();
 	await expect(page.locator('html')).toHaveAttribute('lang', 'be');
-	await panel.locator('[name=locale]').selectOption('en');
-	await panel.locator('form[action$="?/language"] button').click();
+	await panel.getByRole('button', { name: 'English' }).click();
 	await expect(page.locator('html')).toHaveAttribute('lang', 'en');
 	await page.keyboard.press('Escape');
 	await expect(page.getByLabel('Title', { exact: true })).toHaveValue('Garden walk');
@@ -1616,8 +1622,7 @@ test('saves language per member without JavaScript and uses it on another device
 	await expect(page.getByLabel('Language', { exact: true })).toHaveCount(0);
 	await expect(page.getByLabel('Appearance', { exact: true })).toHaveCount(0);
 	await page.getByRole('link', { name: 'Account', exact: true }).click();
-	await page.getByLabel('Language', { exact: true }).selectOption('be');
-	await page.getByRole('button', { name: 'Save language' }).click();
+	await page.getByRole('button', { name: 'Беларуская' }).click();
 	await expect(page.locator('html')).toHaveAttribute('lang', 'be');
 	await expect(page.getByRole('heading', { name: 'Акаўнт', exact: true })).toBeVisible();
 
@@ -1627,11 +1632,9 @@ test('saves language per member without JavaScript and uses it on another device
 	await other.goto('/members');
 	await expect(other.locator('html')).toHaveAttribute('lang', 'be');
 
-	await page.getByLabel('Мова', { exact: true }).selectOption('ru');
-	await page.getByRole('button', { name: 'Захаваць мову' }).click();
+	await page.getByRole('button', { name: 'Русский' }).click();
 	await expect(page.locator('html')).toHaveAttribute('lang', 'ru');
-	await page.getByLabel('Язык', { exact: true }).selectOption('en');
-	await page.getByRole('button', { name: 'Сохранить язык' }).click();
+	await page.getByRole('button', { name: 'English' }).click();
 	await expect(page.locator('html')).toHaveAttribute('lang', 'en');
 	await other.reload();
 	await expect(other.locator('html')).toHaveAttribute('lang', 'en');

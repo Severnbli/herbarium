@@ -59,7 +59,7 @@ Open questions belong in the roadmap until resolved. Move their outcome into the
 
 ## Account and navigation
 
-Use **Account** in the masthead to change language or appearance, manage security settings, or sign out. Language follows the member across devices. Appearance follows the browser's saved preference.
+Use **Account** in the masthead to change language or appearance, manage security settings, or sign out. Choose the language directly to apply it. Language follows the member across devices. Appearance follows the browser's saved preference.
 
 ## Invitations
 
@@ -77,7 +77,7 @@ For an occasion, use day precision and open **For occasions** to set the repeat 
 
 ## Memories
 
-The **Memories** gallery shows photos and videos under clickable event headings, with a **Memories without an event** section for unlinked files. The gallery and lightbox show captions when available. Choose **Open details** to find the original filename.
+The **Memories** gallery shows photos and videos under clickable event headings, with a **Memories without an event** section for unlinked files. The gallery and lightbox show captions when available. A play icon identifies videos in the gallery. Choose **Open details** to find the original filename.
 
 Choose **Add photos and videos** from an event, an album, or **Memories**. Select photos and videos together and follow each file's progress. Retry individual failures while the upload page is open. **Upload one file** is also available and works without JavaScript. Supported files are JPEG, PNG, HEIC and H.264 or HEVC videos in MP4 or MOV. Members can edit alt text and captions, download cleaned originals and organize memories in multiple albums. Open **Change event link** on a memory's page to attach, move, or detach it. With JavaScript enabled, the gallery opens a lightbox with Previous and Next buttons, left and right arrow keys, and Escape to close. The same links open memory pages without JavaScript.
 
@@ -101,7 +101,7 @@ Tests cover cursor boundaries with events on the same date, deleted anchors, com
 
 ## Maps
 
-Open **Map** to filter pinned events by kind, local start year and category. Saved places can be added, edited and deleted from the map. Events can use a saved place or a new location for each stop. The list beside the map links to the same events and works without JavaScript. On a create or edit form, expand **Location on the map** to search for a place, paste a latitude and longitude pair, or set and drag a pin. The two coordinate fields also work without JavaScript. On an existing event, attach a photo to review its GPS suggestion before saving the point.
+Open **Map** to filter pinned events by kind, local start year and category. Use **Saved places** below the map to add, edit or delete reusable locations. When events share a point, its marker shows the count and opens a list of those events. Events can use a saved place or a new location for each stop. The list beside the map links to the same events and works without JavaScript. On a create or edit form, expand **Location on the map** to search for a place, paste a latitude and longitude pair, or set and drag a pin. The two coordinate fields also work without JavaScript. On an existing event, attach a photo to review its GPS suggestion before saving the point.
 
 Playwright installs a small [Belarus tileset fixture](../tests/fixtures/maps/README.md) and blocks outbound HTTP requests during the map flow. It checks authenticated ranges, glyph and sprite delivery, pin editing, event previews and keyboard access to the list. See the [deployment guide](deployment.md#offline-maps) to install a larger map for development.
 

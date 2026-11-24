@@ -10,17 +10,6 @@
 
 	let { data }: PageProps = $props();
 	const m = $derived(messages(data.locale));
-	const entries = $derived([
-		...data.entries,
-		...data.savedPlaces.map((p) => ({
-			...p,
-			kind: 'saved' as const,
-			title: p.place,
-			place: '',
-			date: '',
-			preview: null
-		}))
-	]);
 	const kinds = ['moment', 'plan', 'occasion'] as const;
 	const categories = ['trip', 'date', 'milestone', 'none'] as const;
 </script>
@@ -59,18 +48,8 @@
 </form>
 
 <div class="map-layout">
-	<MapCanvas locale={data.locale} {m} basemap={data.basemap} {entries} />
+	<MapCanvas locale={data.locale} {m} basemap={data.basemap} entries={data.entries} />
 	<section aria-labelledby="saved-places">
-		<h2 id="saved-places">{m.map.saved}</h2>
-		{#if data.savedPlaces.length}<ul>
-				{#each data.savedPlaces as place (place.id)}<li>
-						<a href={resolve('/map/places/[id]', { id: place.id })}>{place.place}</a>
-						<p>{place.lat}, {place.lon}</p>
-					</li>{/each}
-			</ul>{/if}
-		<a class="button secondary" href={resolve('/map/places/[id]', { id: 'new' })}
-			>{m.map.addSaved}</a
-		>
 		<h2 id="pinned-places">{m.map.places}</h2>
 		{#if data.entries.length}
 			<ul role="list">
@@ -88,6 +67,17 @@
 		{/if}
 	</section>
 </div>
+
+<section class="saved-places" aria-labelledby="saved-places">
+	<h2 id="saved-places">{m.map.saved}</h2>
+	{#if data.savedPlaces.length}<ul>
+			{#each data.savedPlaces as place (place.id)}<li>
+					<a href={resolve('/map/places/[id]', { id: place.id })}>{place.place}</a>
+					<p>{place.lat}, {place.lon}</p>
+				</li>{/each}
+		</ul>{/if}
+	<a class="button secondary" href={resolve('/map/places/[id]', { id: 'new' })}>{m.map.addSaved}</a>
+</section>
 
 <style>
 	.filters {
@@ -109,7 +99,7 @@
 		align-items: start;
 		gap: 1.5rem;
 	}
-	section {
+	.map-layout section {
 		margin: 0;
 		padding: 0 0 0 1rem;
 		border: 0;
@@ -117,8 +107,14 @@
 		max-height: clamp(23rem, 63vh, 42rem);
 		overflow: auto;
 	}
-	section > .button {
-		margin-bottom: 1.5rem;
+	.saved-places {
+		margin-top: 1.5rem;
+		padding: 1rem;
+		border: 1px solid var(--line);
+		border-radius: var(--radius);
+	}
+	.saved-places > .button {
+		margin-top: 0.75rem;
 	}
 	h2 {
 		margin-top: 0;
@@ -152,7 +148,7 @@
 		.map-layout {
 			grid-template-columns: minmax(0, 1fr);
 		}
-		section {
+		.map-layout section {
 			border: 0;
 			border-block-start: 1px solid var(--line);
 			padding: 1rem 0 0;

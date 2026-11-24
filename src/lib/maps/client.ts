@@ -33,22 +33,40 @@ const coordinate = ({ lat, lon }: Coordinates): [number, number] => [
 let protocolRegistered = false;
 export type MapController = ReturnType<typeof createMap>;
 
-function geojson(entries: MapEntry[]): FeatureCollection<Point> {
+function groupEntries(entries: MapEntry[]) {
+	const groups = new Map<string, Map<string, MapEntry>>();
+	for (const entry of entries) {
+		const key = coordinate(entry).join(',');
+		let events = groups.get(key);
+		if (!events) {
+			events = new Map();
+			groups.set(key, events);
+		}
+		events.set(entry.id, entry);
+	}
+	return new Map(Array.from(groups, ([key, events]) => [key, [...events.values()]]));
+}
+
+function geojson(groups: ReturnType<typeof groupEntries>): FeatureCollection<Point> {
 	return {
 		type: 'FeatureCollection',
-		features: entries.map((event) => ({
+		features: Array.from(groups, ([key, events]) => ({
 			type: 'Feature',
-			properties: { id: event.pinId ?? event.id, kind: event.kind },
-			geometry: { type: 'Point', coordinates: coordinate(event) }
+			properties: { key, kind: events[0]!.kind, count: events.length },
+			geometry: { type: 'Point', coordinates: coordinate(events[0]!) }
 		}))
 	};
 }
 
-function eventLayers(style: StyleSpecification, entries: MapEntry[], dark: boolean) {
+function eventLayers(
+	style: StyleSpecification,
+	groups: ReturnType<typeof groupEntries>,
+	dark: boolean
+) {
 	const colors = palette[dark ? 'dark' : 'light'];
 	style.sources[sourceId] = {
 		type: 'geojson',
-		data: geojson(entries),
+		data: geojson(groups),
 		cluster: true,
 		clusterRadius: 44,
 		clusterMaxZoom: 15
@@ -85,13 +103,19 @@ function eventLayers(style: StyleSpecification, entries: MapEntry[], dark: boole
 			source: sourceId,
 			filter: ['!', ['has', 'point_count']],
 			layout: {
-				'icon-image': [
-					'concat',
-					'events:',
-					['match', ['get', 'kind'], 'saved', 'plan', ['get', 'kind']]
-				],
+				'icon-image': ['concat', 'events:', ['get', 'kind']],
 				'icon-anchor': 'bottom',
-				'icon-allow-overlap': true
+				'icon-allow-overlap': true,
+				'text-field': ['case', ['>', ['get', 'count'], 1], ['to-string', ['get', 'count']], ''],
+				'text-font': mapFont,
+				'text-size': 13,
+				'text-offset': [0, -3],
+				'text-allow-overlap': true
+			},
+			paint: {
+				'text-color': colors.cluster,
+				'text-halo-color': colors.halo,
+				'text-halo-width': 2
 			}
 		}
 	);
@@ -101,10 +125,9 @@ function eventLayers(style: StyleSpecification, entries: MapEntry[], dark: boole
 function popupContent(entry: MapEntry) {
 	const panel = document.createElement('div');
 	panel.className = 'event-map-popup';
-	const title =
-		entry.kind === 'saved' ? document.createElement('strong') : document.createElement('a');
+	const title = document.createElement('a');
 	title.textContent = entry.title;
-	if (title instanceof HTMLAnchorElement) title.href = resolve('/events/[id]', { id: entry.id });
+	title.href = resolve('/events/[id]', { id: entry.id });
 	const date = document.createElement('p');
 	date.textContent = entry.date;
 	panel.append(title);
@@ -157,9 +180,10 @@ export function createMap({
 	const isDark = () =>
 		root.dataset.theme === 'dark' || (root.dataset.theme !== 'light' && systemTheme.matches);
 	let dark = isDark();
+	let groups = groupEntries(entries ?? []);
 	const style = () => {
 		const base = mapStyle(assets, locale, basemap, dark);
-		return entries ? eventLayers(base, entries, dark) : base;
+		return entries ? eventLayers(base, groups, dark) : base;
 	};
 	const map = new MapLibreMap({
 		container,
@@ -235,8 +259,9 @@ export function createMap({
 	function setEntries(next: MapEntry[]) {
 		if (entries === next) return;
 		entries = next;
+		groups = groupEntries(next);
 		popup?.remove();
-		map.getSource<GeoJSONSource>(sourceId)?.setData(geojson(next));
+		map.getSource<GeoJSONSource>(sourceId)?.setData(geojson(groups));
 		fitEntries();
 	}
 
@@ -261,14 +286,15 @@ export function createMap({
 		map.on('click', clusterLayer, expandCluster);
 		map.on('click', markerLayer, (event) => {
 			const feature = event.features?.[0];
-			const entry = entries?.find(
-				(candidate) => (candidate.pinId ?? candidate.id) === feature?.properties.id
-			);
-			if (!entry) return;
+			const events = groups.get(feature?.properties.key);
+			if (!events?.length) return;
+			const content = document.createElement('div');
+			content.className = 'event-map-group';
+			for (const entry of events) content.append(popupContent(entry));
 			popup?.remove();
-			popup = new Popup({ offset: 27, maxWidth: '16rem' })
-				.setLngLat(coordinate(entry))
-				.setDOMContent(popupContent(entry))
+			popup = new Popup({ offset: 27, maxWidth: '18rem' })
+				.setLngLat(coordinate(events[0]!))
+				.setDOMContent(content)
 				.addTo(map);
 		});
 		for (const layer of [clusterLayer, markerLayer]) {

@@ -20,7 +20,7 @@
 	const cards = $derived(groups?.flatMap((group) => group.rows) ?? rows);
 	const index = $derived(cards.findIndex((row) => row.id === selectedId));
 	const selected = $derived(cards[index]);
-	const title = $derived(selected ? selected.caption || mediaType(selected) : m.memory.title);
+	const title = $derived(selected ? selected.caption || m.memory.title : m.memory.title);
 
 	function mediaType(row: MemoryCard) {
 		return row.isVideo ? m.memory.video : m.memory.photo;
@@ -57,17 +57,21 @@
 				<a
 					class="memory"
 					href={resolve('/memories/[id]', { id: row.id })}
-					aria-label={label || row.altText || mediaType(row)}
+					aria-label={row.isVideo && (label || row.altText)
+						? `${label || row.altText} · ${m.memory.video}`
+						: label || row.altText || mediaType(row)}
 					onclick={(event) => show(event, row.id)}
 				>
-					<img
-						src={resolve('/media/[id]/[variant]', { id: row.id, variant: 'thumbnail' })}
-						alt={row.altText}
-						loading="lazy"
-						decoding="async"
-					/>
-					{#if label}<span>{label}</span>{/if}
-					{#if row.isVideo}<span class="label">{m.memory.video}</span>{/if}
+					<span class="thumbnail">
+						<img
+							src={resolve('/media/[id]/[variant]', { id: row.id, variant: 'thumbnail' })}
+							alt={row.altText}
+							loading="lazy"
+							decoding="async"
+						/>
+						{#if row.isVideo}<span class="play" aria-hidden="true"></span>{/if}
+					</span>
+					{#if label}<span class="caption">{label}</span>{/if}
 				</a>
 			</li>
 		{/each}
@@ -136,16 +140,35 @@
 		border-radius: var(--radius);
 		overflow-wrap: anywhere;
 	}
+	.thumbnail {
+		position: relative;
+	}
 	.memory img {
+		display: block;
 		width: 100%;
 		aspect-ratio: 4 / 3;
 		object-fit: cover;
 		border-radius: var(--radius);
 		background: var(--linen);
 	}
-	.label {
-		font-size: 0.85rem;
-		color: var(--muted);
+	.play {
+		position: absolute;
+		inset: 50% auto auto 50%;
+		transform: translate(-50%, -50%);
+		display: grid;
+		place-items: center;
+		width: 2.75rem;
+		height: 2.75rem;
+		color: var(--paper);
+		background: var(--ink);
+		border: 1px solid currentColor;
+		border-radius: 50%;
+	}
+	.play::before {
+		content: '';
+		border-block: 0.45rem solid transparent;
+		border-inline-start: 0.7rem solid currentColor;
+		margin-inline-start: 0.15rem;
 	}
 	.controls {
 		display: flex;

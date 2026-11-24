@@ -29,7 +29,7 @@ Configuration supplies the master key used for the encrypted SQLite database. Dr
 
 Paraglide compiles `messages/{be,ru,en}.json` through the Vite plugin, using the locally installed MIT-licensed message-format plugin. The typed `messages(locale)` adapter passes the locale to each generated function explicitly; there is no mutable process-global language. Plural variants use CLDR categories through `Intl.PluralRules`.
 
-After authentication, the locale hook uses the member's saved `user.locale`, or negotiates `Accept-Language` when no preference exists. The language form under Account preferences posts to the authenticated account action, validates a strict locale allowlist and saves only the current member's preference. A redirect renders the new language without JavaScript. Existing sessions on other devices use the saved preference on their next request. Public and pending second-factor pages use browser-language detection.
+After authentication, the locale hook uses the member's saved `user.locale`, or negotiates `Accept-Language` when no preference exists. Choosing a language under Account preferences immediately posts to the authenticated account action, validates a strict locale allowlist and saves only the current member's preference. A redirect renders the new language without JavaScript. Existing sessions on other devices use the saved preference on their next request. Public and pending second-factor pages use browser-language detection.
 
 Date-only formatting fixes the time zone to UTC to preserve the day; timed formatting requires an explicit event time zone. Week starts follow the supported locales: Monday for Belarusian and Russian, Sunday for English.
 

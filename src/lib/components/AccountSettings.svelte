@@ -19,6 +19,23 @@
 		const f = at(section);
 		return new Set(f && 'fields' in f ? f.fields : []);
 	};
+	let languagePending = $state(false);
+	const changeLanguage: SubmitFunction = async (input) => {
+		if (languagePending) {
+			input.cancel();
+			return;
+		}
+		languagePending = true;
+		const handle = await submit?.(input);
+		return async (response) => {
+			try {
+				if (handle) await handle(response);
+				else await response.update({ reset: false });
+			} finally {
+				languagePending = false;
+			}
+		};
+	};
 	const setup = $derived(form && 'setup' in form ? form.setup : null);
 	const recoveryCodes = $derived(form && 'recoveryCodes' in form ? form.recoveryCodes : null);
 </script>
@@ -58,14 +75,22 @@
 <section class="preferences" aria-labelledby="account-preferences">
 	<h2 id="account-preferences">{m.account.preferences}</h2>
 	{@render problem('language')}
-	<form method="POST" use:enhance={submit} action={resolve('/account') + '?/language'}>
-		<label for="language">{m.language.label}</label>
-		<select id="language" name="locale" value={data.locale}>
-			{#each LOCALES as locale (locale)}
-				<option value={locale} lang={locale}>{m.language[locale]}</option>
-			{/each}
-		</select>
-		<button class="secondary">{m.language.save}</button>
+	<form method="POST" use:enhance={changeLanguage} action={resolve('/account') + '?/language'}>
+		<fieldset aria-busy={languagePending}>
+			<legend>{m.language.label}</legend>
+			<div class="language-options">
+				{#each LOCALES as locale (locale)}
+					<button
+						type="submit"
+						name="locale"
+						value={locale}
+						lang={locale}
+						class="secondary"
+						aria-pressed={data.locale === locale}>{m.language[locale]}</button
+					>
+				{/each}
+			</div>
+		</fieldset>
 	</form>
 	<ThemePicker {m} />
 </section>
@@ -251,7 +276,7 @@
 		margin-block: 1rem;
 	}
 	.account-heading,
-	.preferences form {
+	.language-options {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
@@ -277,8 +302,18 @@
 	.preferences h2 {
 		margin-top: 0;
 	}
-	.preferences form {
-		margin-block-end: 0.85rem;
+	.preferences fieldset {
+		border: 0;
+		padding: 0;
+		margin: 0 0 0.85rem;
+	}
+	.preferences legend {
+		padding: 0;
+		margin-block-end: 0.4rem;
+	}
+	.language-options [aria-pressed='true'] {
+		border-color: var(--madder);
+		box-shadow: inset 0 -2px var(--madder);
 	}
 	.export {
 		margin-top: 2rem;

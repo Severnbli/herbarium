@@ -123,6 +123,16 @@
 		padding: 0.3rem;
 		min-width: 2.75rem;
 	}
+	.canvas :global(.event-map-group) {
+		max-height: 13rem;
+		overflow: auto;
+		overflow-wrap: anywhere;
+	}
+	.canvas :global(.event-map-popup + .event-map-popup) {
+		margin-top: 0.5rem;
+		padding-top: 0.5rem;
+		border-top: 1px solid var(--line);
+	}
 	.canvas :global(.event-map-popup p) {
 		margin: 0.25rem 0;
 		font-size: 0.875rem;

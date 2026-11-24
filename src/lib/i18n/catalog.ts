@@ -458,8 +458,7 @@ export function messages(locale: Locale) {
 			be: m.language_be({}, { locale }),
 			ru: m.language_ru({}, { locale }),
 			en: m.language_en({}, { locale }),
-			label: m.language_label({}, { locale }),
-			save: m.language_save({}, { locale })
+			label: m.language_label({}, { locale })
 		}
 	};
 }
