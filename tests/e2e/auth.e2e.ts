@@ -167,7 +167,7 @@ test('rejects anonymous access to every route', async ({ browser }) => {
 	]) {
 		const response = await page.request.post(path, {
 			headers: { origin: ORIGIN },
-			form: { x: '1' },
+			form: { confirm: 'delete' },
 			maxRedirects: 0
 		});
 		expect(response.status(), path).toBe(401);
@@ -304,6 +304,19 @@ test('an owner invites a member, and the invite works once', async ({ browser })
 	await expect(other.getByRole('heading', { name: 'This invite cannot be used' })).toBeVisible();
 });
 
+async function expectDeletionGuard(page: Page, path: string) {
+	const missing = await page.request.post(path, {
+		headers: { origin: ORIGIN },
+		form: {}
+	});
+	expect(missing.status()).toBe(400);
+	const crossSite = await page.request.post(path, {
+		headers: { origin: 'https://example.com' },
+		form: { confirm: 'delete' }
+	});
+	expect(crossSite.status()).toBe(403);
+}
+
 test('members create, edit, filter, complete and delete shared events without JavaScript', async ({
 	browser
 }) => {
@@ -363,11 +376,8 @@ test('members create, edit, filter, complete and delete shared events without Ja
 		.locator('summary')
 		.filter({ hasText: /^Delete event$/ })
 		.click();
-	await page.getByLabel('Current password').fill('wrong synthetic password');
-	await page.getByRole('button', { name: 'Delete event', exact: true }).click();
-	await expect(page.getByRole('alert')).toBeVisible();
-	await expect(page.getByLabel('Current password')).toHaveValue('');
-	await page.getByLabel('Current password').fill(member.password);
+	await expectDeletionGuard(page, detail + '?/delete');
+	await expect(page.locator('input[type=password]')).toHaveCount(0);
 	await page.getByRole('button', { name: 'Delete event', exact: true }).click();
 	await expect(page).toHaveURL('/events');
 	const missing = await page.goto(detail);
@@ -774,11 +784,10 @@ test('timed events retain their local year and future plans cannot be completed 
 	await page.goto(detail);
 	await page
 		.locator('summary')
-		.filter({ hasText: /^Delete event$/ })
+		.filter({ hasText: /^Delete plan$/ })
 		.click();
-	await page.getByLabel('Current password').fill(member.password);
-	await page.getByRole('button', { name: 'Delete event', exact: true }).click();
-	await expect(page).toHaveURL('/events');
+	await page.getByRole('button', { name: 'Delete plan', exact: true }).click();
+	await expect(page).toHaveURL('/plans');
 });
 
 test('main workflows render in three languages and both themes on a phone', async ({ browser }) => {
@@ -1041,7 +1050,8 @@ test('uploads private memories, browses them by keyboard and manages independent
 		.locator('summary')
 		.filter({ hasText: /^Delete event$/ })
 		.click();
-	await offline.getByLabel('Current password').fill(member.password);
+	await expectDeletionGuard(offline, eventUrl + '?/delete');
+	await expect(offline.locator('input[type=password]')).toHaveCount(0);
 	await offline.getByRole('button', { name: 'Delete event', exact: true }).click();
 	await expect(offline).toHaveURL('/events');
 	await offline.goto(albumUrl);
@@ -1050,7 +1060,8 @@ test('uploads private memories, browses them by keyboard and manages independent
 		.locator('summary')
 		.filter({ hasText: /^Delete album$/ })
 		.click();
-	await offline.getByLabel('Current password').fill(member.password);
+	await expectDeletionGuard(offline, albumUrl + '?/delete');
+	await expect(offline.locator('input[type=password]')).toHaveCount(0);
 	await offline.getByRole('button', { name: 'Delete album', exact: true }).click();
 	await expect(offline).toHaveURL('/memories?view=albums');
 	await offline.getByRole('link', { name: 'Gallery', exact: true }).click();
@@ -1064,7 +1075,8 @@ test('uploads private memories, browses them by keyboard and manages independent
 		.locator('summary')
 		.filter({ hasText: /^Delete memory$/ })
 		.click();
-	await offline.getByLabel('Current password').fill(member.password);
+	await expectDeletionGuard(offline, photoUrl + '?/delete');
+	await expect(offline.locator('input[type=password]')).toHaveCount(0);
 	await offline.getByRole('button', { name: 'Delete memory', exact: true }).click();
 	await expect(offline).toHaveURL('/memories');
 	expect((await offline.request.get(downloadUrl!)).status()).toBe(404);
@@ -1382,7 +1394,8 @@ test('reuses saved places for separate stops and preserves the event when a plac
 	await page.getByRole('button', { name: 'Save place' }).click();
 	await page.getByRole('link', { name: 'New gate' }).click();
 	await page.locator('summary').filter({ hasText: 'Delete saved place' }).click();
-	await page.getByLabel('Confirm with your password').fill(member.password);
+	await expectDeletionGuard(page, page.url() + '?/remove');
+	await expect(page.locator('input[type=password]')).toHaveCount(0);
 	await page.getByRole('button', { name: 'Delete saved place' }).click();
 	await expect(page.getByRole('link', { name: 'New gate' })).toHaveCount(0);
 	await page.goto(eventUrl);

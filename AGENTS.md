@@ -104,7 +104,8 @@ This app holds the most private data its members have. Security is a requirement
 - Sessions have an idle timeout and an absolute lifetime, are rotated on login and privilege-relevant changes, and are revoked on logout and password change. A "sign out everywhere" action exists.
 - Login is rate-limited per IP and per account with exponential backoff; error messages never reveal whether the account exists.
 - There is no open registration. After first-run setup creates the owner, new members join only through a single-use, expiring invite token issued by an owner. Owners can revoke unused invites and deactivate members (which revokes all their sessions immediately). At least one active owner must always remain.
-- Optional TOTP second factor per user, with single-use recovery codes stored hashed. Sensitive actions (password change, export, deleting data, key operations) require re-entering the password.
+- Optional TOTP second factor per user, with single-use recovery codes stored hashed. Changing the password or second factor, generating recovery codes, exporting shared data and key operations require re-entering the password.
+- Deleting a shared event, plan, memory, album or saved place requires a current member session, explicit confirmation and an audited, CSRF-protected form POST. Members can confirm these actions without re-entering their passwords.
 
 ### Authorization
 

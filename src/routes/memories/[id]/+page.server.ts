@@ -5,12 +5,11 @@ import { getReminderPreferences } from '#lib/server/reminders/preferences.ts';
 import { db, keys } from '#lib/server/app.ts';
 import { audit } from '#lib/server/audit.ts';
 import { requireUser } from '#lib/server/auth/guard.ts';
-import { parseForm } from '#lib/server/auth/schemas.ts';
+import { contentDeletion, parseForm } from '#lib/server/auth/schemas.ts';
 import { getConfig } from '#lib/server/config.ts';
 import { albumMemory, event, mediaFile, memory } from '#lib/server/db/schema.ts';
 import { clientIp } from '#lib/server/http/request.ts';
 import { acceptCoordinates } from '#lib/server/media/coordinates.ts';
-import { confirmMediaDeletion } from '#lib/server/media/delete.ts';
 import {
 	findAlbum,
 	findMemory,
@@ -150,8 +149,8 @@ export const actions: Actions = {
 		const actor = requireUser(request);
 		requireNoQuery(request, ['/delete']);
 		const id = routeMediaId(request.params);
-		const failure = await confirmMediaDeletion(request, actor.id);
-		if (failure) return failure;
+		const parsed = parseForm(contentDeletion, await request.request.formData());
+		if (!parsed.success) return fail(400, { deleteProblem: true });
 		const files = db().transaction((tx) => {
 			const assets = tx
 				.select({ id: mediaFile.id })

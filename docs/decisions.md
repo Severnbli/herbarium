@@ -71,7 +71,7 @@ Status: accepted.
 
 Event forms use explicit text date formats with separate mode and precision selectors. This keeps every create/edit flow usable without JavaScript, including approximate dates and arbitrary time zones. The shared native DatePicker remains available for progressively enhanced feature screens; it is not the event validation boundary. Server errors preserve bounded known fields, reject duplicate and unknown fields and never echo passwords.
 
-Every member can edit or delete any event, preserving the circle's equal content access. Deletion is permanent and requires the acting member's password through the existing rate-limited re-authentication service. Record only the event identifier, actor and client address in the audit log, atomically with deletion; never include title, notes, place or coordinates. Completing a plan changes its kind in place, and the edit path enforces the same elapsed-period rule.
+Every member can edit or delete any event, preserving the circle's equal content access. Deletion is permanent. The original password requirement was superseded by the shared content deletion decision below. Record only the event identifier, actor and client address in the audit log, atomically with deletion; never include title, notes, place or coordinates. Completing a plan changes its kind in place, and the edit path enforces the same elapsed-period rule.
 
 ## Occasion rules and local-date expansion
 
@@ -184,3 +184,9 @@ Saved places form a circle-wide address book in the encrypted database. Selectin
 Status: accepted.
 
 Use Events for past moments and recurring occasions, Plans for ideas and activities the circle is organizing, and Memories for photos, videos and albums. Give these sections their own starting actions. Calendar and Map can show entries from multiple sections together. A plan ready to record becomes a moment once a member confirms it. The same event ID preserves bookmarks, authorship and media attachments, and existing plan filters redirect to Plans. This change requires no data migration.
+
+## Confirming shared content deletion
+
+Status: accepted. Supersedes password confirmation for routine content deletion.
+
+Members can already edit shared content. For a single event, plan, memory, album or saved place, show the consequence in a disclosure and require a deliberate submit from a current member session. Validate the confirmation field and reject cross-site form posts. Keep the audit entry atomic with the database deletion. A person who already has access to an unlocked member session can confirm these deletions. Operations on credentials, two-factor settings, exports and keys keep their password verification.

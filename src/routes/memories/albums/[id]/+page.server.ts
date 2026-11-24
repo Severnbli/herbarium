@@ -4,10 +4,9 @@ import { z } from 'zod';
 import { db } from '#lib/server/app.ts';
 import { audit } from '#lib/server/audit.ts';
 import { requireUser } from '#lib/server/auth/guard.ts';
-import { parseForm } from '#lib/server/auth/schemas.ts';
+import { contentDeletion, parseForm } from '#lib/server/auth/schemas.ts';
 import { album } from '#lib/server/db/schema.ts';
 import { clientIp } from '#lib/server/http/request.ts';
-import { confirmMediaDeletion } from '#lib/server/media/delete.ts';
 import {
 	albumTitle,
 	findAlbum,
@@ -46,8 +45,8 @@ export const actions: Actions = {
 		const actor = requireUser(request);
 		requireNoQuery(request, ['/delete']);
 		const id = routeMediaId(request.params);
-		const failure = await confirmMediaDeletion(request, actor.id);
-		if (failure) return failure;
+		const parsed = parseForm(contentDeletion, await request.request.formData());
+		if (!parsed.success) return fail(400, { deleteProblem: true });
 		db().transaction((tx) => {
 			if (!tx.delete(album).where(eq(album.id, id)).run().changes) error(404, 'Album unavailable');
 			audit(tx, 'album_deleted', { actorId: actor.id, targetId: id, ip: clientIp(request) });

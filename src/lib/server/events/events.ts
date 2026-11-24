@@ -183,11 +183,11 @@ export function completePlan(db: Db, id: string, now = new Date()): void {
 	});
 }
 
-/** The route must confirm the acting member's password before calling this. */
-export function deleteEvent(db: Db, id: string): void {
-	db.transaction((tx) => {
-		findEvent(tx, id);
+export function deleteEvent(db: Db, id: string): EventRecord['kind'] {
+	return db.transaction((tx) => {
+		const { kind } = findEvent(tx, id);
 		tx.delete(event).where(eq(event.id, id)).run();
+		return kind;
 	});
 }
 

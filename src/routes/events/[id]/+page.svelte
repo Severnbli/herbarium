@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import Field from '#lib/components/Field.svelte';
+	import DeleteConfirmation from '#lib/components/DeleteConfirmation.svelte';
 	import Button from '#lib/components/Button.svelte';
 	import MapCanvas from '#lib/components/MapCanvas.svelte';
 	import MemoryGrid from '#lib/components/MemoryGrid.svelte';
@@ -117,7 +117,7 @@
 		<div class="notes">{@html data.notesHtml}</div>
 	</section>
 {/if}
-{#if form?.problem === 'invalid' && !form?.deleteProblem}<p role="alert">
+{#if form?.problem === 'invalid'}<p role="alert">
 		{m.error.form}
 	</p>{/if}
 <section aria-labelledby="event-memories">
@@ -182,30 +182,11 @@
 		{/if}
 	</details>
 </section>
-<section>
-	<details open={!!form?.deleteProblem}>
-		<summary>{m.event.deleteTitle}</summary>
-		<p>{m.event.deleteHint}</p>
-		{#if form?.deleteProblem}
-			{#if form.problem === 'wrong_password'}<p role="alert">{m.error.wrongPassword}</p>
-			{:else if form.problem === 'rate_limited'}<p role="alert">
-					{m.error.rateLimited(form.minutes)}
-				</p>
-			{:else}<p role="alert">{m.error.form}</p>{/if}
-		{/if}
-		<form method="POST" action="?/delete">
-			<Field
-				name="currentPassword"
-				type="password"
-				label={m.field.currentPassword}
-				autocomplete="current-password"
-				required
-				maxlength={256}
-			/>
-			<Button type="submit" variant="secondary">{m.event.delete}</Button>
-		</form>
-	</details>
-</section>
+<DeleteConfirmation
+	label={data.planContext ? m.plans.delete : m.event.deleteTitle}
+	description={data.planContext ? m.plans.deleteHint : m.event.deleteHint}
+	error={form?.deleteProblem ? m.error.form : undefined}
+/>
 
 <style>
 	summary {

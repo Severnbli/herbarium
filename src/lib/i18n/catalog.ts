@@ -105,6 +105,7 @@ export function messages(locale: Locale) {
 		},
 		map: {
 			deletePlace: m.map_deletePlace({}, { locale }),
+			deletePlaceHint: m.map_deletePlaceHint({}, { locale }),
 			saved: m.map_saved({}, { locale }),
 			useSaved: m.map_useSaved({}, { locale }),
 			savePlace: m.map_savePlace({}, { locale }),
@@ -161,6 +162,8 @@ export function messages(locale: Locale) {
 			reviewHint: m.plans_reviewHint({}, { locale }),
 			create: m.plans_create({}, { locale }),
 			edit: m.plans_edit({}, { locale }),
+			delete: m.plans_delete({}, { locale }),
+			deleteHint: m.plans_deleteHint({}, { locale }),
 			more: m.plans_more({}, { locale }),
 			year: (year: string) => m.plans_year({ year }, { locale }),
 			empty: {
@@ -256,7 +259,6 @@ export function messages(locale: Locale) {
 			back: m.event_back({}, { locale }),
 			edit: m.event_edit({}, { locale }),
 			deleteTitle: m.event_deleteTitle({}, { locale }),
-			delete: m.event_delete({}, { locale }),
 			deleteHint: m.event_deleteHint({}, { locale }),
 			complete: m.event_complete({}, { locale }),
 			notFinished: m.event_notFinished({}, { locale }),

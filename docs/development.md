@@ -67,15 +67,19 @@ As an owner, open **Members**, enter an optional label, and choose **Create an i
 
 ## Events
 
-Open **Events** after signing in to browse moments and recurring occasions, filter by kind and local start year, or create a new entry. All members can edit shared entries and delete them after confirming their own password. Forms work without JavaScript. Date-only input formats are `YYYY-MM-DD`, `YYYY-MM` and `YYYY` for day/month/year precision. Timed input uses `YYYY-MM-DDTHH:mm` and an explicit IANA time zone. Repeated DST clock times require independent earlier/later choices for start and end; nonexistent clock times are rejected. The event's local start year determines its list filter even if the stored UTC instant falls in another year.
+Open **Events** after signing in to browse moments and recurring occasions, filter by kind and local start year, or create a new entry. All members can edit shared entries. To delete an entry, open its delete section, read what will be removed and confirm. Forms work without JavaScript. Date-only input formats are `YYYY-MM-DD`, `YYYY-MM` and `YYYY` for day/month/year precision. Timed input uses `YYYY-MM-DDTHH:mm` and an explicit IANA time zone. Repeated DST clock times require independent earlier/later choices for start and end; nonexistent clock times are rejected. The event's local start year determines its list filter even if the stored UTC instant falls in another year.
 
-Unit tests cover date precision, DST gaps/folds, validation, sanitized notes, encrypted storage, pagination, plan transitions and independent route authentication checks. Browser tests exercise shared editing and password-confirmed deletion without JavaScript, local-year filters, blocked early completion, and mobile event pages in all three locales and both themes.
+Unit tests cover date precision, DST gaps/folds, validation, sanitized notes, encrypted storage, pagination, plan transitions and independent route authentication checks. Browser tests exercise shared editing and confirmation and deletion without JavaScript, local-year filters, blocked early completion, and mobile event pages in all three locales and both themes.
 
 Use **New recurring occasion** under Events and choose day precision and a repeat schedule. Anniversaries and birthdays repeat yearly and show the anniversary number or age. For a general occasion, set **Repeat every** and select days, weeks, months or years. The occasion detail shows the localized schedule and upcoming dates.
 
 ## Plans
 
 Open **Plans** and select **New plan** to save an idea with only a title. Open **Add date, place or notes** to provide more when creating it, or reopen it under **Without a date** to set its date. The **Scheduled** view starts with the earliest dated plans. After the end of its scheduled period, open the plan under **Ready to record** and mark it as a moment. Its page and attached memories stay linked to the same record, which now appears in Events.
+
+## Deleting shared content
+
+Open the delete section on an event, plan, memory, album or saved place. Choose the delete button in that section to confirm without re-entering your password. Deleting an event or plan leaves its photos and videos in Memories. Deleting an album leaves its files in the gallery. Deleting a memory removes the file from every album. Deleting a saved place removes it from the picker and keeps the location on existing entries.
 
 ## Memories
 

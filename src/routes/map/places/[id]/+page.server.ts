@@ -1,17 +1,15 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
-import { z } from 'zod';
 import { audit } from '#lib/server/audit.ts';
 import { db } from '#lib/server/app.ts';
 import { requireUser } from '#lib/server/auth/guard.ts';
-import { confirmPassword } from '#lib/server/auth/login.ts';
-import { currentPassword, formObject, parseForm } from '#lib/server/auth/schemas.ts';
+import { contentDeletion, formObject, parseForm } from '#lib/server/auth/schemas.ts';
 import { generateId } from '#lib/server/crypto/tokens.ts';
 import { savedPlace } from '#lib/server/db/schema.ts';
 import { eventId, placeFields } from '#lib/server/events/schemas.ts';
 import { getConfig } from '#lib/server/config.ts';
 import { hasBasemap } from '#lib/server/maps/assets.ts';
-import { clientIp, minutesUntil } from '#lib/server/http/request.ts';
+import { clientIp } from '#lib/server/http/request.ts';
 import type { Actions, PageServerLoad } from './$types';
 
 function placeId(value: string) {
@@ -75,18 +73,8 @@ export const actions: Actions = {
 	remove: async (event) => {
 		const member = requireUser(event);
 		const id = placeId(event.params.id);
-		const input = parseForm(z.strictObject({ currentPassword }), await event.request.formData());
-		if (!input.success) return fail(400, { passwordError: true });
-		const check = await confirmPassword(
-			db(),
-			member.id,
-			input.data.currentPassword,
-			clientIp(event)
-		);
-		if (!check.ok)
-			return check.reason === 'rate_limited'
-				? fail(429, { minutes: minutesUntil(check.retryAfterMs) })
-				: fail(400, { passwordError: true });
+		const input = parseForm(contentDeletion, await event.request.formData());
+		if (!input.success) return fail(400, { deleteProblem: true });
 		db().transaction((tx) => {
 			if (!tx.delete(savedPlace).where(eq(savedPlace.id, id)).run().changes)
 				error(404, 'not_found');
